@@ -339,7 +339,7 @@ if __name__ == "__main__":
 
     elif model == "dual_efficient_vit_v4":
         from pytorch_model.train_torch import train_dualcnn
-        from pytorch_model.dual_efficient_vit_v4 import DualEfficientViTv4
+        from pytorch_model.model.vision_transformer.dual_efficient_vit_v4 import DualEfficientViTv4
 
         dropout = 0.15
         emb_dropout = 0.15
