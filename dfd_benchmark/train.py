@@ -64,8 +64,6 @@ def parse_args():
     parser_normal = subparsers.add_parser('normal', help='Normal Wavelet Net')
 
 
-
-
     #################################################################
     ################ VIT
     #################################################################
@@ -113,6 +111,13 @@ def parse_args():
     parser_spectrum = subparsers.add_parser('spectrum', help='siamese tensorflow')
     parser_headpose = subparsers.add_parser('heapose', help='siamese tensorflow')
     parser_visual = subparsers.add_parser('visual', help='siamese tensorflow')
+
+    parser_dual_eff_vit_v4 = subparsers.add_parser('dual_efficient_vit_v4', help='My model')
+    parser_dual_eff_vit_v4.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
+    parser_dual_eff_vit_v4.add_argument("--version",type=str, default="cross_attention-freq-add", required=True, help="Some changes in model")
+    parser_dual_eff_vit_v4.add_argument("--weight", type=float, default=1, help="Weight for frequency vectors")
+    parser_dual_eff_vit_v4.add_argument("--pretrained", type=int, default=0, help="")
+    parser_dual_eff_vit_v4.add_argument("--architecture", type=str, default='xception_net', help="Weight for frequency vectors")
 
     ## adjust image
     parser.add_argument('--adj_brightness',type=float, default = 1, help='adj_brightness')
@@ -331,6 +336,36 @@ if __name__ == "__main__":
                   batch_size=args.batch_size, lr=args.lr, num_workers=args.workers, checkpoint=args.checkpoint, \
                   epochs=args.niter, print_every=args.print_every,adj_brightness=adj_brightness,adj_contrast=adj_contrast)
         pass
+
+    elif model == "dual_efficient_vit_v4":
+        from pytorch_model.train_torch import train_dualcnn
+        from pytorch_model.dual_efficient_vit_v4 import DualEfficientViTv4
+
+        dropout = 0.15
+        emb_dropout = 0.15
+        model = DualEfficientViTv4(
+            image_size=args.image_size,
+            patch_size=args.patch_size,
+            num_classes=1,
+            dim=args.dim,
+            depth=args.depth,
+            heads=args.heads,
+            mlp_dim=args.mlp_dim,
+            dropout=dropout,
+            emb_dropout=emb_dropout,
+            version=args.version,
+            weight=args.weight,
+            pool=args.pool,
+            architecture=args.architecture,
+            pretrained=args.pretrained
+        )
+        criterion = get_criterion_torch(args.loss)
+        train_dualcnn(model, criterion=criterion, train_set=args.train_set, val_set=args.val_set,
+                  image_size=args.image_size, resume=args.resume, \
+                  batch_size=args.batch_size, lr=args.lr, num_workers=args.workers, checkpoint=args.checkpoint, \
+                  epochs=args.niter, print_every=args.print_every,adj_brightness=adj_brightness,adj_contrast=adj_contrast)
+        pass
+
     elif model == "efft":
         from pytorch_model.train_torch import train_fftcnn
         from pytorch_model.efficientnet import EfficientNet
@@ -568,3 +603,4 @@ if __name__ == "__main__":
         from feature_model.visual_artifact.train_visual import train_visual
         train_visual(args.train_set,model_file=args.checkpoint + args.resume)
         pass
+
