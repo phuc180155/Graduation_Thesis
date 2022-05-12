@@ -34,7 +34,7 @@ from loss.weightedBCE_loss import WeightedBinaryCrossEntropy as WBCE
 
 from typing import List, Tuple
 import warnings
-# warnings.filterwarnings("default")
+warnings.filterwarnings("ignore")
 from sklearn.exceptions import UndefinedMetricWarning
 
 def find_current_earlystopping_score(es_metric, val_loss, val_mic_acc, test_loss, test_mic_acc, test_real_f1, test_fake_f1, test_macro_f1):
