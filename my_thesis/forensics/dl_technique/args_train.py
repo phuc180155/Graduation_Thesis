@@ -118,7 +118,7 @@ if __name__ == "__main__":
         args_txt = "lr_{}_batch_{}_es_{}_loss_{}_pre_{}_seed_{}".format(args.lr, args.batch_size, args.es_metric, args.loss, args.pretrained, args.seed)
         criterion = [args.loss]
         if args.gamma:
-            args_txt += "gamma_{}".format(args.gamma)
+            args_txt += "_gamma_{}".format(args.gamma)
             criterion.append(args.gamma)
             
         train_image_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir, image_size=args.image_size, lr=args.lr,\
@@ -140,7 +140,7 @@ if __name__ == "__main__":
         args_txt = "lr_{}_batch_{}_es_{}_loss_{}_seed_{}".format(args.lr, args.batch_size, args.es_metric, args.loss, args.seed)
         criterion = [args.loss]
         if args.gamma:
-            args_txt += "gamma_{}".format(args.gamma)
+            args_txt += "_gamma_{}".format(args.gamma)
             criterion.append(args.gamma)
             
         train_image_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir, image_size=args.image_size, lr=args.lr,\
@@ -154,7 +154,7 @@ if __name__ == "__main__":
         args_txt = "lr_{}_batch_{}_es_{}_loss_{}_seed_{}".format(args.lr, args.batch_size, args.es_metric, args.loss, args.seed)
         criterion = [args.loss]
         if args.gamma:
-            args_txt += "gamma_{}".format(args.gamma)
+            args_txt += "_gamma_{}".format(args.gamma)
             criterion.append(args.gamma)
             
         train_image_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir, image_size=args.image_size, lr=args.lr,\
@@ -169,7 +169,7 @@ if __name__ == "__main__":
         args_txt = "lr_{}_batch_{}_es_{}_loss_{}_seed_{}".format(args.lr, args.batch_size, args.es_metric,args.loss,args.seed)
         criterion = [args.loss]
         if args.gamma:
-            args_txt += "gamma_{}".format(args.gamma)
+            args_txt += "_gamma_{}".format(args.gamma)
             criterion.append(args.gamma)
             
         train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir, image_size=args.image_size, lr=args.lr,\
@@ -196,7 +196,7 @@ if __name__ == "__main__":
         args_txt = "batch_{}_v_{}_w_{}_lr_{}_patch_{}_es_{}_loss_{}_freeze_{}_seed_{}".format(args.batch_size, args.version, args.weight, args.image_size, args.lr, args.patch_size, args.es_metric, args.loss, args.freeze, args.seed)
         criterion = [args.loss]
         if args.gamma:
-            args_txt += "gamma_{}".format(args.gamma)
+            args_txt += "_gamma_{}".format(args.gamma)
             criterion.append(args.gamma)
         
         train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr,\
@@ -225,7 +225,7 @@ if __name__ == "__main__":
         args_txt = "batch_{}_pool_{}_lr_{}_patch_{}_h_{}_d_{}_es_{}_loss_{}_freeze_{}_seed_{}".format(args.batch_size, args.pool, args.lr, args.patch_size, args.heads, args.depth, args.es_metric, args.loss, args.freeze, args.seed)
         criterion = [args.loss]
         if args.gamma:
-            args_txt += "gamma_{}".format(args.gamma)
+            args_txt += "_gamma_{}".format(args.gamma)
             criterion.append(args.gamma)
         
         train_image_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr,\
@@ -256,7 +256,7 @@ if __name__ == "__main__":
         print(len(args_txt))
         criterion = [args.loss]
         if args.gamma:
-            args_txt += "gamma_{}".format(args.gamma)
+            args_txt += "_gamma_{}".format(args.gamma)
             criterion.append(args.gamma)
         
         train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr,\
@@ -289,7 +289,7 @@ if __name__ == "__main__":
         args_txt = "batch_{}_v_{}_w_{}_arch_{}_pool_{}_lr_{}_patch_{}_h_{}_d_{}_es_{}_loss_{}_freeze_{}_seed_{}".format(args.batch_size, args.version, args.weight, args.architecture, args.pool, args.lr, args.patch_size, args.heads, args.depth, args.es_metric, args.loss, args.freeze, args.seed)
         criterion = [args.loss]
         if args.gamma:
-            args_txt += "gamma_{}".format(args.gamma)
+            args_txt += "_gamma_{}".format(args.gamma)
             criterion.append(args.gamma)
         
         train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr,\
