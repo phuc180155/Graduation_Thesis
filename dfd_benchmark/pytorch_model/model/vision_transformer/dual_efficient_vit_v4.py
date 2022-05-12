@@ -5,13 +5,13 @@ from torchsummary import summary
 from einops import rearrange
 
 import sys
-from model.backbone.efficient_net.model import EfficientNet
+from pytorch_model.model.backbone.efficient_net.model import EfficientNet
 
 import re
 import torch.nn.functional as F
 
 import re, math
-from model.vision_transformer.vit import Transformer
+from pytorch_model.model.vision_transformer.vit import Transformer
 from pytorchcv.model_provider import get_model
 
 

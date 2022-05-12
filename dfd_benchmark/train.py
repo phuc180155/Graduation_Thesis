@@ -118,6 +118,7 @@ def parse_args():
     parser_dual_eff_vit_v4.add_argument("--weight", type=float, default=1, help="Weight for frequency vectors")
     parser_dual_eff_vit_v4.add_argument("--pretrained", type=int, default=0, help="")
     parser_dual_eff_vit_v4.add_argument("--architecture", type=str, default='xception_net', help="Weight for frequency vectors")
+    parser_dual_eff_vit_v4.add_argument("--pool", type=str, default='cls', help="Weight for frequency vectors")
 
     ## adjust image
     parser.add_argument('--adj_brightness',type=float, default = 1, help='adj_brightness')
@@ -357,7 +358,7 @@ if __name__ == "__main__":
             weight=args.weight,
             pool=args.pool,
             architecture=args.architecture,
-            pretrained=args.pretrained
+            pretrained=args.pretrained,
         )
         criterion = get_criterion_torch(args.loss)
         train_dualcnn(model, criterion=criterion, train_set=args.train_set, val_set=args.val_set,
