@@ -110,7 +110,7 @@ class DualEfficientViTv4(nn.Module):
                         else:
                             param.requires_grad = False
         if architecture == 'xception_net':
-            xception = get_model("xception", pretrained=bool(True))
+            xception = get_model("xception", pretrained=bool(pretrained))
             extractor = nn.Sequential(*list(xception.children())[:-1])
             extractor[0].final_block.pool = nn.Identity()
             if in_channels != 3:
