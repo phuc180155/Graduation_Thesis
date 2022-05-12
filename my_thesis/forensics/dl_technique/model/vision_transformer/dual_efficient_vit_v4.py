@@ -97,9 +97,8 @@ class DualEfficientViTv4(nn.Module):
     def get_feature_extractor(self, architecture="efficient_net", pretrained=False, unfreeze_blocks=-1, num_classes=1, in_channels=3):
         extractor = None
         if architecture == "efficient_net":
-            if pretrained == "":
-                extractor = EfficientNet.from_pretrained('efficientnet-b0', num_classes=num_classes,in_channels = in_channels, pretrained=bool(pretrained))
-                # print("Extractor: ", extractor)
+            extractor = EfficientNet.from_pretrained('efficientnet-b0', num_classes=num_classes,in_channels = in_channels, pretrained=bool(pretrained))
+            # print("Extractor: ", extractor)
 
             # Freeze the first (num_blocks - 3) blocks and unfreeze the rest 
             if unfreeze_blocks != -1:
