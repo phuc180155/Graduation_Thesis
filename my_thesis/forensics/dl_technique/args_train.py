@@ -281,7 +281,6 @@ if __name__ == "__main__":
             emb_dropout=emb_dropout,
             version=args.version,
             weight=args.weight,
-            freeze=args.freeze,
             pool=args.pool,
             architecture=args.architecture,
             pretrained=args.pretrained

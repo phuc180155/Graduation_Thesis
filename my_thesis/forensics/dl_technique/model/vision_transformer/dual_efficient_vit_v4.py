@@ -19,7 +19,7 @@ class DualEfficientViTv4(nn.Module):
     def __init__(self, channels=1280,\
                  image_size=224,patch_size=7,num_classes=1,dim=1024,\
                  depth=6,heads=8,mlp_dim=2048,\
-                 emb_dim=32, dim_head=64,dropout=0.15,emb_dropout=0.15, architecture='xception_net', pretrained=False, version="cross_attention-spatial-cat",weight=0.5, freeze=0, pool='cls'):  
+                 emb_dim=32, dim_head=64,dropout=0.15,emb_dropout=0.15, architecture='xception_net', pretrained=False, version="cross_attention-spatial-cat",weight=0.5, pool='cls'):  
         super(DualEfficientViTv4, self).__init__()
 
         self.image_size = image_size
