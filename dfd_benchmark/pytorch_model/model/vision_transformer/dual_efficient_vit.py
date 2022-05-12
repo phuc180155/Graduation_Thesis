@@ -169,6 +169,13 @@ class DualEfficientViT(nn.Module):
             activation = None
         return activation
 
+    def init_conv_weight(self, module):
+            for ly in module.children():
+                if isinstance(ly, nn.Conv2d):
+                    nn.init.kaiming_normal_(ly.weight, a=1)
+                    if not ly.bias is None:
+                        nn.init.constant_(ly.bias, 0)
+
     def get_feature_extractor(self, architecture="efficient_net", unfreeze_blocks=-1, pretrained=False, num_classes=1, in_channels=3):
         extractor = None
         if architecture == "efficient_net":
@@ -188,6 +195,7 @@ class DualEfficientViT(nn.Module):
             extractor[0].final_block.pool = nn.Identity()
             if in_channels != 3:
                 extractor[0].init_block.conv1.conv = nn.Conv2d(1, 32, kernel_size=(3, 3), stride=(2, 2), bias=False)
+
             if unfreeze_blocks != -1:
                 blocks = len(extractor[0].children())
                 print("Number of blocks in xception: ", len(blocks))
@@ -199,6 +207,8 @@ class DualEfficientViT(nn.Module):
                         for param in block.parameters():
                             param.requires_grad = False
         print("Pretrained backbone: ", bool(pretrained))
+        if not pretrained:
+            self.init_conv_weight(extractor)
         return extractor
 
     def flatten_to_vectors(self, feature):

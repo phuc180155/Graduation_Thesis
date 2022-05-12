@@ -159,6 +159,7 @@ class DualEfficientViT(nn.Module):
             nn.Linear(self.mlp_dim, self.num_classes)
         )
         self.sigmoid = nn.Sigmoid()
+        self.apply(self._init_weights)
 
     def get_activation(self, act):
         if act == 'relu':
@@ -168,6 +169,42 @@ class DualEfficientViT(nn.Module):
         else:
             activation = None
         return activation
+
+    def init_conv_weight(self, module):
+        for ly in module.children():
+            if isinstance(ly, nn.Conv2d):
+                nn.init.kaiming_normal_(ly.weight, a=1)
+                if not ly.bias is None:
+                    nn.init.constant_(ly.bias, 0)
+            elif isinstance(ly, nn.Module):
+                self.init_conv_weight(ly)
+
+    def init_transformer_weights(self, module):
+        if isinstance(module, nn.Linear):
+            print("Linear: ", module)
+            module.weight.data.normal_(mean=0.0, std=1.0)
+            if module.bias is not None:
+                module.bias.data.zero_()
+        elif isinstance(module, nn.LayerNorm):
+            print("Layer norm: ", module)
+            module.bias.data.zero_()
+            module.weight.data.fill_(1.0)
+    
+    def _init_weights(self, module):
+        if isinstance(module, nn.Linear):
+            # print("Linear: ", module)
+            module.weight.data.normal_(mean=0.0, std=1.0)
+            if module.bias is not None:
+                module.bias.data.zero_()
+        elif isinstance(module, nn.LayerNorm):
+            # print("Layer norm: ", module)
+            module.bias.data.zero_()
+            module.weight.data.fill_(1.0)
+        elif isinstance(module, nn.Conv2d):
+            # print("Conv: ", module)
+            nn.init.kaiming_normal_(module.weight, a=1)
+            if not module.bias is None:
+                nn.init.constant_(module.bias, 0)
 
     def get_feature_extractor(self, architecture="efficient_net", unfreeze_blocks=-1, pretrained=False, num_classes=1, in_channels=3):
         extractor = None
@@ -188,6 +225,7 @@ class DualEfficientViT(nn.Module):
             extractor[0].final_block.pool = nn.Identity()
             if in_channels != 3:
                 extractor[0].init_block.conv1.conv = nn.Conv2d(1, 32, kernel_size=(3, 3), stride=(2, 2), bias=False)
+
             if unfreeze_blocks != -1:
                 blocks = len(extractor[0].children())
                 print("Number of blocks in xception: ", len(blocks))
@@ -199,6 +237,8 @@ class DualEfficientViT(nn.Module):
                         for param in block.parameters():
                             param.requires_grad = False
         print("Pretrained backbone: ", bool(pretrained))
+        # if not pretrained:
+        #     self.init_conv_weight(extractor)
         return extractor
 
     def flatten_to_vectors(self, feature):
@@ -291,7 +331,7 @@ if __name__ == '__main__':
     model_ = DualEfficientViT(  image_size=128, num_classes=1, dim=1024,\
                                 depth=6, heads=8, mlp_dim=2048,\
                                 dim_head=64, dropout=0.15, emb_dropout=0.15,\
-                                backbone='xception_net', pretrained=True,\
+                                backbone='xception_net', pretrained=False,\
                                 normalize_ifft=True,\
                                 flatten_type='patch',\
                                 conv_attn=True, ratio=8, qkv_embed=True, inner_ca_dim=0, init_ca_weight=True, prj_out=False, act='none',\
