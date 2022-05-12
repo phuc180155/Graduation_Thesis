@@ -86,6 +86,14 @@ def parse_args():
     parser_dual_eff_vit_v4.add_argument("--weight", type=float, default=1, help="Weight for frequency vectors")
     parser_dual_eff_vit_v4.add_argument("--pretrained", type=int, default=0, help="")
     parser_dual_eff_vit_v4.add_argument("--architecture", type=str, default='xception_net', help="Weight for frequency vectors")
+
+ 
+    parser_dual_eff_vit_v2 = sub_parser.add_parser('dual_efficient_vit_v2', help='My model')
+    parser_dual_eff_vit_v2.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
+    parser_dual_eff_vit_v2.add_argument("--version",type=str, default="cross_attention-freq-add", required=True, help="Some changes in model")
+    parser_dual_eff_vit_v2.add_argument("--weight", type=float, default=1, help="Weight for frequency vectors")
+    parser_dual_eff_vit_v2.add_argument("--pretrained", type=int, default=0, help="")
+    parser_dual_eff_vit_v2.add_argument("--freeze", type=int, default=0,  help="Weight for frequency vectors")
     
     ############# adjust image
     parser.add_argument('--adj_brightness',type=float, default = 1, help='adj_brightness')
@@ -287,6 +295,39 @@ if __name__ == "__main__":
         )
         
         args_txt = "batch_{}_v_{}_w_{}_arch_{}_pool_{}_lr_{}_patch_{}_h_{}_d_{}_es_{}_loss_{}_pre_{}_seed_{}".format(args.batch_size, args.version, args.weight, args.architecture, args.pool, args.lr, args.patch_size, args.heads, args.depth, args.es_metric, args.loss, args.pretrained, args.seed)
+        criterion = [args.loss]
+        if args.gamma:
+            args_txt += "_gamma_{}".format(args.gamma)
+            criterion.append(args.gamma)
+        
+        train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr,\
+                           batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual-efficient-vit-v4", args_txt=args_txt)
+
+    elif model == "dual_efficient_vit_v2":
+        from module.train_torch import train_dual_stream
+        from model.vision_transformer.dual_efficient_vit_v2 import DualEfficientViTV2
+        
+        dropout = 0.15
+        emb_dropout = 0.15
+        model = DualEfficientViTV2(
+            image_size=args.image_size,
+            patch_size=args.patch_size,
+            num_classes=1,
+            dim=args.dim,
+            depth=args.depth,
+            heads=args.heads,
+            mlp_dim=args.mlp_dim,
+            dropout=dropout,
+            emb_dropout=emb_dropout,
+            version=args.version,
+            weight=args.weight,
+            pool=args.pool,
+            freeze=args.freeze,
+            pretrained=args.pretrained
+        )
+        
+        args_txt = "batch_{}_v_{}_w_{}_pool_{}_lr_{}_patch_{}_h_{}_d_{}_es_{}_loss_{}_pre_{}_seed_{}".format(args.batch_size, args.version, args.weight, args.pool, args.lr, args.patch_size, args.heads, args.depth, args.es_metric, args.loss, args.pretrained, args.seed)
         criterion = [args.loss]
         if args.gamma:
             args_txt += "_gamma_{}".format(args.gamma)

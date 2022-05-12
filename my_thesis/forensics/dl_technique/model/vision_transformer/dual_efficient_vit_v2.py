@@ -18,7 +18,7 @@ class DualEfficientViTV2(nn.Module):
     def __init__(self, channels=1280,\
                  image_size=224,patch_size=7,num_classes=1,dim=1024,\
                  depth=6,heads=8,mlp_dim=2048,\
-                 emb_dim=32, dim_head=64,dropout=0.15,emb_dropout=0.15,version="cross_attention-spatial-cat",weight=0.5, freeze=0, pool='cls'):  
+                 emb_dim=32, dim_head=64,dropout=0.15,emb_dropout=0.15,version="cross_attention-spatial-cat",weight=0.5, freeze=0, pool='cls',pretrained=False):  
         super(DualEfficientViTV2, self).__init__()
 
         self.image_size = image_size
@@ -48,8 +48,8 @@ class DualEfficientViTV2(nn.Module):
         self.version = version
         self.weight = weight
 
-        self.spatial_extractor = self.get_feature_extractor(freeze=freeze, num_classes=num_classes, in_channels=3)   # efficient_net-b0, return shape (1280, 8, 8) or (1280, 7, 7)
-        self.freq_extractor = self.get_feature_extractor(freeze=freeze, num_classes=num_classes, in_channels=1)
+        self.spatial_extractor = self.get_feature_extractor(freeze=freeze, num_classes=num_classes, in_channels=3, pretrained=pretrained)   # efficient_net-b0, return shape (1280, 8, 8) or (1280, 7, 7)
+        self.freq_extractor = self.get_feature_extractor(freeze=freeze, num_classes=num_classes, in_channels=1, pretrained=pretrained)
 
         ############################# Xét 2 stream hiện tại là như nhau
         # Kích thước của 1 patch
