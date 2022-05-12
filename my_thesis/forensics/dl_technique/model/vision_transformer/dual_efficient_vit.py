@@ -84,7 +84,8 @@ class DualEfficientViT(nn.Module):
                 flatten_type='patch',\
                 conv_attn=False, ratio=5, qkv_embed=True, init_ca_weight=True, prj_out=False, inner_ca_dim=512, act='none',\
                 patch_size=7, position_embed=False, pool='cls',\
-                version='ca-fcat-0.5', unfreeze_blocks=-1):  
+                version='ca-fcat-0.5', unfreeze_blocks=-1, \
+                init_linear="xavier", init_layernorm="normal", init_conv="kaiming"):  
         super(DualEfficientViT, self).__init__()
 
         self.image_size = image_size
@@ -159,6 +160,7 @@ class DualEfficientViT(nn.Module):
             nn.Linear(self.mlp_dim, self.num_classes)
         )
         self.sigmoid = nn.Sigmoid()
+        self.init_linear, self.init_layernorm, self.init_conv = init_linear, init_layernorm, init_conv
         self.apply(self._init_weights)
 
     def get_activation(self, act):
@@ -193,7 +195,12 @@ class DualEfficientViT(nn.Module):
     def _init_weights(self, module):
         if isinstance(module, nn.Linear):
             # print("Linear: ", module)
-            module.weight.data.normal_(mean=0.0, std=1.0)
+            if self.init_linear == 'normal':
+                module.weight.data.normal_(mean=0.0, std=1.0)
+            elif self.init_linear == 'xavier':
+                nn.init.xavier_uniform_(module.weight)
+            else:
+                pass
             if module.bias is not None:
                 module.bias.data.zero_()
         elif isinstance(module, nn.LayerNorm):
@@ -202,7 +209,13 @@ class DualEfficientViT(nn.Module):
             module.weight.data.fill_(1.0)
         elif isinstance(module, nn.Conv2d):
             # print("Conv: ", module)
-            nn.init.kaiming_normal_(module.weight, a=1)
+            if self.init_conv == 'kaiming':
+                nn.init.kaiming_normal_(module.weight, a=1)
+            elif self.init_conv == "xavier":
+                nn.init.xavier_uniform_(module.weight)
+            else:
+                pass
+
             if not module.bias is None:
                 nn.init.constant_(module.bias, 0)
 
