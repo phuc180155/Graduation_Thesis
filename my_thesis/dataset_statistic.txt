@@ -1,0 +1,26 @@
+df-timit:
+	+ train:  95578 file
+	+ test: 15 482 file
+dfdc
+	+ train: 833,516 
+		real: 135000	=> 35000 => 100000
+		fake: 700000	=> 105000 => 600000
+	+ test: 220 441
+celeb-df
+	+ train: 566 904
+	+ test: 49 363
+ff:
+	+ train: 466 318
+	+ test: 116 582
+
+server:
+	+ df_in_the_wild:
+		+ train: 
+			0_real: 331876
+			1_df: 582561
+		+ test:
+			0_real: 58659
+			1_df: 107003
+		+ val:
+			0_real: 50000
+			1_df: 50000

@@ -1,0 +1,15 @@
+Epoch 1, Train loss 0.0831, Train accuracy 0.9717, Valid loss 0.2541, Valid accuracy  0.8947 
+Epoch 2, Train loss 0.0312, Train accuracy 0.9883, Valid loss 0.4535, Valid accuracy  0.9371 
+Epoch 3, Train loss 0.0277, Train accuracy 0.9879, Valid loss 0.5796, Valid accuracy  0.9376 
+Epoch 4, Train loss 0.0209, Train accuracy 0.9895, Valid loss 0.5770, Valid accuracy  0.9149 
+Epoch 5, Train loss 0.0240, Train accuracy 0.9908, Valid loss 1.0080, Valid accuracy  0.9142 
+Epoch 6, Train loss 0.0174, Train accuracy 0.9927, Valid loss 0.3590, Valid accuracy  0.9190 
+Epoch 7, Train loss 0.0149, Train accuracy 0.9925, Valid loss 0.2519, Valid accuracy  0.9129 
+Epoch 8, Train loss 0.0181, Train accuracy 0.9915, Valid loss 0.2307, Valid accuracy  0.9319 
+Epoch 9, Train loss 0.0249, Train accuracy 0.9907, Valid loss 0.1992, Valid accuracy  0.9430 
+Epoch 10, Train loss 0.0202, Train accuracy 0.9910, Valid loss 0.3679, Valid accuracy  0.9450 
+Epoch 11, Train loss 0.0206, Train accuracy 0.9901, Valid loss 0.4263, Valid accuracy  0.9328 
+Epoch 12, Train loss 0.0192, Train accuracy 0.9914, Valid loss 0.7457, Valid accuracy  0.9424 
+Epoch 13, Train loss 0.0146, Train accuracy 0.9923, Valid loss 0.9794, Valid accuracy  0.9322 
+Epoch 14, Train loss 0.0147, Train accuracy 0.9916, Valid loss 0.3547, Valid accuracy  0.9430 
+Epoch 15, Train loss 0.0140, Train accuracy 0.9926, Valid loss 0.8017, Valid accuracy  0.9400 

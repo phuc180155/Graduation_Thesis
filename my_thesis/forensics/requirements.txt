@@ -1,0 +1,16 @@
+numpy
+opencv-python
+opencv-contrib-python
+torch
+torchvision
+tqdm
+facenet-pytorch
+torchsummary
+pytorchcv
+tensorboard
+scikit-learn
+albumentations
+
+
+"../../../../2_Deep_Learning/Dataset/facial_forgery/FF+/manipulated_sequences"
+"../../../../2_Deep_Learning/Dataset/facial_forgery/FF+/image/fake"

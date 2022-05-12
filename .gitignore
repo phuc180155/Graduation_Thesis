@@ -1,0 +1,9 @@
+*.pth
+*.pt
+my_thesis/forensics/dl_technique/bash
+my_thesis/forensics/dl_technique/checkpoint
+my_thesis/forensics/dl_technique/checkpoint_tmp
+my_thesis/forensics/dl_technique/pretrained
+my_thesis/forensics/dl_technique/test
+my_thesis/dfdc.tar.gz
+my_thesis/wild.tar.gz

@@ -1,0 +1,86 @@
+my repo
+    api_to_drive
+        api_to_drive
+            repo_1
+                test.txt
+            repo_3
+                empty
+                    new_v3.txt
+                v_3
+                    empty
+                        Report - Week 4.pptx
+                    v_3.txt
+                    v_4.txt
+            repo_2
+                empty
+                    not_empty.txt
+            template.pptx
+            test.txt
+        api_to_drive - Copy - Copy
+            repo_1
+                test.txt
+            repo_3
+                empty
+                    new_v3.txt
+                v_3
+                    empty
+                        Report - Week 4.pptx
+                    v_3.txt
+                    v_4.txt
+            repo_2
+                empty
+                    not_empty.txt
+            template.pptx
+            test.txt
+        api_to_drive - Copy
+            repo_1
+                test.txt
+            repo_3
+                empty
+                    new_v3.txt
+                v_3
+                    empty
+                        Report - Week 4.pptx
+                    v_3.txt
+                    v_4.txt
+            repo_2
+                empty
+                    not_empty.txt
+            template.pptx
+            test.txt
+        repo_1 - Copy
+            test.txt
+        repo_3 - Copy
+            empty
+                new_v3.txt
+            v_3
+                empty
+                    Report - Week 4.pptx
+                v_3.txt
+                v_4.txt
+        repo_2 - Copy
+            empty
+                not_empty.txt
+        template - Copy.pptx
+        test.txt
+        repo_3
+            v_3
+                empty
+                    template.pptx
+            Report - Week 2.pptx
+        repo_1
+            test.txt
+            test - Copy.txt
+            uadfv
+            df_timit
+                v_2
+                v_1
+                    Report - Week 7.pptx
+                    template.pptx
+            dfdc
+                empty
+            template.pptx
+        template.pptx
+        repo_2
+            Report - Week 3.pptx
+        Weekly-Report-1.pptx

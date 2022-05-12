@@ -1,0 +1,2 @@
+python eval.py --val_set /mnt/disk1/phucnp/Dataset/dfdc/test --batch_size 16 --image_size 256 --workers 16 --checkpoint /mnt/disk1/phucnp/Graduation_Thesis/dfd_benchmark/xception_checkpoint --resume model_pytorch_0.pt  --gpu_id 3 xception_torch
+python eval.py --val_set /mnt/disk1/phucnp/Dataset/dfdc/test --batch_size 16 --image_size 256 --workers 16 --checkpoint /mnt/disk1/phucnp/Graduation_Thesis/dfd_benchmark/xception_checkpoint --resume model_pytorch_1.pt  --gpu_id 3 xception_torch

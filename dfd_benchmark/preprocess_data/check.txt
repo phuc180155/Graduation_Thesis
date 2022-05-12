@@ -1,0 +1,23 @@
+python preprocess_data\upload_data_to_drive.py --src "../../../../2_Deep_Learning/Dataset/facial_forgery/dfdc/image/test/0_real/" --targetDirID "1UcBHl-0ILm3rKr8d8kZOgRhptUK90zgG" --pre_folder 22 --next_folder 78
+python preprocess_data\upload_data_to_drive.py --src "../../../../2_Deep_Learning/Dataset/facial_forgery/dfdc/image/test/1_df/" --targetDirID "1qB8LTrmd4oCVwMObjfNlnDORtS45VRP-" --pre_folder 0 --next_folder 50
+python preprocess_data\upload_data_to_drive.py --src "../../../../2_Deep_Learning/Dataset/facial_forgery/dfdc/image/test/1_df/" --targetDirID "1qB8LTrmd4oCVwMObjfNlnDORtS45VRP-" --pre_folder 50 --next_folder 100
+python preprocess_data\upload_data_to_drive.py --src "../../../../2_Deep_Learning/Dataset/facial_forgery/dfdc/image/test/1_df/" --targetDirID "1qB8LTrmd4oCVwMObjfNlnDORtS45VRP-" --pre_folder 100 --next_folder 150
+python preprocess_data\upload_data_to_drive.py --src "../../../../2_Deep_Learning/Dataset/facial_forgery/dfdc/image/test/1_df/" --targetDirID "1qB8LTrmd4oCVwMObjfNlnDORtS45VRP-" --pre_folder 170 --next_folder 200
+python preprocess_data\upload_data_to_drive.py --src "../../../../2_Deep_Learning/Dataset/facial_forgery/dfdc/image/test/1_df/" --targetDirID "1qB8LTrmd4oCVwMObjfNlnDORtS45VRP-" --pre_folder 200 --next_folder 250
+python preprocess_data\upload_data_to_drive.py --src "../../../../2_Deep_Learning/Dataset/facial_forgery/dfdc/image/test/1_df/" --targetDirID "1qB8LTrmd4oCVwMObjfNlnDORtS45VRP-" --pre_folder 250 --next_folder 300
+python preprocess_data\upload_data_to_drive.py --src "../../../../2_Deep_Learning/Dataset/facial_forgery/dfdc/image/test/1_df/" --targetDirID "1qB8LTrmd4oCVwMObjfNlnDORtS45VRP-" --pre_folder 339 --next_folder 364
+
+python preprocess_data\upload_data_to_drive.py --src "../../../../2_Deep_Learning/Dataset/facial_forgery/dfdc/image/val/0_real/" --targetDirID "1mNtbeV3pLM2_8WGs7SfbpI391ClAC4b0" --pre_folder 19 --next_folder 70
+
+python preprocess_data\upload_data_to_drive.py --src "../../../../2_Deep_Learning/Dataset/facial_forgery/dfdc/image/val/1_df/" --targetDirID "1M2hqmGTUJ4hcDMuFNvF8F6DHEveCG_kR" --pre_folder 0 --next_folder 50
+python preprocess_data\upload_data_to_drive.py --src "../../../../2_Deep_Learning/Dataset/facial_forgery/dfdc/image/val/1_df/" --targetDirID "1M2hqmGTUJ4hcDMuFNvF8F6DHEveCG_kR" --pre_folder 50 --next_folder 100
+python preprocess_data\upload_data_to_drive.py --src "../../../../2_Deep_Learning/Dataset/facial_forgery/dfdc/image/val/1_df/" --targetDirID "1M2hqmGTUJ4hcDMuFNvF8F6DHEveCG_kR" --pre_folder 100 --next_folder 150
+
+python preprocess_data\upload_data_to_drive.py --src "../../../../2_Deep_Learning/Dataset/facial_forgery/dfdc/image/train/1_df/" --targetDirID "1QKkDbKDUiwA0-RsIJl7vdD5qp_6airAP" --pre_folder 1125 --next_folder 1193
+python preprocess_data\upload_data_to_drive.py --src "../../../../2_Deep_Learning/Dataset/facial_forgery/dfdc/image/train/1_df/" --targetDirID "1QKkDbKDUiwA0-RsIJl7vdD5qp_6airAP" --pre_folder 1000 --next_folder 1040
+python preprocess_data\upload_data_to_drive.py --src "../../../../2_Deep_Learning/Dataset/facial_forgery/dfdc/image/train/1_df/" --targetDirID "1QKkDbKDUiwA0-RsIJl7vdD5qp_6airAP" --pre_folder 960 --next_folder 1000
+python preprocess_data\upload_data_to_drive.py --src "../../../../2_Deep_Learning/Dataset/facial_forgery/dfdc/image/train/1_df/" --targetDirID "1QKkDbKDUiwA0-RsIJl7vdD5qp_6airAP" --pre_folder 920 --next_folder 960
+python preprocess_data\upload_data_to_drive.py --src "../../../../2_Deep_Learning/Dataset/facial_forgery/dfdc/image/train/1_df/" --targetDirID "1QKkDbKDUiwA0-RsIJl7vdD5qp_6airAP" --pre_folder 725 --next_folder 760
+python preprocess_data\upload_data_to_drive.py --src "../../../../2_Deep_Learning/Dataset/facial_forgery/dfdc/image/train/1_df/" --targetDirID "1QKkDbKDUiwA0-RsIJl7vdD5qp_6airAP" --pre_folder 645 --next_folder 680
+
+python preprocess_data\upload_data_to_drive_test.py --src "E:/4_Graduation_Thesis/dfd_v2/dfd_benchmark/preprocess_data/test" --targetDirID "1TKCZcakksAaBldM8R_nOm8LP_2-EMfaR"
