@@ -80,12 +80,12 @@ def parse_args():
     parser_dual_eff_vit.add_argument("--act", type=str, default='relu', help="")
     parser_dual_eff_vit.add_argument("--position_embed", type=int, default=1, help="")
  
-    parser_dual_eff_vit_v2 = sub_parser.add_parser('dual_efficient_vit_v2', help='My model')
-    parser_dual_eff_vit_v2.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
-    parser_dual_eff_vit_v2.add_argument("--version",type=str, default="cross_attention-freq-add", required=True, help="Some changes in model")
-    parser_dual_eff_vit_v2.add_argument("--weight", type=float, default=1, help="Weight for frequency vectors")
-    parser_dual_eff_vit_v2.add_argument("--freeze", type=int, default=0, help="Weight for frequency vectors")
-    parser_dual_eff_vit_v2.add_argument("--architecture", type=str, default='xception_net', help="Weight for frequency vectors")
+    parser_dual_eff_vit_v4 = sub_parser.add_parser('dual_efficient_vit_v4', help='My model')
+    parser_dual_eff_vit_v4.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
+    parser_dual_eff_vit_v4.add_argument("--version",type=str, default="cross_attention-freq-add", required=True, help="Some changes in model")
+    parser_dual_eff_vit_v4.add_argument("--weight", type=float, default=1, help="Weight for frequency vectors")
+    parser_dual_eff_vit_v4.add_argument("--pretrained", type=int, default=0, help="")
+    parser_dual_eff_vit_v4.add_argument("--architecture", type=str, default='xception_net', help="Weight for frequency vectors")
     
     ############# adjust image
     parser.add_argument('--adj_brightness',type=float, default = 1, help='adj_brightness')
@@ -284,9 +284,10 @@ if __name__ == "__main__":
             freeze=args.freeze,
             pool=args.pool,
             architecture=args.architecture,
+            pretrained=args.pretrained
         )
         
-        args_txt = "batch_{}_v_{}_w_{}_arch_{}_pool_{}_lr_{}_patch_{}_h_{}_d_{}_es_{}_loss_{}_freeze_{}_seed_{}".format(args.batch_size, args.version, args.weight, args.architecture, args.pool, args.lr, args.patch_size, args.heads, args.depth, args.es_metric, args.loss, args.freeze, args.seed)
+        args_txt = "batch_{}_v_{}_w_{}_arch_{}_pool_{}_lr_{}_patch_{}_h_{}_d_{}_es_{}_loss_{}_pre_{}_seed_{}".format(args.batch_size, args.version, args.weight, args.architecture, args.pool, args.lr, args.patch_size, args.heads, args.depth, args.es_metric, args.loss, args.pretrained, args.seed)
         criterion = [args.loss]
         if args.gamma:
             args_txt += "_gamma_{}".format(args.gamma)
