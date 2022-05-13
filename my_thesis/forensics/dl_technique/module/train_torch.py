@@ -215,6 +215,26 @@ def define_device(seed: int, model_name: str):
         cudnn.deterministic = True
     return device
 
+def define_optimizer(model, model_name: str, init_lr: float, division_lr=True, use_pretrained=False):
+    if not division_lr or not use_pretrained:
+        optimizer = optim.Adam(model.parameters(), lr=init_lr)
+    else:
+        extractor = []
+        rest = []
+        for name, param in model.named_parameters():
+            if 'extractor' in name:
+                extractor.append(param)
+            else:
+                rest.append(param)
+        optimizer = Adam(
+            [
+                {"params": extractor, "lr": init_lr/5},
+                {"params": rest, "lr": init_lr},
+            ],
+        )
+    return optimizer
+
+
 def calculate_metric(y_label: List[float], y_pred_label: List[float]):
     mic_accuracy = accuracy_score(y_label, y_pred_label)
     try:
@@ -487,7 +507,7 @@ def eval_dual_stream(model, dataloader, device, criterion, adj_brightness=1.0, a
     calculate_cls_metrics(y_label=np.array(y_label, dtype=np.float64), y_pred_label=np.array(y_pred_label, dtype=np.float64), save=True, print_metric=False)
     return loss, mac_accuracy, mic_accuracy, reals, fakes, micros, macros
     
-def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', test_dir= '', image_size=256, lr=3e-4, \
+def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', test_dir= '', image_size=256, lr=3e-4, division_lr=True, use_pretrained=False,\
               batch_size=16, num_workers=8, checkpoint='', resume='', epochs=30, eval_per_iters=-1, seed=0, \
               adj_brightness=1.0, adj_contrast=1.0, es_metric='val_loss', es_patience=5, model_name="dual-efficient", args_txt=""):
     
@@ -520,7 +540,7 @@ def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', t
         except:
             pass
 
-    optimizer = optim.Adam(model.parameters(), lr=init_lr)
+    optimizer = define_optimizer(model, model_name=model_name, init_lr=init_lr, division_lr=division_lr, use_pretrained=use_pretrained)
     scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones = [3*i for i in range(1, epochs//3 + 1)], gamma = 0.8)
     
     # Define devices

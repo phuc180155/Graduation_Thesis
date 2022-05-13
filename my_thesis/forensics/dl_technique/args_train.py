@@ -83,7 +83,8 @@ def parse_args():
     parser_dual_eff_vit.add_argument("--init_linear", type=str, default="xavier", help="")
     parser_dual_eff_vit.add_argument("--init_layernorm", type=str, default="normal", help="")
     parser_dual_eff_vit.add_argument("--init_conv", type=str, default="kaiming", help="")
- 
+    parser_dual_eff_vit.add_argument("--division_lr", type=int, default=1, help="")
+
     parser_dual_eff_vit_v4 = sub_parser.add_parser('dual_efficient_vit_v4', help='My model')
     parser_dual_eff_vit_v4.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
     parser_dual_eff_vit_v4.add_argument("--version",type=str, default="cross_attention-freq-add", required=True, help="Some changes in model")
@@ -267,7 +268,7 @@ if __name__ == "__main__":
                                 version=args.version, unfreeze_blocks=args.unfreeze_blocks, \
                                 init_weight=args.init_weight, init_linear=args.init_linear, init_layernorm=args.init_layernorm, init_conv=args.init_conv)
         
-        args_txt = "lr_{}_batch_{}_es_{}_loss_{}_v_{}_pool_{}_bb_{}_pre_{}_unf_{}_".format(args.lr, args.batch_size, args.es_metric, args.loss, args.version, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
+        args_txt = "lr_{}-{}_batch_{}_es_{}_loss_{}_v_{}_pool_{}_bb_{}_pre_{}_unf_{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.version, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
         args_txt += "norm_{}_".format(args.normalize_ifft)
         args_txt += "flat_{}_".format(args.flatten_type)
         args_txt += "convattn_{}_r_{}_qkvemb_{}_incadim_{}_prj_{}_act_{}_".format(args.conv_attn, args.ratio, args.qkv_embed, args.inner_ca_dim, args.prj_out, args.act)
@@ -279,8 +280,8 @@ if __name__ == "__main__":
         if args.gamma:
             args_txt += "_gamma_{}".format(args.gamma)
             criterion.append(args.gamma)
-        
-        train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr,\
+        use_pretrained = True if args.pretrained or args.resume != '' else False
+        train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual-efficient-vit", args_txt=args_txt)
         
