@@ -14,12 +14,12 @@ import re, math
 from .vit import Transformer
 
 
-class DualEfficientViT(nn.Module):
+class OriDualEfficientViT(nn.Module):
     def __init__(self, channels=1280,\
                  image_size=224,patch_size=7,num_classes=1,dim=1024,\
                  depth=6,heads=8,mlp_dim=2048,\
                  emb_dim=32, dim_head=64,dropout=0.15,emb_dropout=0.15,version="cross_attention-spatial-cat",weight=0.5,freeze=0):  
-        super(DualEfficientViT, self).__init__()
+        super(OriDualEfficientViT, self).__init__()
 
         self.image_size = image_size
         self.patch_size = patch_size
@@ -230,6 +230,6 @@ class DualEfficientViT(nn.Module):
 if __name__ == '__main__':
     x = torch.ones(32, 3, 256, 256)
     y = torch.ones(32, 1, 256, 256)
-    model_ = DualEfficientViT(image_size=256, patch_size=2)
+    model_ = OriDualEfficientViT(image_size=256, patch_size=2)
     out = model_(x, y)
     print(out.shape)
