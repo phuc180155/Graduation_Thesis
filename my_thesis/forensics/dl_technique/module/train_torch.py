@@ -37,6 +37,11 @@ import warnings
 warnings.filterwarnings("ignore")
 from sklearn.exceptions import UndefinedMetricWarning
 
+def refine_model(model_name: str):
+    if 'dual' in model_name and 'vit' in model_name:
+        return True
+    return False
+
 def find_current_earlystopping_score(es_metric, val_loss, val_mic_acc, test_loss, test_mic_acc, test_real_f1, test_fake_f1, test_macro_f1):
     if es_metric == 'val_loss':
         return val_loss
@@ -595,6 +600,8 @@ def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', t
                     # Save model:
                     step_model_saver(global_step, [val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2]], step_ckcpoint, model)
                     step_model_saver.save_last_model(step_ckcpoint, model, global_step)
+                    if refine_model(model_name=model_name):
+                        step_model_saver.save_model(step_ckcpoint, model, global_step)
                     model.train()
 
         # Eval
@@ -608,7 +615,8 @@ def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', t
         # Save model:
         epoch_model_saver(epoch+1, [val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2]], epoch_ckcpoint, model)
         epoch_model_saver.save_last_model(epoch_ckcpoint, model, epoch+1)
-        
+        if refine_model(model_name=model_name):
+            epoch_model_saver.save_model(epoch_ckcpoint, model, epoch+1)
         # Reset to the next epoch
         running_loss = 0
         running_acc = 0
