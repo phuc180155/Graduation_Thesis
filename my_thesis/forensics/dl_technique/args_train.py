@@ -79,9 +79,9 @@ def parse_args():
     parser_dual_eff_vit.add_argument("--prj_out", type=int, default=0, help="")
     parser_dual_eff_vit.add_argument("--act", type=str, default='relu', help="")
     parser_dual_eff_vit.add_argument("--position_embed", type=int, default=1, help="")
-    parser_dual_eff_vit.add_argument("--init_linear", type=int, default="xavier", help="")
-    parser_dual_eff_vit.add_argument("--init_layernorm", type=int, default="normal", help="")
-    parser_dual_eff_vit.add_argument("--init_conv", type=int, default="kaiming", help="")
+    parser_dual_eff_vit.add_argument("--init_linear", type=str, default="xavier", help="")
+    parser_dual_eff_vit.add_argument("--init_layernorm", type=str, default="normal", help="")
+    parser_dual_eff_vit.add_argument("--init_conv", type=str, default="kaiming", help="")
  
     parser_dual_eff_vit_v4 = sub_parser.add_parser('dual_efficient_vit_v4', help='My model')
     parser_dual_eff_vit_v4.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
