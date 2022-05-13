@@ -70,5 +70,5 @@ class ModelSaver:
             torch.save(model.state_dict(), join(checkpoint_dir, "_model_iter_{}_.pt".format(iteration)))
         else:
             torch.save(model.state_dict(), join(checkpoint_dir, "_model_iter_{}_.pt".format(iteration)))
-            with open(join(checkpoint_dir, 'global_acc_loss.txt', 'w')) as f:
+            with open(join(checkpoint_dir, 'global_acc_loss.txt'), 'w') as f:
                 f.write("{},{}".format(global_acc, global_loss))
