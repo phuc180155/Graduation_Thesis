@@ -113,6 +113,7 @@ class DualEfficientViT(nn.Module):
         self.conv_attn = conv_attn
         self.activation = self.get_activation(act)
 
+        self.pretrained = pretrained
         self.rgb_extractor = self.get_feature_extractor(architecture=backbone, pretrained=pretrained, unfreeze_blocks=unfreeze_blocks, num_classes=num_classes, in_channels=3)   # efficient_net-b0, return shape (1280, 8, 8) or (1280, 7, 7)
         self.freq_extractor = self.get_feature_extractor(architecture=backbone, pretrained=pretrained, unfreeze_blocks=unfreeze_blocks, num_classes=num_classes, in_channels=1)     
         self.normalize = nn.BatchNorm2d(num_features=self.out_ext_channels) if normalize_ifft else nn.Identity()
@@ -207,7 +208,7 @@ class DualEfficientViT(nn.Module):
             # print("Layer norm: ", module)
             module.bias.data.zero_()
             module.weight.data.fill_(1.0)
-        elif isinstance(module, nn.Conv2d):
+        elif isinstance(module, nn.Conv2d) and self.pretrained == 0:
             # print("Conv: ", module)
             if self.init_conv == 'kaiming':
                 nn.init.kaiming_normal_(module.weight, a=1)
