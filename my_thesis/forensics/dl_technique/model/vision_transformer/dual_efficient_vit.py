@@ -51,7 +51,7 @@ class CrossAttention(nn.Module):
             v = self.to_v(z)
         else:
             q, k, v = x, y, z
-        out, attn = self.scale_dot(q, k, v, dropout_p=0.05)
+        out, attn = self.scale_dot(q, k, v, dropout_p=0.00)
         out = self.to_out(out)
         return out, attn
 
