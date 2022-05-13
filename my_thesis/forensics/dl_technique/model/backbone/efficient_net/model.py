@@ -165,11 +165,13 @@ class EfficientNet(nn.Module):
         for block in self._blocks:
             block.set_swish(memory_efficient)
 
-    def extract_features(self, inputs):
+    def extract_features(self, file_name, inputs):
         """ Returns output of the final convolution layer """
 
         # Stem
         x = self._swish(self._bn0(self._conv_stem(inputs)))
+        import numpy as np
+        np.savetxt(file_name, x.numpy().flatten())
 
         # Blocks
         for idx, block in enumerate(self._blocks):
@@ -206,12 +208,14 @@ class EfficientNet(nn.Module):
     def from_pretrained(cls, model_name, advprop=False, num_classes=1000, in_channels=3, pretrained=True):
         model = cls.from_name(model_name, override_params={'num_classes': num_classes})
         if pretrained:
+            # device = torch.device('cuda' if torch.cuda.is_available else 'cpu')
             load_pretrained_weights(model, model_name, load_fc=(num_classes == 1000), advprop=advprop)
         if in_channels != 3:
             Conv2d = get_same_padding_conv2d(image_size=model._global_params.image_size)
             out_channels = round_filters(32, model._global_params)
             model._conv_stem = Conv2d(in_channels, out_channels, kernel_size=3, stride=2, bias=False)
         return model
+        
 
     @classmethod
     def get_image_size(cls, model_name):
