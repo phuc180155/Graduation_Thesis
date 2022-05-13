@@ -577,7 +577,7 @@ def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', t
         print("\n=========================================")
         print("Epoch: {}/{}".format(epoch+1, epochs))
         print("Model: {} - {}".format(model_name, args_txt))
-        print("lr = ", optimizer.param_groups[0]['lr'])
+        print("lr = ", [optimizer.param_groups[i]['lr'] for i in range(len(optimizer.param_groups))])
 
         # Train
         model.train()
