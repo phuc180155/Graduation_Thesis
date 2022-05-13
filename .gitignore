@@ -1,5 +1,6 @@
 *.pth
 *.pt
+*.xlsx
 my_thesis/forensics/dl_technique/bash
 my_thesis/forensics/dl_technique/checkpoint
 my_thesis/forensics/dl_technique/checkpoint_tmp
