@@ -196,7 +196,7 @@ def define_log_writer(checkpoint: str, resume: str, args_txt:str, model: Tuple[t
     
     return ckc_pointdir, log, batch_writer, (epoch_ckcpoint, epoch_val_writer, epoch_test_writer), (step_ckcpoint, step_val_writer, step_test_writer)
 
-def define_device(seed: int):
+def define_device(seed: int, model_name: str):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # os.environ['PYTHONHASHSEED'] = str(seed)
     torch.manual_seed(seed)
@@ -205,7 +205,8 @@ def define_device(seed: int):
     if device == "cuda":
         torch.cuda.manual_seed_all(seed)
         cudnn.benchmark = True
-        cudnn.deterministic = True
+        if 'dual' in model_name and 'vit' in model_name:
+            cudnn.deterministic = True
     return device
 
 def calculate_metric(y_label: List[float], y_pred_label: List[float]):
@@ -314,7 +315,7 @@ def train_image_stream(model, criterion_name=None, train_dir = '', val_dir ='', 
     scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones = [3*i for i in range(1, epochs//3 + 1)], gamma = 0.8)
     
     # Define devices
-    device = define_device(seed=seed)
+    device = define_device(seed=seed, model_name=model_name)
 
     # Define criterion
     criterion = define_criterion(criterion_name, num_samples)
@@ -511,7 +512,7 @@ def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', t
     scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones = [3*i for i in range(1, epochs//3 + 1)], gamma = 0.8)
     
     # Define devices
-    device = define_device(seed=seed)
+    device = define_device(seed=seed, model_name=model_name)
         
     # Define criterion
     criterion = define_criterion(criterion_name, num_samples)
