@@ -165,14 +165,11 @@ class EfficientNet(nn.Module):
         for block in self._blocks:
             block.set_swish(memory_efficient)
 
-    def extract_features(self, file_name, inputs):
+    def extract_features(self, inputs):
         """ Returns output of the final convolution layer """
 
         # Stem
         x = self._swish(self._bn0(self._conv_stem(inputs)))
-        import numpy as np
-        np.savetxt(file_name, x.numpy().flatten())
-
         # Blocks
         for idx, block in enumerate(self._blocks):
             drop_connect_rate = self._global_params.drop_connect_rate
