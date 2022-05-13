@@ -79,6 +79,7 @@ def parse_args():
     parser_dual_eff_vit.add_argument("--prj_out", type=int, default=0, help="")
     parser_dual_eff_vit.add_argument("--act", type=str, default='relu', help="")
     parser_dual_eff_vit.add_argument("--position_embed", type=int, default=1, help="")
+    parser_dual_eff_vit.add_argument("--init_weight", type=int, default=0, help="")
     parser_dual_eff_vit.add_argument("--init_linear", type=str, default="xavier", help="")
     parser_dual_eff_vit.add_argument("--init_layernorm", type=str, default="normal", help="")
     parser_dual_eff_vit.add_argument("--init_conv", type=str, default="kaiming", help="")
@@ -264,13 +265,14 @@ if __name__ == "__main__":
                                 conv_attn=bool(args.conv_attn), ratio=args.ratio, qkv_embed=bool(args.qkv_embed), inner_ca_dim=args.inner_ca_dim, init_ca_weight=bool(args.init_ca_weight), prj_out=bool(args.prj_out), act=args.act,\
                                 patch_size=args.patch_size, position_embed=bool(args.position_embed), pool=args.pool,\
                                 version=args.version, unfreeze_blocks=args.unfreeze_blocks, \
-                                init_linear=args.init_linear, init_layernorm=args.init_layernorm, init_conv=args.init_conv)
+                                init_weight=args.init_weight, init_linear=args.init_linear, init_layernorm=args.init_layernorm, init_conv=args.init_conv)
         
         args_txt = "lr_{}_batch_{}_es_{}_loss_{}_v_{}_pool_{}_bb_{}_pre_{}_unf_{}_".format(args.lr, args.batch_size, args.es_metric, args.loss, args.version, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
         args_txt += "norm_{}_".format(args.normalize_ifft)
         args_txt += "flat_{}_".format(args.flatten_type)
         args_txt += "convattn_{}_r_{}_qkvemb_{}_incadim_{}_prj_{}_act_{}_".format(args.conv_attn, args.ratio, args.qkv_embed, args.inner_ca_dim, args.prj_out, args.act)
-        args_txt += "init_{}-{}-{}_".format(args.init_linear, args.init_layernorm, args.init_conv)
+        if args.init_weight == 1:
+            args_txt += "init_{}-{}-{}_".format(args.init_linear, args.init_layernorm, args.init_conv)
         args_txt += "patch_{}_seed_{}".format(args.patch_size, args.seed)
         print(len(args_txt))
         criterion = [args.loss]

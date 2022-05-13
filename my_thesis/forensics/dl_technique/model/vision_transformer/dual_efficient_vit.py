@@ -85,7 +85,7 @@ class DualEfficientViT(nn.Module):
                 conv_attn=False, ratio=5, qkv_embed=True, init_ca_weight=True, prj_out=False, inner_ca_dim=512, act='none',\
                 patch_size=7, position_embed=False, pool='cls',\
                 version='ca-fcat-0.5', unfreeze_blocks=-1, \
-                init_linear="xavier", init_layernorm="normal", init_conv="kaiming"):  
+                init_weight=False, init_linear="xavier", init_layernorm="normal", init_conv="kaiming"):  
         super(DualEfficientViT, self).__init__()
 
         self.image_size = image_size
@@ -162,7 +162,8 @@ class DualEfficientViT(nn.Module):
         )
         self.sigmoid = nn.Sigmoid()
         self.init_linear, self.init_layernorm, self.init_conv = init_linear, init_layernorm, init_conv
-        self.apply(self._init_weights)
+        if init_weight:
+            self.apply(self._init_weights)
 
     def get_activation(self, act):
         if act == 'relu':
