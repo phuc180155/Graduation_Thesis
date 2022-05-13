@@ -206,7 +206,8 @@ def define_device(seed: int, model_name: str):
         torch.cuda.manual_seed_all(seed)
         cudnn.benchmark = True
         if 'dual' in model_name and 'vit' in model_name:
-            cudnn.deterministic = True
+            return device
+        cudnn.deterministic = True
     return device
 
 def calculate_metric(y_label: List[float], y_pred_label: List[float]):
