@@ -499,6 +499,8 @@ def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', t
     init_lr = lr
     init_epoch = 0
     init_step = 0
+    init_global_acc = 0
+    init_global_loss = 0
     if resume != "":
         try:
             if 'epoch' in checkpoint:
@@ -510,6 +512,8 @@ def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', t
                 init_step = int(resume.split('_')[3])
                 init_epoch = int(init_step / len(dataloader_train))
                 init_lr = lr * (0.8 ** (init_epoch // 3))
+                init_global_acc = float(resume.split('_')[4])
+                init_global_loss = float(resume.split('_')[5])
                 print('Resume step: {} - in epoch: {} - lr: {}'.format(init_step, init_epoch, init_lr))              
         except:
             pass
@@ -543,8 +547,8 @@ def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', t
     running_loss = 0
     running_acc = 0
 
-    global_loss = 0.0
-    global_acc = 0.0
+    global_loss = init_global_loss
+    global_acc = init_global_acc
     global_step = init_step
     
     for epoch in range(init_epoch, epochs):
@@ -601,7 +605,7 @@ def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', t
                     step_model_saver(global_step, [val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2]], step_ckcpoint, model)
                     step_model_saver.save_last_model(step_ckcpoint, model, global_step)
                     if refine_model(model_name=model_name):
-                        step_model_saver.save_model(step_ckcpoint, model, global_step)
+                        step_model_saver.save_model(step_ckcpoint, model, global_step, global_acc, global_loss)
                     model.train()
 
         # Eval
