@@ -512,9 +512,11 @@ def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', t
                 init_step = int(resume.split('_')[3])
                 init_epoch = int(init_step / len(dataloader_train))
                 init_lr = lr * (0.8 ** (init_epoch // 3))
-                init_global_acc = float(resume.split('_')[4])
-                init_global_loss = float(resume.split('_')[5])
-                print('Resume step: {} - in epoch: {} - lr: {}'.format(init_step, init_epoch, init_lr))              
+                with open(osp.join(checkpoint, 'global_acc_loss.txt'), 'r') as f:
+                    line = f.read().strip()
+                    init_global_acc = float(line.split(',')[0])
+                    init_global_loss = float(line.split(',')[1])
+                print('Resume step: {} - in epoch: {} - lr: {} - global_acc: {} - global_loss: {}'.format(init_step, init_epoch, init_lr, init_global_acc, init_global_loss))              
         except:
             pass
 
