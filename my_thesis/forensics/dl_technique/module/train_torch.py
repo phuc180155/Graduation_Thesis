@@ -422,6 +422,7 @@ def train_image_stream(model, criterion_name=None, train_dir = '', val_dir ='', 
                     # Save model:
                     step_model_saver(global_step, [val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2]], step_ckcpoint, model)
                     step_model_saver.save_last_model(step_ckcpoint, model, global_step)
+                    step_model_saver.save_model(step_ckcpoint, model, global_step, global_acc, global_loss, save_ckcpoint=False)
                 
                     es_cur_score = find_current_earlystopping_score(es_metric, val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2])
                     early_stopping(es_cur_score)
@@ -635,8 +636,7 @@ def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', t
                     # Save model:
                     step_model_saver(global_step, [val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2]], step_ckcpoint, model)
                     step_model_saver.save_last_model(step_ckcpoint, model, global_step)
-                    if refine_model(model_name=model_name):
-                        step_model_saver.save_model(step_ckcpoint, model, global_step, global_acc, global_loss)
+                    step_model_saver.save_model(step_ckcpoint, model, global_step, global_acc, global_loss, save_ckcpoint=False)
 
                     es_cur_score = find_current_earlystopping_score(es_metric, val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2])
                     early_stopping(es_cur_score)
