@@ -371,6 +371,95 @@ def check_synchronization(statistic_dir: str):
             else:
                 print("File {} and {} are ok!".format(file_1, file_2))
 
+def statistic_video(data_dir: str):
+    real_dir = join(data_dir, '0_real')
+    fake_dir = join(data_dir, '1_df')
+    real_imgs = os.listdir(real_dir)
+    fake_imgs = os.listdir(fake_dir)
+    real_videos, fake_videos = {}, {}
+
+    for img in real_imgs:
+        if '.jpg' not in img:
+            print('bug')
+            return
+        base_name = img.replace('.jpg', '').split('_')
+        video_name = '_'.join(base_name[:-1])
+        index = base_name[-1]
+        if video_name not in real_videos.keys():
+            real_videos[video_name] = [join(real_dir, img)]
+        else:
+            real_videos[video_name].append(join(real_dir, img))
+
+    for img in fake_imgs:
+        if '.jpg' not in img:
+            print('bug')
+            return
+        base_name = img.replace('.jpg', '').split('_')
+        video_name = '_'.join(base_name[:-1])
+        index = base_name[-1]
+        if video_name not in fake_videos.keys():
+            fake_videos[video_name] = [join(fake_dir, img)]
+        else:
+            fake_videos[video_name].append(join(fake_dir, img))
+
+    real_len_images = [len(v) for k, v in real_videos.items()]
+    fake_len_images = [len(v) for k, v in fake_videos.items()]
+    real_mean_len = sum(real_len_images)/len(real_len_images)
+    fake_mean_len = sum(fake_len_images)/len(fake_len_images)
+    return real_videos, fake_videos, real_len_images, fake_len_images, real_mean_len, fake_mean_len
+
+def split_by_video(dataset_path: str, val_real_image=25000, val_fake_image=30000, move=False):
+    # Merge train and val first:
+    train_dir = join(dataset_path, 'train')
+    val_dir = join(dataset_path, 'val')
+    test_dir = join(dataset_path, 'test')
+
+    train_img_paths = glob(join(train_dir, '*/*'))
+    val_img_paths = glob(join(val_dir, '*/*'))
+    test_img_paths = glob(join(test_dir, '*/*'))
+
+    for v in val_img_paths:
+        cls = v.split('/')[-2]
+        if move:
+            shutil.move(v, join(train_dir, cls))
+        
+    # Statistic videos:
+    real_v, fake_v, real_len_images, fake_len_images, real_mean_len, fake_mean_len = statistic_video(train_dir)
+    print("******NUmber of real videos in test: ", len(statistic_video(test_dir)[0].keys()))
+    print("******NUmber of fake videos in test: ", len(statistic_video(test_dir)[1].keys()))
+    print("******Number of all in train real videos: ", len(real_v.keys()))
+    # for k, v in real_v.items():
+    #     print(k, ' = ', v)
+    #     break
+    print("******Number of all in train fake videos: ", len(fake_v.keys()))
+    # for k, v in fake_v.items():
+    #     print(k, ' = ', v)
+    #     break
+    # print("******Real videos: ", real_len_images)
+    print("******Real mean: ", real_mean_len)
+    # print("******Fake videos: ", fake_len_images)
+    print("******Fake mean: ", fake_mean_len)
+    num_val_real_v = int(val_real_image/real_mean_len)
+    num_val_fake_v = int(val_fake_image/fake_mean_len)
+    print("******Want val real video: ", num_val_real_v)
+    print("******Want val fake video: ", num_val_fake_v)
+    val_real_video = random.sample(list(real_v.keys()), k=num_val_real_v)
+    val_fake_video = random.sample(list(fake_v.keys()), k=num_val_fake_v)
+    val_r_v_dict = {k: real_v[k] for k in val_real_video}
+    val_f_v_dict = {k: fake_v[k] for k in val_fake_video}
+    print("******Expected val real images: ", sum([len(v) for k, v in val_r_v_dict.items()]))
+    print("******Expected val fake images: ", sum([len(v) for k, v in val_f_v_dict.items()]))
+    # Move:
+    if move:
+        move_images(val_r_v_dict, dir=join(val_dir, '0_real'))
+        move_images(val_f_v_dict, dir=join(val_dir, '1_df'))
+
+def move_images(d: dict, dir: str):
+    for v in d.values():
+        for img_path in v:
+            shutil.move(img_path, dir)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Filter noise image by another face detection module")
     parser.add_argument("--device_name", type=str, default='server61')
@@ -411,56 +500,69 @@ if __name__ == '__main__':
     # check_synchronization("/home/phucnp/facial-fake-detection/forensics/preprocess_data/data_statistic")
     
     # WILD
-    print("DF_IN_THE_WILD")
-    dataset_path = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv2/image"
-    statisticize_dataset(dataset_path)
-    # train_dir = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv2/image/train"
-    # phase = "train"
-    # real_trunc_ratio = float(2/3)
-    # fake_trunc_ratio = float(2/3)
-    # video_pos = [0, 1]
-    # id_pos = 2
-    # truncated=True
-    # truncate_images_in_dataset(dataset_path=dataset_path, phase=phase, real_trunc_ratio=real_trunc_ratio, fake_trunc_ratio=fake_trunc_ratio, video_pos=video_pos, id_pos=id_pos, truncated=truncated)
-    # print("After delete df_in_the_wild: ")
+    # print("DF_IN_THE_WILD")
+    # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv2/image"
     # statisticize_dataset(dataset_path)
-    device_name = "server61"
-    log_dataset_statistic(dataset_path, "wildv2", "/mnt/disk1/doan/phucnp/Graduation_Thesis/review/forensics/preprocess_data/deleted_statistic", device_name)
-    # print()
-    # print()
+    # # train_dir = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv2/image/train"
+    # # phase = "train"
+    # # real_trunc_ratio = float(2/3)
+    # # fake_trunc_ratio = float(2/3)
+    # # video_pos = [0, 1]
+    # # id_pos = 2
+    # # truncated=True
+    # # truncate_images_in_dataset(dataset_path=dataset_path, phase=phase, real_trunc_ratio=real_trunc_ratio, fake_trunc_ratio=fake_trunc_ratio, video_pos=video_pos, id_pos=id_pos, truncated=truncated)
+    # # print("After delete df_in_the_wild: ")
+    # # statisticize_dataset(dataset_path)
+    # device_name = "server61"
+    # log_dataset_statistic(dataset_path, "wildv2", "/mnt/disk1/doan/phucnp/Graduation_Thesis/review/forensics/preprocess_data/deleted_statistic", device_name)
+    # # print()
+    # # print()
 
-    # DFDC
-    # print("DFDC")
-    dataset_path = "/mnt/disk1/doan/phucnp/Dataset/dfdcv2/image"
-    statisticize_dataset(dataset_path)
-    # train_dir = "/mnt/disk1/doan/phucnp/Dataset/dfdcv2/image/train"
-    # phase = "train"
-    # real_trunc_ratio = float(0)
-    # fake_trunc_ratio = float(2/3)
-    # video_pos = [0]
-    # id_pos = 1
-    # truncated=True
-    # truncate_images_in_dataset(dataset_path=dataset_path, phase=phase, real_trunc_ratio=real_trunc_ratio, fake_trunc_ratio=fake_trunc_ratio, video_pos=video_pos, id_pos=id_pos, truncated=truncated)
-    # print("After delete dfdc: ")
+    # # DFDC
+    # # print("DFDC")
+    # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/dfdcv2/image"
     # statisticize_dataset(dataset_path)
-    device_name = "server61"
-    log_dataset_statistic(dataset_path, "dfdcv2", "/mnt/disk1/doan/phucnp/Graduation_Thesis/review/forensics/preprocess_data/deleted_statistic", device_name)
-    # print()
-    # print()
+    # # train_dir = "/mnt/disk1/doan/phucnp/Dataset/dfdcv2/image/train"
+    # # phase = "train"
+    # # real_trunc_ratio = float(0)
+    # # fake_trunc_ratio = float(2/3)
+    # # video_pos = [0]
+    # # id_pos = 1
+    # # truncated=True
+    # # truncate_images_in_dataset(dataset_path=dataset_path, phase=phase, real_trunc_ratio=real_trunc_ratio, fake_trunc_ratio=fake_trunc_ratio, video_pos=video_pos, id_pos=id_pos, truncated=truncated)
+    # # print("After delete dfdc: ")
+    # # statisticize_dataset(dataset_path)
+    # device_name = "server61"
+    # log_dataset_statistic(dataset_path, "dfdcv2", "/mnt/disk1/doan/phucnp/Graduation_Thesis/review/forensics/preprocess_data/deleted_statistic", device_name)
+    # # print()
+    # # print()
 
-    # Celeb_DF
-    print("Celeb-DF")
-    dataset_path = "/mnt/disk1/doan/phucnp/Dataset/Celeb-DFv2/image"
-    statisticize_dataset(dataset_path)
-    # train_dir = "/mnt/disk1/doan/phucnp/Dataset/Celeb-DFv2/image/train"
-    # phase = "train"
-    # real_trunc_ratio = float(0)
-    # fake_trunc_ratio = float(2/3)
-    # video_pos = [0, 1, 2]
-    # id_pos = 3
-    # truncated=True
-    # truncate_images_in_dataset(dataset_path=dataset_path, phase=phase, real_trunc_ratio=real_trunc_ratio, fake_trunc_ratio=fake_trunc_ratio, video_pos=video_pos, id_pos=id_pos, truncated=truncated)
-    # print("After delete celeb_DF: ")
+    # # Celeb_DF
+    # print("Celeb-DF")
+    # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/Celeb-DFv2/image"
     # statisticize_dataset(dataset_path)
-    device_name = "server61"
-    log_dataset_statistic(dataset_path, "celeb-dfv2", "/mnt/disk1/doan/phucnp/Graduation_Thesis/review/forensics/preprocess_data/deleted_statistic", device_name)
+    # # train_dir = "/mnt/disk1/doan/phucnp/Dataset/Celeb-DFv2/image/train"
+    # # phase = "train"
+    # # real_trunc_ratio = float(0)
+    # # fake_trunc_ratio = float(2/3)
+    # # video_pos = [0, 1, 2]
+    # # id_pos = 3
+    # # truncated=True
+    # # truncate_images_in_dataset(dataset_path=dataset_path, phase=phase, real_trunc_ratio=real_trunc_ratio, fake_trunc_ratio=fake_trunc_ratio, video_pos=video_pos, id_pos=id_pos, truncated=truncated)
+    # # print("After delete celeb_DF: ")
+    # # statisticize_dataset(dataset_path)
+    # device_name = "server61"
+    # log_dataset_statistic(dataset_path, "celeb-dfv2", "/mnt/disk1/doan/phucnp/Graduation_Thesis/review/forensics/preprocess_data/deleted_statistic", device_name)
+
+    # DFDC:
+    dataset_path = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv3/image"
+    # statisticize_dataset(dataset_path)
+    # val_real_image = 30000
+    # val_fake_image = 25000
+    # split_by_video(dataset_path=dataset_path, val_real_image=val_real_image, val_fake_image=val_fake_image, move=True)
+    # statisticize_dataset(dataset_path)
+    lst = ['1_103_, 2_49_, 4_64_']
+    for img in os.listdir(join(dataset_path, 'train/0_real')):
+        for l in lst:
+            if l in img:
+                print('bug')
