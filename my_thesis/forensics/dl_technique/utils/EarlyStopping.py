@@ -41,7 +41,7 @@ class EarlyStopping:
                 print("### BEST ###: {} {}: ({:.6f} --> {:.6f})".format(self.tunning_metric, 'decreased' if 'loss' in self.tunning_metric else 'increased',\
                                                                         self.best_score, cur_score))
             self.best_score = cur_score
-            self.counter = self.patience
+            self.cooldown = self.patience
 
     def save_checkpoint(self, val_loss, model, args):
         """Saves model when validation loss decreases or accuracy/f1 increases."""
