@@ -65,10 +65,11 @@ class ModelSaver:
         if cnt == 2:
             print("Seem to be wrong. 2 checkpoint in one folder.")
 
-    def save_model(self, checkpoint_dir: str, model: torch.nn.Module, iteration: int, global_acc=0.0, global_loss=0.0):
-        if global_acc == 0 and global_loss == 0:
-            torch.save(model.state_dict(), join(checkpoint_dir, "_model_iter_{}_.pt".format(iteration)))
-        else:
-            torch.save(model.state_dict(), join(checkpoint_dir, "_model_iter_{}_.pt".format(iteration)))
-            with open(join(checkpoint_dir, 'global_acc_loss.txt'), 'w') as f:
-                f.write("{},{}".format(global_acc, global_loss))
+    def save_model(self, checkpoint_dir: str, model: torch.nn.Module, iteration: int, save_ckcpoint=False, global_acc=0.0, global_loss=0.0):
+        if save_ckcpoint:
+            if global_acc == 0 and global_loss == 0:
+                torch.save(model.state_dict(), join(checkpoint_dir, "_model_iter_{}_.pt".format(iteration)))
+            else:
+                torch.save(model.state_dict(), join(checkpoint_dir, "_model_iter_{}_.pt".format(iteration)))
+        with open(join(checkpoint_dir, 'global_acc_loss.txt'), 'w') as f:
+            f.write("{},{}".format(global_acc, global_loss))
