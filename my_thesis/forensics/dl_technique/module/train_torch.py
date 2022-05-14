@@ -427,7 +427,9 @@ def train_image_stream(model, criterion_name=None, train_dir = '', val_dir ='', 
                     early_stopping(es_cur_score)
                     if early_stopping.early_stop:
                         print('Early stopping. Best {}: {:.6f}'.format(es_metric, early_stopping.best_score))
-                        break
+                        time.sleep(5)
+                        os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, "({:.4f}_{:.4f}_{:.4f})_{}".format(step_model_saver.best_scores[0], step_model_saver.best_scores[1], step_model_saver.best_scores[3], args_txt if resume == '' else 'resume')))
+                        return
                     model.train()
 
         # Eval
@@ -455,7 +457,7 @@ def train_image_stream(model, criterion_name=None, train_dir = '', val_dir ='', 
         #     print('Early stopping. Best {}: {:.6f}'.format(es_metric, early_stopping.best_score))
         #     break
     time.sleep(5)
-    os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, "({:.4f}_{:.4f}_{:.4f}_{:.4f})_{}".format(epoch_model_saver.best_scores[3], step_model_saver.best_scores[3], epoch_model_saver.best_scores[2], step_model_saver.best_scores[2], args_txt if resume == '' else 'resume')))
+    os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, "({:.4f}_{:.4f}_{:.4f})_{}".format(step_model_saver.best_scores[0], step_model_saver.best_scores[1], step_model_saver.best_scores[3], args_txt if resume == '' else 'resume')))
     return
 
 #############################################
@@ -562,7 +564,7 @@ def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', t
     step_ckcpoint, step_val_writer, step_test_writer = step_writer_tup
         
     # Define Early stopping and Model saver
-    early_stopping = EarlyStopping(patience=es_patience, verbose=False, tunning_metric=es_metric)
+    early_stopping = EarlyStopping(patience=es_patience, verbose=True, tunning_metric=es_metric)
     epoch_model_saver = ModelSaver(save_metrics=["val_loss", "val_acc", "test_loss", 'test_acc', "test_realf1", "test_fakef1", "test_avgf1"])
     step_model_saver = ModelSaver(save_metrics=["val_loss", "val_acc", "test_loss", 'test_acc', "test_realf1", "test_fakef1", "test_avgf1"])
     
@@ -620,6 +622,7 @@ def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', t
             batch_writer.write("{},{:.4f}\n".format(global_step, loss.item()))
 
             # Eval after <?> iters:
+            stop = True
             if eval_per_iters != -1:
                 if global_step % eval_per_iters == 0:
                     model.eval()
@@ -639,7 +642,9 @@ def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', t
                     early_stopping(es_cur_score)
                     if early_stopping.early_stop:
                         print('Early stopping. Best {}: {:.6f}'.format(es_metric, early_stopping.best_score))
-                        break
+                        time.sleep(5)
+                        os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, "({:.4f}_{:.4f}_{:.4f})_{}".format(step_model_saver.best_scores[0], step_model_saver.best_scores[1], step_model_saver.best_scores[3], args_txt if resume == '' else 'resume')))
+                        return
                     model.train()
 
         # Eval
@@ -669,5 +674,5 @@ def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', t
         #     break
     # Sleep 5 seconds for rename ckcpoint dir:
     time.sleep(5)
-    os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, "({:.4f}_{:.4f})_{}".format(epoch_model_saver.best_scores[3], step_model_saver.best_scores[3], args_txt if resume == '' else 'resume')))
+    os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, "({:.4f}_{:.4f}_{:.4f})_{}".format(step_model_saver.best_scores[0], step_model_saver.best_scores[1], step_model_saver.best_scores[3], args_txt if resume == '' else 'resume')))
     return
