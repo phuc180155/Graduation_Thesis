@@ -9,3 +9,5 @@ my_thesis/forensics/dl_technique/test
 my_thesis/dfdc.tar.gz
 my_thesis/wild.tar.gz
 my_thesis/forensics/preprocess_data/prepare_dataset.py
+my_thesis/dataset.xlsx
+my_thesis/finetune.xlsx
