@@ -420,8 +420,7 @@ def split_by_video(dataset_path: str, val_real_image=25000, val_fake_image=30000
 
     for v in val_img_paths:
         cls = v.split('/')[-2]
-        if move:
-            shutil.move(v, join(train_dir, cls))
+        shutil.move(v, join(train_dir, cls))
         
     # Statistic videos:
     real_v, fake_v, real_len_images, fake_len_images, real_mean_len, fake_mean_len = statistic_video(train_dir)
@@ -556,13 +555,13 @@ if __name__ == '__main__':
 
     # DFDC:
     dataset_path = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv3/image"
-    # statisticize_dataset(dataset_path)
-    # val_real_image = 30000
-    # val_fake_image = 25000
-    # split_by_video(dataset_path=dataset_path, val_real_image=val_real_image, val_fake_image=val_fake_image, move=True)
-    # statisticize_dataset(dataset_path)
-    lst = ['1_103_, 2_49_, 4_64_']
-    for img in os.listdir(join(dataset_path, 'train/0_real')):
-        for l in lst:
-            if l in img:
-                print('bug')
+    statisticize_dataset(dataset_path)
+    val_real_image = 40000
+    val_fake_image = 35000
+    split_by_video(dataset_path=dataset_path, val_real_image=val_real_image, val_fake_image=val_fake_image, move=True)
+    statisticize_dataset(dataset_path)
+    # lst = ['1_103_, 2_49_, 4_64_']
+    # for img in os.listdir(join(dataset_path, 'train/0_real')):
+    #     for l in lst:
+    #         if l in img:
+    #             print('bug')
