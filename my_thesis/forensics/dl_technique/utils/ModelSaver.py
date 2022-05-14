@@ -47,6 +47,7 @@ class ModelSaver:
             if metric in ckcpoint:
                 cnt += 1
                 os.remove(join(checkpoint_dir, ckcpoint))
+                ###########################################################
                 torch.save(model.state_dict(), join(checkpoint_dir, "best_{}_{}_{:.6f}.pt".format(metric, iter, score)))
         if cnt == 0:
             torch.save(model.state_dict(), join(checkpoint_dir, "best_{}_{}_{:.6f}.pt".format(metric, iter, score)))            

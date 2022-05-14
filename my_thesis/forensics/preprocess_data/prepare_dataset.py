@@ -408,6 +408,18 @@ def statistic_video(data_dir: str):
     fake_mean_len = sum(fake_len_images)/len(fake_len_images)
     return real_videos, fake_videos, real_len_images, fake_len_images, real_mean_len, fake_mean_len
 
+def move_image_from_train_to_val(dataset_path: str, expected_real_images=5000, expected_fake_images=5000):
+    train_dir = join(dataset_path, 'train')
+    val_dir = join(dataset_path, 'val')
+    for cls in ['0_real', '1_df']:
+        cls_train_dir = join(train_dir, cls)
+        cls_val_dir = join(val_dir, cls)
+        train_img = glob(join(cls_train_dir, '*'))
+        num_move = expected_real_images if 'real' in cls else expected_fake_images
+        train_img = random.sample(train_img, k=num_move)
+        for im in train_img:
+            shutil.move(im, cls_val_dir)
+
 def split_by_video(dataset_path: str, val_real_image=25000, val_fake_image=30000, move=False):
     # Merge train and val first:
     train_dir = join(dataset_path, 'train')
@@ -554,11 +566,14 @@ if __name__ == '__main__':
     # log_dataset_statistic(dataset_path, "celeb-dfv2", "/mnt/disk1/doan/phucnp/Graduation_Thesis/review/forensics/preprocess_data/deleted_statistic", device_name)
 
     # DFDC:
-    dataset_path = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv3/image"
+    dataset_path = "/mnt/disk1/doan/phucnp/Dataset/dfdcv3/image"
     statisticize_dataset(dataset_path)
-    val_real_image = 40000
-    val_fake_image = 35000
-    split_by_video(dataset_path=dataset_path, val_real_image=val_real_image, val_fake_image=val_fake_image, move=True)
+    expected_real_images = 3000
+    expected_fake_images = 3000
+    move_image_from_train_to_val(dataset_path=dataset_path, expected_real_images=expected_real_images, expected_fake_images=expected_fake_images)
+    # val_real_image = 25000
+    # val_fake_image = 28000
+    # split_by_video(dataset_path=dataset_path, val_real_image=val_real_image, val_fake_image=val_fake_image, move=True)
     statisticize_dataset(dataset_path)
     # lst = ['1_103_, 2_49_, 4_64_']
     # for img in os.listdir(join(dataset_path, 'train/0_real')):

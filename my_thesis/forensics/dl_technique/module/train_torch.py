@@ -422,19 +422,25 @@ def train_image_stream(model, criterion_name=None, train_dir = '', val_dir ='', 
                     # Save model:
                     step_model_saver(global_step, [val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2]], step_ckcpoint, model)
                     step_model_saver.save_last_model(step_ckcpoint, model, global_step)
+                
+                    es_cur_score = find_current_earlystopping_score(es_metric, val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2])
+                    early_stopping(es_cur_score)
+                    if early_stopping.early_stop:
+                        print('Early stopping. Best {}: {:.6f}'.format(es_metric, early_stopping.best_score))
+                        break
                     model.train()
 
         # Eval
-        print("Validating epoch...")
-        model.eval()
-        val_loss, val_mac_acc, val_mic_acc, val_reals, val_fakes, val_micros, val_macros = eval_image_stream(model, dataloader_val, device, criterion, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
-        save_result(epoch_val_writer, log, epoch+1, running_loss/len(dataloader_train), running_acc/len(dataloader_train), val_loss, val_mac_acc, val_mic_acc, val_reals, val_fakes, val_micros, val_macros, is_epoch=True, phase="val")
-        # Eval test set
-        test_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros = eval_image_stream(model, dataloader_test, device, criterion, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
-        save_result(epoch_test_writer, log, epoch+1, running_loss/len(dataloader_train), running_acc/len(dataloader_train), test_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros, is_epoch=True, phase="test")
-        # Save model:
-        epoch_model_saver(epoch+1, [val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2]], epoch_ckcpoint, model)
-        epoch_model_saver.save_last_model(epoch_ckcpoint, model, epoch+1)
+        # print("Validating epoch...")
+        # model.eval()
+        # val_loss, val_mac_acc, val_mic_acc, val_reals, val_fakes, val_micros, val_macros = eval_image_stream(model, dataloader_val, device, criterion, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
+        # save_result(epoch_val_writer, log, epoch+1, running_loss/len(dataloader_train), running_acc/len(dataloader_train), val_loss, val_mac_acc, val_mic_acc, val_reals, val_fakes, val_micros, val_macros, is_epoch=True, phase="val")
+        # # Eval test set
+        # test_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros = eval_image_stream(model, dataloader_test, device, criterion, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
+        # save_result(epoch_test_writer, log, epoch+1, running_loss/len(dataloader_train), running_acc/len(dataloader_train), test_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros, is_epoch=True, phase="test")
+        # # Save model:
+        # epoch_model_saver(epoch+1, [val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2]], epoch_ckcpoint, model)
+        # epoch_model_saver.save_last_model(epoch_ckcpoint, model, epoch+1)
         
         # Reset to the next epoch
         running_loss = 0
@@ -442,12 +448,12 @@ def train_image_stream(model, criterion_name=None, train_dir = '', val_dir ='', 
         scheduler.step()
         model.train()
 
-        # Early stopping:
-        es_cur_score = find_current_earlystopping_score(es_metric, val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2])
-        early_stopping(es_cur_score)
-        if early_stopping.early_stop:
-            print('Early stopping. Best {}: {:.6f}'.format(es_metric, early_stopping.best_score))
-            break
+        # # Early stopping:
+        # es_cur_score = find_current_earlystopping_score(es_metric, val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2])
+        # early_stopping(es_cur_score)
+        # if early_stopping.early_stop:
+        #     print('Early stopping. Best {}: {:.6f}'.format(es_metric, early_stopping.best_score))
+        #     break
     time.sleep(5)
     os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, "({:.4f}_{:.4f}_{:.4f}_{:.4f})_{}".format(epoch_model_saver.best_scores[3], step_model_saver.best_scores[3], epoch_model_saver.best_scores[2], step_model_saver.best_scores[2], args_txt if resume == '' else 'resume')))
     return
@@ -556,7 +562,7 @@ def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', t
     step_ckcpoint, step_val_writer, step_test_writer = step_writer_tup
         
     # Define Early stopping and Model saver
-    early_stopping = EarlyStopping(patience=es_patience, verbose=True, tunning_metric=es_metric)
+    early_stopping = EarlyStopping(patience=es_patience, verbose=False, tunning_metric=es_metric)
     epoch_model_saver = ModelSaver(save_metrics=["val_loss", "val_acc", "test_loss", 'test_acc', "test_realf1", "test_fakef1", "test_avgf1"])
     step_model_saver = ModelSaver(save_metrics=["val_loss", "val_acc", "test_loss", 'test_acc', "test_realf1", "test_fakef1", "test_avgf1"])
     
@@ -628,33 +634,39 @@ def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', t
                     step_model_saver.save_last_model(step_ckcpoint, model, global_step)
                     if refine_model(model_name=model_name):
                         step_model_saver.save_model(step_ckcpoint, model, global_step, global_acc, global_loss)
+
+                    es_cur_score = find_current_earlystopping_score(es_metric, val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2])
+                    early_stopping(es_cur_score)
+                    if early_stopping.early_stop:
+                        print('Early stopping. Best {}: {:.6f}'.format(es_metric, early_stopping.best_score))
+                        break
                     model.train()
 
         # Eval
-        print("Validating epoch...")
-        model.eval()
-        val_loss, val_mac_acc, val_mic_acc, val_reals, val_fakes, val_micros, val_macros = eval_dual_stream(model, dataloader_val, device, criterion, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
-        save_result(epoch_val_writer, log, epoch+1, running_loss/len(dataloader_train), running_acc/len(dataloader_train), val_loss, val_mac_acc, val_mic_acc, val_reals, val_fakes, val_micros, val_macros, is_epoch=True, phase="val")
-        # Eval test set
-        test_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros = eval_dual_stream(model, dataloader_test, device, criterion, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
-        save_result(epoch_test_writer, log, epoch+1, running_loss/len(dataloader_train), running_acc/len(dataloader_train), test_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros, is_epoch=True, phase="test")
-        # Save model:
-        epoch_model_saver(epoch+1, [val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2]], epoch_ckcpoint, model)
-        epoch_model_saver.save_last_model(epoch_ckcpoint, model, epoch+1)
-        if refine_model(model_name=model_name):
-            epoch_model_saver.save_model(epoch_ckcpoint, model, epoch+1)
+        # print("Validating epoch...")
+        # model.eval()
+        # val_loss, val_mac_acc, val_mic_acc, val_reals, val_fakes, val_micros, val_macros = eval_dual_stream(model, dataloader_val, device, criterion, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
+        # save_result(epoch_val_writer, log, epoch+1, running_loss/len(dataloader_train), running_acc/len(dataloader_train), val_loss, val_mac_acc, val_mic_acc, val_reals, val_fakes, val_micros, val_macros, is_epoch=True, phase="val")
+        # # Eval test set
+        # test_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros = eval_dual_stream(model, dataloader_test, device, criterion, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
+        # save_result(epoch_test_writer, log, epoch+1, running_loss/len(dataloader_train), running_acc/len(dataloader_train), test_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros, is_epoch=True, phase="test")
+        # # Save model:
+        # epoch_model_saver(epoch+1, [val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2]], epoch_ckcpoint, model)
+        # epoch_model_saver.save_last_model(epoch_ckcpoint, model, epoch+1)
+        # if refine_model(model_name=model_name):
+        #     epoch_model_saver.save_model(epoch_ckcpoint, model, epoch+1)
         # Reset to the next epoch
         running_loss = 0
         running_acc = 0
         scheduler.step()
         model.train()
 
-        # Early stopping:
-        es_cur_score = find_current_earlystopping_score(es_metric, val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2])
-        early_stopping(es_cur_score)
-        if early_stopping.early_stop:
-            print('Early stopping. Best {}: {:.6f}'.format(es_metric, early_stopping.best_score))
-            break
+        ## Early stopping:
+        # es_cur_score = find_current_earlystopping_score(es_metric, val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2])
+        # early_stopping(es_cur_score)
+        # if early_stopping.early_stop:
+        #     print('Early stopping. Best {}: {:.6f}'.format(es_metric, early_stopping.best_score))
+        #     break
     # Sleep 5 seconds for rename ckcpoint dir:
     time.sleep(5)
     os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, "({:.4f}_{:.4f})_{}".format(epoch_model_saver.best_scores[3], step_model_saver.best_scores[3], args_txt if resume == '' else 'resume')))
