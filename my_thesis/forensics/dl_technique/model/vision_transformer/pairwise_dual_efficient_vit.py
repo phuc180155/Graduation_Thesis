@@ -336,6 +336,7 @@ class PairwiseDualEfficientViT(nn.Module):
         embedding_feature = self.mlp_head_hidden(x)
         embedding_feature = F.relu(embedding_feature)
         out = self.mlp_head_out(embedding_feature)
+        out = self.sigmoid(out)
         return embedding_feature, out
 
     def forward(self, rgb_imgs0, freq_imgs0, rgb_imgs1, freq_imgs1):
