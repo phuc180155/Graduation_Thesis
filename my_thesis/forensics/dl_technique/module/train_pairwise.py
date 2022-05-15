@@ -243,7 +243,7 @@ def eval_pairwise_dual_stream(model, dataloader, device, bce_loss, contrastive_l
     calculate_cls_metrics(y_label=np.array(y_label, dtype=np.float64), y_pred_label=np.array(y_pred_label, dtype=np.float64), save=True, print_metric=True)
     return contrastive_loss_, bce_loss_, total_loss_, mac_accuracy, mic_accuracy, reals, fakes, micros, macros
     
-def train_pairwise_dual_stream(model, margin=2, train_dir = '', val_dir ='', test_dir= '', image_size=128, lr=3e-4, division_lr=True, use_pretrained=False,\
+def train_pairwise_dual_stream(model, weight_importance=2, margin=2, train_dir = '', val_dir ='', test_dir= '', image_size=128, lr=3e-4, division_lr=True, use_pretrained=False,\
               batch_size=16, num_workers=8, checkpoint='', resume='', epochs=30, eval_per_iters=-1, seed=0, \
               adj_brightness=1.0, adj_contrast=1.0, es_metric='val_loss', es_patience=5, model_name="pairwise-dual-efficient", args_txt=""):
     
@@ -345,7 +345,7 @@ def train_pairwise_dual_stream(model, margin=2, train_dir = '', val_dir ='', tes
             bceloss_0 = bce_loss(logps0, labels0)
             # bceloss_1 = bce_loss(logps1, labels1)
             contrastiveloss = contrastive_loss(embedding_0, embedding_1, labels_contrastive)
-            loss = bceloss_0 + contrastiveloss
+            loss = weight_importance * bceloss_0 + contrastiveloss
 
             if global_step % 100 == 0:
                 print("Bceloss 0: {}  --- Contrastive: {} ".format(bceloss_0.item(), contrastiveloss.item()))

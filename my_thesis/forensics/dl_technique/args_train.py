@@ -86,6 +86,7 @@ def parse_args():
     parser_dual_eff_vit.add_argument("--division_lr", type=int, default=1, help="")
 
     parser_pairwise_dual_eff_vit = sub_parser.add_parser('pairwise_dual_efficient_vit', help='My model')
+    parser_pairwise_dual_eff_vit.add_argument("--weight_importance", type=float, default=2.0)
     parser_pairwise_dual_eff_vit.add_argument("--margin", type=float, default=2.0)
     parser_pairwise_dual_eff_vit.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
     parser_pairwise_dual_eff_vit.add_argument("--version",type=str, default="ca-fadd-0.8", required=False, help="Some changes in model")
@@ -422,7 +423,7 @@ if __name__ == "__main__":
                                 version=args.version, unfreeze_blocks=args.unfreeze_blocks, \
                                 init_weight=args.init_weight, init_linear=args.init_linear, init_layernorm=args.init_layernorm, init_conv=args.init_conv)
         
-        args_txt = "lr_{}-{}_batch_{}_es_{}_loss_{}_mar_{}_v_{}_pool_{}_bb_{}_pre_{}_unf_{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.margin, args.version, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
+        args_txt = "lr_{}-{}_batch_{}_es_{}_loss_{}_im_{}_mar_{}_v_{}_pool_{}_bb_{}_pre_{}_unf_{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.weight_importance, args.margin, args.version, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
         args_txt += "norm_{}_".format(args.normalize_ifft)
         args_txt += "flat_{}_".format(args.flatten_type)
         args_txt += "convattn_{}_r_{}_qkvemb_{}_incadim_{}_prj_{}_act_{}_".format(args.conv_attn, args.ratio, args.qkv_embed, args.inner_ca_dim, args.prj_out, args.act)
@@ -435,6 +436,6 @@ if __name__ == "__main__":
             args_txt += "_gamma_{}".format(args.gamma)
             criterion.append(args.gamma)
         use_pretrained = True if args.pretrained or args.resume != '' else False
-        train_pairwise_dual_stream(model, args.margin, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
+        train_pairwise_dual_stream(model, args.weight_importance, args.margin, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="pairwise_dual_efficient_vit", args_txt=args_txt)
