@@ -58,11 +58,15 @@ class PairwiseDataset(Dataset):
                 if img0_label == img1_label:
                     break
         else:
-            img1_index = random.choice(self.indexes)
-            while index == img1_index:
+            while True:
+                #keep looping till the same class image is found
                 img1_index = random.choice(self.indexes)
-            img1_path = self.data_path[img1_index]
-            img1_label = self.find_label(img1_path)  
+                if index == img1_index:
+                    continue
+                img1_path = self.data_path[img1_index]
+                img1_label = self.find_label(img1_path)
+                if img0_label != img1_label:
+                    break
 
         PIL_img0, PIL_img1, fft_img0, fft_img1 = self.__data_generation(img0_path, img1_path)
         # print(img0_path, img1_path)

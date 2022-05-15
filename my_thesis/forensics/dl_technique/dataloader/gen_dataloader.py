@@ -126,7 +126,7 @@ def generate_dataloader_dual_stream(train_dir, val_dir, image_size, batch_size, 
     dataloader_val = torch.utils.data.DataLoader(fft_val_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
     return dataloader_train, dataloader_val, num_samples
 
-def generate_dataloader_dual_stream_for_pairwise(train_dir, val_dir, image_size, batch_size, num_workers):
+def generate_dataloader_dual_stream_for_pairwise(train_dir, val_dir, image_size, batch_size, num_workers, sampler_type='weight_random_sampler'):
     # Transform for image
     transform_fwd = transforms.Compose([transforms.Resize((image_size,image_size)),\
                                         transforms.RandomHorizontalFlip(p=0.5),\
@@ -140,7 +140,17 @@ def generate_dataloader_dual_stream_for_pairwise(train_dir, val_dir, image_size,
     # Transform for spectrum image
     transform_fft = transforms.Compose([transforms.ToTensor()])
     train_pairwise_dualfft_dataset = PairwiseDataset(path=train_dir, image_size=image_size, transform=transform_fwd, transform_fft=transform_fft)
-    train_dataloader = torch.utils.data.DataLoader(train_pairwise_dualfft_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=True)
+    dataset_train = datasets.ImageFolder(train_dir, transform=transform_fwd)
+    assert dataset_train
+    # Calculate weights for each sample
+    weights = make_weights_for_balanced_classes(dataset_train.imgs, len(dataset_train.classes))
+    weights = torch.DoubleTensor(weights)
+    sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
+    # Make dataloader with WeightedRandomSampler
+    if sampler_type == 'none':
+        train_dataloader = torch.utils.data.DataLoader(train_pairwise_dualfft_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=True)
+    else:
+        train_dataloader = torch.utils.data.DataLoader(train_pairwise_dualfft_dataset, batch_size=batch_size, sampler=sampler, num_workers=num_workers)
     assert train_pairwise_dualfft_dataset, "Train dataset is None!"
 
     # Transform for val dataset:
