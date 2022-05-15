@@ -335,7 +335,7 @@ class PairwiseDualEfficientViT(nn.Module):
         x = self.to_cls_token(x.mean(dim = 1) if self.pool == 'mean' else x[:, 0])
         embedding_feature = self.mlp_head_hidden(x)
         embedding_feature = F.relu(embedding_feature)
-        out = self.mlp_head_out(x)
+        out = self.mlp_head_out(embedding_feature)
         return embedding_feature, out
 
     def forward(self, rgb_imgs0, freq_imgs0, rgb_imgs1, freq_imgs1):

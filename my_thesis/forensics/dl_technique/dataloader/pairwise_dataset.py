@@ -10,12 +10,16 @@ from PIL import Image, ImageEnhance
 import torch
 
 class PairwiseDataset(Dataset):
-    def __init__(self, path, transform=None, transform_fft=None, should_invert=True,shuffle=True):
+    def __init__(self, path=None, image_size=128, transform=None, transform_fft=None, should_invert=True,shuffle=True, adj_brightness=None, adj_contrast=None):
         self.path = path
-        self.imageFolderDataset = ImageFolder(path)   
+        self.imageFolderDataset = ImageFolder(path)
+        self.image_size = image_size
         self.transform = transform
+        self.transform_fft = transform_fft
         self.should_invert = should_invert
         self.shuffle = shuffle
+        self.adj_brightness = adj_brightness
+        self.adj_contrast = adj_contrast
         data_path = []
         data_path = data_path + glob.glob(path + "/*/*.jpg")
         data_path = data_path + glob.glob(path + "/*/*.jpeg")
@@ -61,8 +65,8 @@ class PairwiseDataset(Dataset):
             img1_label = self.find_label(img1_path)  
 
         PIL_img0, PIL_img1, fft_img0, fft_img1 = self.__data_generation(img0_path, img1_path)
-        print(img0_path, img1_path)
-        print(img0_label, img1_label)
+        # print(img0_path, img1_path)
+        # print(img0_label, img1_label)
 
         if img0_label != img1_label:
             label_contrastive = 1
@@ -155,4 +159,4 @@ class PairwiseDataset(Dataset):
         return X_l, X_r,y
 
     def __len__(self):
-        return int(np.floor(min(len(self.df_path), len(self.real_path))))
+        return int(np.floor(len(self.data_path)))

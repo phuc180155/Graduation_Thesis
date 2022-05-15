@@ -86,7 +86,7 @@ def parse_args():
     parser_dual_eff_vit.add_argument("--division_lr", type=int, default=1, help="")
 
     parser_pairwise_dual_eff_vit = sub_parser.add_parser('pairwise_dual_efficient_vit', help='My model')
-    parser_pairwise_dual_eff_vit.add_argument("--margin", type=int, default=2)
+    parser_pairwise_dual_eff_vit.add_argument("--margin", type=float, default=2.0)
     parser_pairwise_dual_eff_vit.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
     parser_pairwise_dual_eff_vit.add_argument("--version",type=str, default="ca-fadd-0.8", required=False, help="Some changes in model")
     parser_pairwise_dual_eff_vit.add_argument("--backbone",type=str, default="efficient_net", required=False, help="Type of backbone")

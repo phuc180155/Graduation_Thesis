@@ -106,7 +106,7 @@ def train_pairwise_dual_stream(model, margin=2, train_dir = '', val_dir ='', tes
               adj_brightness=1.0, adj_contrast=1.0, es_metric='val_loss', es_patience=5, model_name="pairwise-dual-efficient", args_txt=""):
     
     # Generate dataloader train and validation 
-    dataloader_train, dataloader_val, num_samples = generate_dataloader_dual_stream_for_pairwise(train_dir, val_dir, image_size, batch_size, num_workers)
+    dataloader_train, dataloader_val = generate_dataloader_dual_stream_for_pairwise(train_dir, val_dir, image_size, batch_size, num_workers)
     dataloader_test = generate_test_dataloader_dual_stream_for_pairwise(test_dir, image_size, 2*batch_size, num_workers)
     
     # Define optimizer (Adam) and learning rate decay
