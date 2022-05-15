@@ -65,7 +65,6 @@ def eval_pairwise_dual_stream(model, dataloader, device, bce_loss, contrastive_l
     begin = time.time()
     with torch.no_grad():
         for inputs0, fft_imgs0, labels0, inputs1, fft_imgs1, labels1, labels_contrastive in tqdm(dataloader):
-            global_step += 1
             # Push to device
             inputs0, fft_imgs0, labels0 = inputs0.float().to(device), fft_imgs0.float().to(device), labels0.float().to(device)
             inputs1, fft_imgs1, labels1 = inputs1.float().to(device), fft_imgs1.float().to(device), labels1.float().to(device)
