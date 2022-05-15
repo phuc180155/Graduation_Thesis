@@ -17,6 +17,30 @@ import json
 
 random.seed(0)
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Filter noise image by another face detection module")
+    parser.add_argument("--device_name", type=str, default='server61')
+    #
+    parser.add_argument("--dataset_path", type=str, required=False, help="path to dataset")
+    parser.add_argument("--make_validation_set", type=int, default=0, help="make validation set from train set (maintain test samples) or not")
+    parser.add_argument("--num_real_val", type=int, default=0)
+    parser.add_argument("--num_fake_val", type=int, default=0)
+    #
+    parser.add_argument("--delete_test_set", type=int, default=0, help="Delete some samples in test set")
+    parser.add_argument("--num_real_test", type=int, default=0)
+    parser.add_argument("--num_fake_test", type=int, default=0)
+    #
+    parser.add_argument("--agg_fake_ff_set", type=int, default=0, help="Aggregate fake samples of ff dataset")
+    #
+    parser.add_argument("--make_dataset_from_txt_file", type=int, default=0, help="Synchronize among servers")
+    parser.add_argument("--train_file", type=str)
+    parser.add_argument("--test_file", type=str)
+    parser.add_argument("--val_file", type=str)
+    parser.add_argument("--check_sync", type=int, default=1)
+    parser.add_argument("--sync", type=int, default=0)
+    return parser.parse_args()
+
+
 def log_dataset_statistic(dataset_path: str, dataset_name: str, statistic_dir: str, device_name: str):
     """Function to save all the image paths of a dataset to a statistic directory
 
@@ -420,7 +444,109 @@ def move_image_from_train_to_val(dataset_path: str, expected_real_images=5000, e
         for im in train_img:
             shutil.move(im, cls_val_dir)
 
-def split_by_video(dataset_path: str, val_real_image=25000, val_fake_image=30000, move=False):
+def split_by_video(dataset_path: str, val_real_image=25000, val_fake_image=30000, move=False, phase_two=False):
+    # Merge train and val first:
+    train_dir = join(dataset_path, 'train')
+    val_dir = join(dataset_path, 'val')
+    test_dir = join(dataset_path, 'test')
+
+    train_img_paths = glob(join(train_dir, '*/*'))
+    val_img_paths = glob(join(val_dir, '*/*'))
+    test_img_paths = glob(join(test_dir, '*/*'))
+
+    for v in val_img_paths:
+        cls = v.split('/')[-2]
+        if move:
+            shutil.move(v, join(train_dir, cls))
+        
+    # Statistic videos:
+    if phase_two:
+        real_v, fake_v, real_len_images, fake_len_images, real_mean_len, fake_mean_len = statistic_video(train_dir)
+        print("******NUmber of real videos in test: ", len(statistic_video(test_dir)[0].keys()))
+        print("******NUmber of fake videos in test: ", len(statistic_video(test_dir)[1].keys()))
+        print("******Number of all in train real videos: ", len(real_v.keys()))
+        # for k, v in real_v.items():
+        #     print(k, ' = ', v)
+        #     break
+        # print("******Number of all in train fake videos: ", len(fake_v.keys()))
+        # for k, v in fake_v.items():
+        #     print(k, ' = ', v)
+        #     break
+        # print("******Real videos: ", real_len_images)
+        print("******Real mean: ", real_mean_len)
+        # print("******Fake videos: ", fake_len_images)
+        print("******Fake mean: ", fake_mean_len)
+        num_val_real_v = int(val_real_image/real_mean_len)
+        num_val_fake_v = int(val_fake_image/fake_mean_len)
+        print("******Want val real video: ", num_val_real_v)
+        print("******Want val fake video: ", num_val_fake_v)
+        val_real_video = random.sample(list(real_v.keys()), k=num_val_real_v)
+        val_fake_video = random.sample(list(fake_v.keys()), k=num_val_fake_v)
+        val_r_v_dict = {k: real_v[k] for k in val_real_video}
+        val_f_v_dict = {k: fake_v[k] for k in val_fake_video}
+        print("******Expected val real images: ", sum([len(v) for k, v in val_r_v_dict.items()]))
+        print("******Expected val fake images: ", sum([len(v) for k, v in val_f_v_dict.items()]))
+        # # Move:
+        if move:
+            move_images(val_r_v_dict, dir=join(val_dir, '0_real'))
+            move_images(val_f_v_dict, dir=join(val_dir, '1_df'))
+
+def remove(dataset_path: str,  num_real_v_remove=0, num_fake_v_remove=0, remove_v=False, remove_i=False):
+    # Merge train and val first:
+    train_dir = join(dataset_path, 'train')
+    val_dir = join(dataset_path, 'val')
+    test_dir = join(dataset_path, 'test')
+
+    train_img_paths = glob(join(train_dir, '*/*'))
+    val_img_paths = glob(join(val_dir, '*/*'))
+    test_img_paths = glob(join(test_dir, '*/*'))
+
+    real_v, fake_v, real_len_images, fake_len_images, real_mean_len, fake_mean_len = statistic_video(train_dir)
+    if remove_v:
+        remove_video(real_v, fake_v, num_real=num_real_v_remove, num_fake=num_fake_v_remove)
+    if remove_i:
+        remove_image(real_v, fake_v, num_real=num_real_v_remove, num_fake=num_fake_v_remove)
+
+
+
+def remove_video(real_v, fake_v, num_real=0, num_fake=0):
+    # Remove real:
+    num_real_v = len(real_v.keys())
+    num_fake_v = len(fake_v.keys())
+    print("Num video: ", num_real_v, num_fake_v)
+    remove_r_idx = random.sample([i for i in range(num_real_v)], k=num_real)
+    print(remove_r_idx)
+    idx = 0
+    for k, v in real_v.items():
+        if idx in remove_r_idx:
+            for path in v:
+                os.remove(path)
+        idx += 1
+
+    remove_r_idx = random.sample([i for i in range(num_fake_v)], k=num_fake)
+    # print(remove_r_idx)
+    idx = 0
+    for k, v in fake_v.items():
+        if idx in remove_r_idx:
+            for path in v:
+                os.remove(path)
+        idx += 1
+
+def remove_image(real_v, fake_v, num_real=0, num_fake=0):
+    for k, v in real_v.items():
+        if len(v) >= 2 * num_real:
+            remove_lst = random.sample(v, num_real)
+            for r in remove_lst:
+                os.remove(r)
+
+    for k, v in fake_v.items():
+        if len(v) >= 2 * num_fake:
+            remove_lst = random.sample(v, num_fake)
+            for r in remove_lst:
+                os.remove(r)
+
+
+def mix(dataset_path, val_real_want=0, val_fake_want=0):
     # Merge train and val first:
     train_dir = join(dataset_path, 'train')
     val_dir = join(dataset_path, 'val')
@@ -433,159 +559,86 @@ def split_by_video(dataset_path: str, val_real_image=25000, val_fake_image=30000
     for v in val_img_paths:
         cls = v.split('/')[-2]
         shutil.move(v, join(train_dir, cls))
-        
-    # Statistic videos:
-    real_v, fake_v, real_len_images, fake_len_images, real_mean_len, fake_mean_len = statistic_video(train_dir)
-    print("******NUmber of real videos in test: ", len(statistic_video(test_dir)[0].keys()))
-    print("******NUmber of fake videos in test: ", len(statistic_video(test_dir)[1].keys()))
-    print("******Number of all in train real videos: ", len(real_v.keys()))
-    # for k, v in real_v.items():
-    #     print(k, ' = ', v)
-    #     break
-    print("******Number of all in train fake videos: ", len(fake_v.keys()))
-    # for k, v in fake_v.items():
-    #     print(k, ' = ', v)
-    #     break
-    # print("******Real videos: ", real_len_images)
-    print("******Real mean: ", real_mean_len)
-    # print("******Fake videos: ", fake_len_images)
-    print("******Fake mean: ", fake_mean_len)
-    num_val_real_v = int(val_real_image/real_mean_len)
-    num_val_fake_v = int(val_fake_image/fake_mean_len)
-    print("******Want val real video: ", num_val_real_v)
-    print("******Want val fake video: ", num_val_fake_v)
-    val_real_video = random.sample(list(real_v.keys()), k=num_val_real_v)
-    val_fake_video = random.sample(list(fake_v.keys()), k=num_val_fake_v)
-    val_r_v_dict = {k: real_v[k] for k in val_real_video}
-    val_f_v_dict = {k: fake_v[k] for k in val_fake_video}
-    print("******Expected val real images: ", sum([len(v) for k, v in val_r_v_dict.items()]))
-    print("******Expected val fake images: ", sum([len(v) for k, v in val_f_v_dict.items()]))
-    # Move:
-    if move:
-        move_images(val_r_v_dict, dir=join(val_dir, '0_real'))
-        move_images(val_f_v_dict, dir=join(val_dir, '1_df'))
+
+    real_dir = join(train_dir, '0_real')
+    imgs = glob(join(real_dir, '*'))
+    move_img = random.sample(imgs, k=val_real_want)
+    for i in move_img:
+        shutil.move(i, join(val_dir, '0_real'))
+
+    fake_dir = join(train_dir, '1_df')
+    imgs = glob(join(fake_dir, '*'))
+    move_img = random.sample(imgs, k=val_fake_want)
+    for i in move_img:
+        shutil.move(i, join(val_dir, '1_df'))
+
 
 def move_images(d: dict, dir: str):
     for v in d.values():
         for img_path in v:
             shutil.move(img_path, dir)
 
+def delete_in_test(dir, real=0, fake=0):
+    imgs = glob(join(dir, '0_real/*'))
+    imgs = random.sample(imgs, k=real)
+    for i in imgs:
+        os.remove(i)
 
-def parse_args():
-    parser = argparse.ArgumentParser(description="Filter noise image by another face detection module")
-    parser.add_argument("--device_name", type=str, default='server61')
-    #
-    parser.add_argument("--dataset_path", type=str, required=False, help="path to dataset")
-    parser.add_argument("--make_validation_set", type=int, default=0, help="make validation set from train set (maintain test samples) or not")
-    parser.add_argument("--num_real_val", type=int, default=0)
-    parser.add_argument("--num_fake_val", type=int, default=0)
-    #
-    parser.add_argument("--delete_test_set", type=int, default=0, help="Delete some samples in test set")
-    parser.add_argument("--num_real_test", type=int, default=0)
-    parser.add_argument("--num_fake_test", type=int, default=0)
-    #
-    parser.add_argument("--agg_fake_ff_set", type=int, default=0, help="Aggregate fake samples of ff dataset")
-    #
-    parser.add_argument("--make_dataset_from_txt_file", type=int, default=0, help="Synchronize among servers")
-    parser.add_argument("--train_file", type=str)
-    parser.add_argument("--test_file", type=str)
-    parser.add_argument("--val_file", type=str)
-    parser.add_argument("--check_sync", type=int, default=1)
-    parser.add_argument("--sync", type=int, default=0)
-    return parser.parse_args()
-    
+    imgs = glob(join(dir, '1_df/*'))
+    imgs = random.sample(imgs, k=fake)
+    for i in imgs:
+        os.remove(i)
+
+
 if __name__ == '__main__':
-    # args = parse_args()
-    # if args.make_validation_set:
-    #     make_validation_set(args.dataset_path, int(args.num_real_val), int(args.num_fake_val))
-    # if args.delete_test_set:
-    #     delete_test_set(args.dataset_path, int(args.num_real_test), int(args.num_fake_test))
-    # if args.agg_fake_ff_set:
-    #     aggregate_fake_ff_set(args.dataset_path)
-        
-    # statisticize_dataset(args.dataset_path)
-    # log_dataset_statistic(args.dataset_path, find_dataset_name(args.dataset_path), "/mnt/disk1/phucnp/Graduation_Thesis/review/forensics/preprocess_data/data_statistic", args.device_name)
-    # if args.make_dataset_from_txt_file:
-    #     make_dataset_from_txt_file(args.dataset_path, args.train_file, args.test_file, args.val_file, check_sync=bool(args.check_sync), sync=bool(args.sync))
-    #     statisticize_dataset(args.dataset_path)
-    # check_synchronization("/home/phucnp/facial-fake-detection/forensics/preprocess_data/data_statistic")
+    # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/Celeb-DFv4/image"
+    # # num_real_v_remove = 0
+    # # num_fake_v_remove = 0
+
+    # num_real_i_remove = 10
+    # num_fake_i_remove = 0
+    # remove_v = False
+    # remove_i = True
+    # # remove(dataset_path=dataset_path, num_real_v_remove=num_real_i_remove, num_fake_v_remove=num_fake_i_remove, remove_v=remove_v, remove_i=remove_i)
     
-    # WILD
-    # print("DF_IN_THE_WILD")
-    # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv2/image"
-    # statisticize_dataset(dataset_path)
-    # # train_dir = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv2/image/train"
-    # # phase = "train"
-    # # real_trunc_ratio = float(2/3)
-    # # fake_trunc_ratio = float(2/3)
-    # # video_pos = [0, 1]
-    # # id_pos = 2
-    # # truncated=True
-    # # truncate_images_in_dataset(dataset_path=dataset_path, phase=phase, real_trunc_ratio=real_trunc_ratio, fake_trunc_ratio=fake_trunc_ratio, video_pos=video_pos, id_pos=id_pos, truncated=truncated)
-    # # print("After delete df_in_the_wild: ")
-    # # statisticize_dataset(dataset_path)
-    # device_name = "server61"
-    # log_dataset_statistic(dataset_path, "wildv2", "/mnt/disk1/doan/phucnp/Graduation_Thesis/review/forensics/preprocess_data/deleted_statistic", device_name)
-    # # print()
-    # # print()
+    # # val_real_want = 20000
+    # # val_fake_want = 30000
+    # # # mix(dataset_path=dataset_path, val_real_want=val_real_want, val_fake_want=val_fake_want)
+    # # statisticize_dataset(dataset_path=dataset_path)
+    # # split_by_video(dataset_path, phase_two=True)
 
-    # # DFDC
-    # # print("DFDC")
-    # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/dfdcv2/image"
-    # statisticize_dataset(dataset_path)
-    # # train_dir = "/mnt/disk1/doan/phucnp/Dataset/dfdcv2/image/train"
-    # # phase = "train"
-    # # real_trunc_ratio = float(0)
-    # # fake_trunc_ratio = float(2/3)
-    # # video_pos = [0]
-    # # id_pos = 1
-    # # truncated=True
-    # # truncate_images_in_dataset(dataset_path=dataset_path, phase=phase, real_trunc_ratio=real_trunc_ratio, fake_trunc_ratio=fake_trunc_ratio, video_pos=video_pos, id_pos=id_pos, truncated=truncated)
-    # # print("After delete dfdc: ")
-    # # statisticize_dataset(dataset_path)
-    # device_name = "server61"
-    # log_dataset_statistic(dataset_path, "dfdcv2", "/mnt/disk1/doan/phucnp/Graduation_Thesis/review/forensics/preprocess_data/deleted_statistic", device_name)
-    # # print()
-    # # print()
-
-    # # Celeb_DF
-    # print("Celeb-DF")
-    # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/Celeb-DFv2/image"
-    # statisticize_dataset(dataset_path)
-    # # train_dir = "/mnt/disk1/doan/phucnp/Dataset/Celeb-DFv2/image/train"
-    # # phase = "train"
-    # # real_trunc_ratio = float(0)
-    # # fake_trunc_ratio = float(2/3)
-    # # video_pos = [0, 1, 2]
-    # # id_pos = 3
-    # # truncated=True
-    # # truncate_images_in_dataset(dataset_path=dataset_path, phase=phase, real_trunc_ratio=real_trunc_ratio, fake_trunc_ratio=fake_trunc_ratio, video_pos=video_pos, id_pos=id_pos, truncated=truncated)
-    # # print("After delete celeb_DF: ")
-    # # statisticize_dataset(dataset_path)
-    # device_name = "server61"
-    # log_dataset_statistic(dataset_path, "celeb-dfv2", "/mnt/disk1/doan/phucnp/Graduation_Thesis/review/forensics/preprocess_data/deleted_statistic", device_name)
-
-    # DFDC:
-    # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/dfdcv3/image"
-    # statisticize_dataset(dataset_path)
-    # expected_real_images = 3000
-    # expected_fake_images = 3000
-    # move_image_from_train_to_val(dataset_path=dataset_path, expected_real_images=expected_real_images, expected_fake_images=expected_fake_images)
-    # val_real_image = 25000
-    # val_fake_image = 28000
-    # split_by_video(dataset_path=dataset_path, val_real_image=val_real_image, val_fake_image=val_fake_image, move=True)
-    # statisticize_dataset(dataset_path)
-    # lst = ['1_103_, 2_49_, 4_64_']
-    # for img in os.listdir(join(dataset_path, 'train/0_real')):
-    #     for l in lst:
-    #         if l in img:
-    #             print('bug')
-    dataset_path = "/mnt/disk1/doan/phucnp/Dataset/dfdcv3/image"
+    # # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv4/image"
+    # val_real_image = 10000
+    # val_fake_image = 25000
+    # statisticize_dataset(dataset_path=dataset_path)
+    # move = True
+    # split_by_video(dataset_path=dataset_path, val_real_image=val_real_image, val_fake_image=val_fake_image, move=move, phase_two=True)
+    # # print("Done move.")
+    # val_real_want = 5000
+    # val_fake_want = 5000
+    # mix(dataset_path=dataset_path, val_real_want=val_real_want, val_fake_want=val_fake_want)
+    # print("Done mix")
+    # statisticize_dataset(dataset_path=dataset_path)
+    # split_by_video(dataset_path=dataset_path, val_real_image=val_real_image, val_fake_image=val_fake_image, move=False, phase_two=True)
+    # statisticize_dataset(dataset_path=dataset_path)
+    # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv4/image"
+    # val_real_want = 20000
+    # val_fake_want = 30000
+    # mix(dataset_path=dataset_path, val_real_want=val_real_want, val_fake_want=val_fake_want)
+    # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/dfdcv4/image"
+    # val_real_want = 25000
+    # val_fake_want = 35000
+    # mix(dataset_path=dataset_path, val_real_want=val_real_want, val_fake_want=val_fake_want)
+    # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/Celeb-DFv4/image"
+    # val_real_want = 17500
+    # val_fake_want = 30000
+    # mix(dataset_path=dataset_path, val_real_want=val_real_want, val_fake_want=val_fake_want)
+    dataset_path = "/mnt/disk1/doan/phucnp/Dataset/dfdcv4/image"
     statisticize_dataset(dataset_path=dataset_path)
-    log_dataset_statistic(dataset_path=dataset_path, dataset_name="dfdcv3", statistic_dir="/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/preprocess_data/deleted_statistic", device_name="server61")
-    dataset_path = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv3/image"
+    log_dataset_statistic(dataset_path=dataset_path, dataset_name="dfdcv4", statistic_dir="/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/preprocess_data/deleted_statistic", device_name="server61")
+    dataset_path = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv4/image"
     statisticize_dataset(dataset_path=dataset_path)
-    log_dataset_statistic(dataset_path=dataset_path, dataset_name="wildv3", statistic_dir="/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/preprocess_data/deleted_statistic", device_name="server61")
-    dataset_path = "/mnt/disk1/doan/phucnp/Dataset/Celeb-DFv3/image"
+    log_dataset_statistic(dataset_path=dataset_path, dataset_name="wildv4", statistic_dir="/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/preprocess_data/deleted_statistic", device_name="server61")
+    dataset_path = "/mnt/disk1/doan/phucnp/Dataset/Celeb-DFv4/image"
     statisticize_dataset(dataset_path=dataset_path)
-    log_dataset_statistic(dataset_path=dataset_path, dataset_name="celeb_dfv3", statistic_dir="/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/preprocess_data/deleted_statistic", device_name="server61")
+    log_dataset_statistic(dataset_path=dataset_path, dataset_name="celeb_dfv4", statistic_dir="/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/preprocess_data/deleted_statistic", device_name="server61")

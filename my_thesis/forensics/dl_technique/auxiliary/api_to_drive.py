@@ -497,9 +497,9 @@ if __name__ == '__main__':
     file_path = "/mnt/disk1/phucnp/Graduation_Thesis/review/forensics/dl_technique/test/test.txt"
     dst_id = "1UKZa6PFKa8uqn0HsfXWE_8f7zmq4nAQd"
     
-    # folder_path = "/mnt/disk1/phucnp/Graduation_Thesis/review/forensics/dl_technique/checkpoint" #
-    # dst_id = "1XYvccxaHguOUFJ3JLGaIvxisMo0JYAYY"    #my repo
-    # merge_id = gdrive.upload_folder_to_drive(folder_path=folder_path, dest_id=dst_id, overwrite=True, merge=True)
+    folder_path = "/mnt/disk1/doan/phucnp/Dataset/Celeb-DFv3" #
+    dst_id = "1tl0-A9F4EeRo2PoUcwqFIlzMXbLldRYY"    #my repo
+    merge_id = gdrive.upload_folder_to_drive(folder_path=folder_path, dest_id=dst_id, overwrite=False, merge=False)
     
     # folder_path = "/mnt/disk1/phucnp/Graduation_Thesis/review/forensics/dl_technique/checkpoint" #
     # dst_id = "1QzAdW_4VFMeiLGoFowgb1lNQ4iFSazWA"    #my repo
@@ -527,8 +527,8 @@ if __name__ == '__main__':
     
     ################################ Check synchronization ################################
     
-    gdrive_id = "1ijcDB7j_2_-U5Px8X9fInQVKW_pdvAJ-"
-    device_path = "/mnt/disk1/phucnp/Graduation_Thesis/review/forensics/dl_technique/checkpoint/df_in_the_wild/dual_efficient_vit/(0.81-12)_v_cross_attention-freq-add_w_0.8_lr_0.0003_patch_2_h_3_d_4_es_none_loss_bce_freeze_0"
-    sync = gdrive.check_synchronization(gdrive_id=gdrive_id, device_path=device_path)
-    print("Synchronize: ", "{}".format("Yes " if sync else "No"))
-    #####################################################################################
+    # gdrive_id = "1ijcDB7j_2_-U5Px8X9fInQVKW_pdvAJ-"
+    # device_path = "/mnt/disk1/phucnp/Graduation_Thesis/review/forensics/dl_technique/checkpoint/df_in_the_wild/dual_efficient_vit/(0.81-12)_v_cross_attention-freq-add_w_0.8_lr_0.0003_patch_2_h_3_d_4_es_none_loss_bce_freeze_0"
+    # sync = gdrive.check_synchronization(gdrive_id=gdrive_id, device_path=device_path)
+    # print("Synchronize: ", "{}".format("Yes " if sync else "No"))
+    # #####################################################################################

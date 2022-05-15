@@ -8,6 +8,7 @@ from torchvision import datasets, transforms
 
 from .utils import make_weights_for_balanced_classes
 from gen_dual_fft import ImageGeneratorDualFFT
+from .pairwise_dataset import PairwiseDataset
 
 """
     Make dataloader for train and validation in trainning phase
@@ -124,6 +125,44 @@ def generate_dataloader_dual_stream(train_dir, val_dir, image_size, batch_size, 
     # Make val dataloader
     dataloader_val = torch.utils.data.DataLoader(fft_val_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
     return dataloader_train, dataloader_val, num_samples
+
+def generate_dataloader_dual_stream_for_pairwise(train_dir, val_dir, image_size, batch_size, num_workers):
+    # Transform for image
+    transform_fwd = transforms.Compose([transforms.Resize((image_size,image_size)),\
+                                        transforms.RandomHorizontalFlip(p=0.5),\
+                                        transforms.RandomApply([
+                                            transforms.RandomRotation(5),\
+                                            transforms.RandomAffine(degrees=5, scale=(0.95, 1.05))
+                                        ], p=0.5),
+                                        transforms.ToTensor(),\
+                                        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+                                        ])
+    # Transform for spectrum image
+    transform_fft = transforms.Compose([transforms.ToTensor()])
+    train_pairwise_dualfft_dataset = PairwiseDataset(train_dir, transform=transform_fwd, transform_fft=transform_fft)
+    train_dataloader = torch.utils.data.DataLoader(train_pairwise_dualfft_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=True)
+    assert train_pairwise_dualfft_dataset, "Train dataset is None!"
+
+    # Transform for val dataset:
+    transform_val_fwd = transforms.Compose([transforms.Resize((image_size,image_size)),\
+                                            transforms.ToTensor(),\
+                                            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+                                            ])
+    val_pairwise_dualfft_dataset = PairwiseDataset(val_dir, transform=transform_val_fwd, transform_fft=transform_fft)
+    val_dataloader  = torch.utils.data.DataLoader(val_pairwise_dualfft_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
+    assert val_pairwise_dualfft_dataset, "Val dataset is None!"
+    return train_dataloader, val_dataloader
+
+def generate_test_dataloader_dual_stream_for_pairwise(test_dir, image_size, batch_size, num_workers):
+    transform_test_fwd = transforms.Compose([transforms.Resize((image_size,image_size)),\
+                                            transforms.ToTensor(), \
+                                            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+                                            ])
+    transform_fft = transforms.Compose([transforms.ToTensor()])                
+    test_pairwise_dualfft_dataset = PairwiseDataset(test_dir, transform=transform_test_fwd, transform_fft=transform_fft)
+    test_dataloader  = torch.utils.data.DataLoader(test_pairwise_dualfft_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
+    assert test_pairwise_dualfft_dataset, "Val dataset is None!"
+    return test_dataloader
 
 """
     Make test dataloader for single (spatial) image stream

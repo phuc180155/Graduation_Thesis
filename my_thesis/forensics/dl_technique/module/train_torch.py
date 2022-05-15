@@ -192,7 +192,8 @@ def define_log_writer(checkpoint: str, resume: str, args_txt:str, model: Tuple[t
     # Save model to txt file
     sys.stdout = open(os.path.join(ckc_pointdir, 'model_{}.txt'.format(args_txt)), 'w')
     if 'dual' in model[1]:
-        torchsummary.summary(model[0], [(3, model[2], model[2]), (1, model[2], model[2])], device='cpu')
+        if model[1] != 'pairwise_dual_efficient_vit':
+            torchsummary.summary(model[0], [(3, model[2], model[2]), (1, model[2], model[2])], device='cpu')
     else:
         if model[1] != 'capsulenet':
             torchsummary.summary(model[0], (3, model[2], model[2]), device='cpu')
@@ -333,7 +334,11 @@ def train_image_stream(model, criterion_name=None, train_dir = '', val_dir ='', 
                 init_step = int(resume.split('_')[3])
                 init_epoch = int(init_step / len(dataloader_train))
                 init_lr = lr * (0.8 ** (init_epoch // 3))
-                print('Resume step: {} - in epoch: {} - lr: {}'.format(init_step, init_epoch, init_lr))              
+                with open(osp.join(checkpoint, 'global_acc_loss.txt'), 'r') as f:
+                    line = f.read().strip()
+                    init_global_acc = float(line.split(',')[0])
+                    init_global_loss = float(line.split(',')[1])
+                print('Resume step: {} - in epoch: {} - lr: {} - global_acc: {} - global_loss: {}'.format(init_step, init_epoch, init_lr, init_global_acc, init_global_loss))               
         except:
             pass
         
@@ -366,8 +371,8 @@ def train_image_stream(model, criterion_name=None, train_dir = '', val_dir ='', 
     running_loss = 0
     running_acc = 0
 
-    global_loss = 0.0
-    global_acc = 0.0
+    global_loss = init_global_loss
+    global_acc = init_global_acc
     global_step = init_step
 
     for epoch in range(init_epoch, epochs):
