@@ -74,3 +74,12 @@ class ModelSaver:
                 torch.save(model.state_dict(), join(checkpoint_dir, "_model_iter_{}_.pt".format(iteration)))
         with open(join(checkpoint_dir, 'global_acc_loss.txt'), 'w') as f:
             f.write("{},{}".format(global_acc, global_loss))
+
+    def save_model_for_pairwise(self, checkpoint_dir: str, model: torch.nn.Module, iteration: int, save_ckcpoint=False, global_acc=0.0, global_contrastive_loss=0.0, global_bce_loss=0.0, global_total_loss=0.0):
+        if save_ckcpoint:
+            if global_acc == 0 and global_total_loss == 0:
+                torch.save(model.state_dict(), join(checkpoint_dir, "_model_iter_{}_.pt".format(iteration)))
+            else:
+                torch.save(model.state_dict(), join(checkpoint_dir, "_model_iter_{}_.pt".format(iteration)))
+        with open(join(checkpoint_dir, 'global_acc_loss.txt'), 'w') as f:
+            f.write("{},{},{},{}".format(global_acc, global_contrastive_loss, global_bce_loss, global_total_loss))

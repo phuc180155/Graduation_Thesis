@@ -497,8 +497,8 @@ if __name__ == '__main__':
     file_path = "/mnt/disk1/phucnp/Graduation_Thesis/review/forensics/dl_technique/test/test.txt"
     dst_id = "1UKZa6PFKa8uqn0HsfXWE_8f7zmq4nAQd"
     
-    folder_path = "/mnt/disk1/doan/phucnp/Dataset/Celeb-DFv3" #
-    dst_id = "1tl0-A9F4EeRo2PoUcwqFIlzMXbLldRYY"    #my repo
+    folder_path = "/mnt/disk1/doan/phucnp/Dataset/dfdcv4/image/train/1_df" #
+    dst_id = "1d5mO2KSdMuko-Vn2VGAsw4tPt63HQKgj"    #my repo
     merge_id = gdrive.upload_folder_to_drive(folder_path=folder_path, dest_id=dst_id, overwrite=False, merge=False)
     
     # folder_path = "/mnt/disk1/phucnp/Graduation_Thesis/review/forensics/dl_technique/checkpoint" #
