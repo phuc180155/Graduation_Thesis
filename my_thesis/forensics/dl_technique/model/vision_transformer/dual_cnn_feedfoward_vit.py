@@ -214,7 +214,7 @@ class DualCNNFeedForwardViT(nn.Module):
         # print("weight: ", weight)
         if 'cat' in self.aggregation:
             out = torch.cat([out_1, weight * out_2], dim=1)
-        elif 'add' in self.version:
+        elif 'add' in self.aggregation:
             out = torch.add(out_1, weight * out_2)
         return out
 
