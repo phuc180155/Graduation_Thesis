@@ -192,7 +192,7 @@ def define_log_writer(checkpoint: str, resume: str, args_txt:str, model: Tuple[t
     # Save model to txt file
     sys.stdout = open(os.path.join(ckc_pointdir, 'model_{}.txt'.format(args_txt)), 'w')
     if 'dual' in model[1]:
-        if model[1] != 'pairwise_dual_efficient_vit':
+        if model[1] != 'pairwise_dual_efficient_vit' and model[1] != 'dual_cnn_feedforward_vit':
             torchsummary.summary(model[0], [(3, model[2], model[2]), (1, model[2], model[2])], device='cpu')
     else:
         if model[1] != 'capsulenet':
@@ -528,8 +528,12 @@ def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', t
               adj_brightness=1.0, adj_contrast=1.0, es_metric='val_loss', es_patience=5, model_name="dual-efficient", args_txt=""):
     
     # Generate dataloader train and validation 
-    dataloader_train, dataloader_val, num_samples = generate_dataloader_dual_stream(train_dir, val_dir, image_size, batch_size, num_workers)
-    dataloader_test = generate_test_dataloader_dual_stream(test_dir, image_size, 2*batch_size, num_workers)
+    if model_name != "dual_cnn_feedforward_vit":
+        dataloader_train, dataloader_val, num_samples = generate_dataloader_dual_stream(train_dir, val_dir, image_size, batch_size, num_workers)
+        dataloader_test = generate_test_dataloader_dual_stream(test_dir, image_size, 2*batch_size, num_workers)
+    else:
+        dataloader_train, dataloader_val, num_samples = generate_dataloader_dual_stream_for_cnnfeedforward(train_dir, val_dir, image_size, batch_size, num_workers)
+        dataloader_test = generate_test_dataloader_dual_stream_for_cnnfeedforward(test_dir, image_size, 2*batch_size, num_workers)        
     
     # Define optimizer (Adam) and learning rate decay
     init_lr = lr

@@ -7,7 +7,7 @@ import torch
 from torchvision import datasets, transforms
 
 from .utils import make_weights_for_balanced_classes
-from gen_dual_fft import ImageGeneratorDualFFT
+from gen_dual_fft import ImageGeneratorDualFFT, ImageGeneratorDualFFTFeature
 from .pairwise_dataset import PairwiseDataset
 
 """
@@ -126,6 +126,47 @@ def generate_dataloader_dual_stream(train_dir, val_dir, image_size, batch_size, 
     dataloader_val = torch.utils.data.DataLoader(fft_val_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
     return dataloader_train, dataloader_val, num_samples
 
+def generate_dataloader_dual_stream_for_cnnfeedforward(train_dir, val_dir, image_size, batch_size, num_workers, sampler_type='weight_random_sampler'):
+    # Transform for image
+    transform_fwd = transforms.Compose([transforms.Resize((image_size,image_size)),\
+                                        transforms.ToTensor(),\
+                                        transforms.Normalize(mean=[0.485, 0.456, 0.406],\
+                                                            std=[0.229, 0.224, 0.225]),\
+                                        ])
+    # Transform for spectrum image
+    transform_fft = None
+    
+    ############## TRain dataset #############
+    fft_train_dataset = ImageGeneratorDualFFTFeature(path=train_dir, image_size=image_size,\
+                                              transform=transform_fwd, transform_fft=transform_fft,\
+                                              should_invert=False,shuffle=True)
+    
+    print("fft dual train len :   ", fft_train_dataset.__len__())
+    assert fft_train_dataset, "Dataset is empty!"
+    
+    ##### Use ImageFolder for only calculate the weights for each sample, and use it for dual_fft dataset
+    dataset_train = datasets.ImageFolder(train_dir, transform=transform_fwd)
+    assert dataset_train
+    # Calculate weights for each sample
+    weights, num_samples = make_weights_for_balanced_classes(dataset_train.imgs, len(dataset_train.classes))
+    weights = torch.DoubleTensor(weights)
+    sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
+    # Make dataloader with WeightedRandomSampler
+    if sampler_type == 'none':
+        dataloader_train = torch.utils.data.DataLoader(fft_train_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=True)
+    else:
+        dataloader_train = torch.utils.data.DataLoader(fft_train_dataset, batch_size=batch_size, sampler=sampler, num_workers=num_workers)
+    
+    ############## Val dataset #############
+    fft_val_dataset = ImageGeneratorDualFFTFeature(path=val_dir,image_size=image_size,\
+                                            transform=transform_fwd, transform_fft=transform_fft,\
+                                            should_invert=False,shuffle=False)
+    print("fft dual val len :   ", fft_val_dataset.__len__())
+    assert fft_val_dataset
+    # Make val dataloader
+    dataloader_val = torch.utils.data.DataLoader(fft_val_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
+    return dataloader_train, dataloader_val, num_samples
+
 def generate_dataloader_dual_stream_for_pairwise(train_dir, val_dir, image_size, batch_size, num_workers, sampler_type='weight_random_sampler'):
     # Transform for image
     transform_fwd = transforms.Compose([transforms.Resize((image_size,image_size)),\
@@ -210,6 +251,27 @@ def generate_test_dataloader_dual_stream(test_dir, image_size, batch_size, num_w
     
     # Generate dataset
     test_dual_dataset = ImageGeneratorDualFFT(path=test_dir, image_size=image_size,\
+                                        transform=transform_fwd, transform_fft=transform_fft,\
+                                        should_invert=False, shuffle=False, adj_brightness=adj_brightness, adj_contrast=adj_contrast)
+    print("Test (dual) dataset: ", test_dual_dataset.__len__())
+    assert test_dual_dataset, "Dataset is empty!"
+    print("Test dataset: ", test_dual_dataset.__len__())
+
+    dataloader_test = torch.utils.data.DataLoader(test_dual_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    return dataloader_test
+
+def generate_test_dataloader_dual_stream_for_cnnfeedforward(test_dir, image_size, batch_size, num_workers, adj_brightness=1.0, adj_contrast=1.0):
+    # Transform for spatial image
+    transform_fwd = transforms.Compose([transforms.Resize((image_size,image_size)),\
+                                        transforms.ToTensor(),\
+                                        transforms.Normalize(mean=[0.485, 0.456, 0.406],\
+                                                             std=[0.229, 0.224, 0.225]),\
+                                        ])
+    # Transform for spectral image
+    transform_fft = None
+    
+    # Generate dataset
+    test_dual_dataset = ImageGeneratorDualFFTFeature(path=test_dir, image_size=image_size,\
                                         transform=transform_fwd, transform_fft=transform_fft,\
                                         should_invert=False, shuffle=False, adj_brightness=adj_brightness, adj_contrast=adj_contrast)
     print("Test (dual) dataset: ", test_dual_dataset.__len__())
