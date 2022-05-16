@@ -224,7 +224,9 @@ def train_capsulenet(train_dir = '', val_dir ='', test_dir = '', gpu_id=0, beta1
                     early_stopping(es_cur_score)
                     if early_stopping.early_stop:
                         print('Early stopping. Best {}: {:.6f}'.format(es_metric, early_stopping.best_score))
-                        break
+                        time.sleep(5)
+                        os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, "({:.4f}_{:.4f}_{:.4f})_{}".format(step_model_saver.best_scores[0], step_model_saver.best_scores[1], step_model_saver.best_scores[3], args_txt if resume == '' else 'resume')))
+                        return
                     capnet.train()
                     
         running_acc = metrics.accuracy_score(y_label, y_pred_label)
