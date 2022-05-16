@@ -249,8 +249,8 @@ def train_pairwise_dual_stream(model, weight_importance=2, margin=2, train_dir =
     
     # Generate dataloader train and validation 
     if 'cnn_feedforward' in model_name:
-        dataloader_train, dataloader_val = generate_dataloader_dual_feature_stream_for_pairwise(train_dir, val_dir, image_size, batch_size, num_workers)
-        dataloader_test = generate_test_dataloader_dual_feature_stream_for_pairwise(test_dir, image_size, 2*batch_size, num_workers)
+        dataloader_train, dataloader_val = generate_dataloader_dual_cnnfeedforward_stream_for_pairwise(train_dir, val_dir, image_size, batch_size, num_workers)
+        dataloader_test = generate_test_dataloader_dual_cnnfeedforward_stream_for_pairwise(test_dir, image_size, 2*batch_size, num_workers)
     else:
         dataloader_train, dataloader_val = generate_dataloader_dual_stream_for_pairwise(train_dir, val_dir, image_size, batch_size, num_workers)
         dataloader_test = generate_test_dataloader_dual_stream_for_pairwise(test_dir, image_size, 2*batch_size, num_workers)
