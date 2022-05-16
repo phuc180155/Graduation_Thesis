@@ -96,19 +96,7 @@ def define_log_writer_for_pairwise(checkpoint: str, resume: str, args_txt:str, m
         
     # Epoch and step save:
     epoch_ckcpoint, epoch_val_writer, epoch_test_writer = make_sub_checkpoint(ckc_pointdir, "epoch")
-    step_ckcpoint, step_val_writer, step_test_writer = make_sub_checkpoint(ckc_pointdir, "step")
-
-    # Save model to txt file
-    sys.stdout = open(os.path.join(ckc_pointdir, 'model_{}.txt'.format(args_txt)), 'w')
-    if 'dual' in model[1]:
-        if model[1] != 'pairwise_dual_efficient_vit':
-            torchsummary.summary(model[0], [(3, model[2], model[2]), (1, model[2], model[2])], device='cpu')
-    else:
-        if model[1] != 'capsulenet':
-            torchsummary.summary(model[0], (3, model[2], model[2]), device='cpu')
-    sys.stdout.close()
-    sys.stdout = sys.__stdout__
-    
+    step_ckcpoint, step_val_writer, step_test_writer = make_sub_checkpoint(ckc_pointdir, "step")    
     return ckc_pointdir, log, batch_contrast_writer, batch_bce_writer, batch_total_writer, (epoch_ckcpoint, epoch_val_writer, epoch_test_writer), (step_ckcpoint, step_val_writer, step_test_writer)
 
 def save_result_for_pairwise(text_writer, log, iteration, train_contrastive_loss, train_bce_loss, train_total_loss, train_acc, val_contrastive_loss, val_bce_loss, val_total_loss, val_mac_acc, val_mic_acc, reals, fakes, micros, macros, is_epoch=True, phase='val'):
