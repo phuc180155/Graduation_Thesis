@@ -323,6 +323,8 @@ def train_image_stream(model, criterion_name=None, train_dir = '', val_dir ='', 
     init_lr = lr
     init_epoch = 0
     init_step = 0
+    init_global_acc = 0
+    init_global_loss = 0
     if resume != "":
         try:
             if 'epoch' in checkpoint:

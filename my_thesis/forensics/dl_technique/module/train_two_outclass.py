@@ -88,13 +88,13 @@ def eval_capsulenet(capnet, vgg_ext, dataloader, device, capsule_loss, adj_brigh
 
 def train_capsulenet(train_dir = '', val_dir ='', test_dir = '', gpu_id=0, beta1=0.9, dropout=0.05, image_size=128, lr=3e-4, \
               batch_size=16, num_workers=4, checkpoint='', resume='', epochs=20, eval_per_iters=-1, seed=0, \
-              adj_brightness=1.0, adj_contrast=1.0, es_metric='val_loss', es_patience=5, model_name="xception", args_txt=""):
+              adj_brightness=1.0, adj_contrast=1.0, es_metric='val_loss', es_patience=5, model_name="capsule", args_txt=""):
     # Generate dataloader train and validation 
     dataloader_train, dataloader_val, num_samples = generate_dataloader_image_stream(train_dir, val_dir, image_size, batch_size, num_workers)
     dataloader_test = generate_test_dataloader_image_stream(test_dir, image_size, batch_size, num_workers)
     
     # Define devices
-    device = define_device(seed=seed)
+    device = define_device(seed=seed, model_name=model_name)
     
     # Define and load model
     vgg_ext = VggExtractor().to(device)
