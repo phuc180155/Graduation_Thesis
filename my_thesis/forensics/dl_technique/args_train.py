@@ -147,6 +147,26 @@ def parse_args():
     parser_dual_cnn_feedforward_vit.add_argument("--init_layernorm", type=str, default="normal", help="")
     parser_dual_cnn_feedforward_vit.add_argument("--init_conv", type=str, default="kaiming", help="")
     parser_dual_cnn_feedforward_vit.add_argument("--division_lr", type=int, default=1, help="")
+
+    parser_dual_pairwise_cnn_feedforward_vit = sub_parser.add_parser('pairwise_dual_cnn_feedforward_vit', help='My model')
+    parser_dual_pairwise_cnn_feedforward_vit.add_argument("--weight_importance", type=float, default=2.0)
+    parser_dual_pairwise_cnn_feedforward_vit.add_argument("--margin", type=float, default=2.0)
+    parser_dual_pairwise_cnn_feedforward_vit.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
+    parser_dual_pairwise_cnn_feedforward_vit.add_argument("--aggregation",type=str, default="add-0.8", required=False, help="Some changes in model")
+    parser_dual_pairwise_cnn_feedforward_vit.add_argument("--backbone",type=str, default="efficient_net", required=False, help="Type of backbone")
+    parser_dual_pairwise_cnn_feedforward_vit.add_argument("--pretrained",type=int, default=1, required=False, help="Load pretrained backbone")
+    parser_dual_pairwise_cnn_feedforward_vit.add_argument("--unfreeze_blocks", type=int, default=-1, help="Unfreeze blocks in backbone")
+    parser_dual_pairwise_cnn_feedforward_vit.add_argument("--flatten_type", type=str, default='patch', help="in ['patch', 'channel']")
+    parser_dual_pairwise_cnn_feedforward_vit.add_argument("--conv_reduction_channels", type=int, default=0, help="")   
+    parser_dual_pairwise_cnn_feedforward_vit.add_argument("--ratio_reduction", type=int, default=1, help="")   
+    parser_dual_pairwise_cnn_feedforward_vit.add_argument("--input_freq_dim", type=int, default=88, help="")   
+    parser_dual_pairwise_cnn_feedforward_vit.add_argument("--hidden_freq_dim", type=int, default=256, help="")   
+    parser_dual_pairwise_cnn_feedforward_vit.add_argument("--position_embed", type=int, default=1, help="")
+    parser_dual_pairwise_cnn_feedforward_vit.add_argument("--init_weight", type=int, default=0, help="")
+    parser_dual_pairwise_cnn_feedforward_vit.add_argument("--init_linear", type=str, default="xavier", help="")
+    parser_dual_pairwise_cnn_feedforward_vit.add_argument("--init_layernorm", type=str, default="normal", help="")
+    parser_dual_pairwise_cnn_feedforward_vit.add_argument("--init_conv", type=str, default="kaiming", help="")
+    parser_dual_pairwise_cnn_feedforward_vit.add_argument("--division_lr", type=int, default=1, help="")
     
     ############# adjust image
     parser.add_argument('--adj_brightness',type=float, default = 1, help='adj_brightness')
@@ -491,3 +511,37 @@ if __name__ == "__main__":
         train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual_cnn_feedforward_vit", args_txt=args_txt)
+
+    elif model == "pairwise_dual_cnn_feedforward_vit":
+        from module.train_pairwise import train_pairwise_dual_stream
+        from model.vision_transformer.pairwise_dual_cnn_feedfoward_vit import PairwiseDualCNNFeedForwardViT
+        
+        dropout = 0.15
+        emb_dropout = 0.15
+        model = PairwiseDualCNNFeedForwardViT(image_size=args.image_size, num_classes=1, dim=args.dim,\
+                                    depth=args.depth, heads=args.heads, mlp_dim=args.mlp_dim,\
+                                    dim_head=args.dim_head, dropout=0.15, emb_dropout=0.15,\
+                                    backbone=args.backbone, pretrained=bool(args.pretrained), unfreeze_blocks=args.unfreeze_blocks,\
+                                    conv_reduction_channels=args.conv_reduction_channels, ratio_reduction=args.ratio_reduction,\
+                                    flatten_type=args.flatten_type, patch_size=args.patch_size,\
+                                    input_freq_dim=args.input_freq_dim, hidden_freq_dim=args.hidden_freq_dim,\
+                                    position_embed=bool(args.position_embed), pool=args.pool,\
+                                    aggregation=args.aggregation,\
+                                    init_weight=args.init_weight, init_linear=args.init_linear, init_layernorm=args.init_layernorm, init_conv=args.init_conv)
+        
+        args_txt = "lr_{}-{}_batch_{}_es_{}_loss_{}_im_{}_mar_{}_agg_{}_pool_{}_bb_{}_pre_{}_unf_{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.weight_importance, args.margin, args.aggregation, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
+        args_txt += "flat_{}_".format(args.flatten_type)
+        args_txt += "convredu_{}_r_{}_".format(args.conv_reduction_channels, args.ratio_reduction)
+        args_txt += "inpffdim_{}_hidffdim_{}_".format(args.input_freq_dim, args.hidden_freq_dim)
+        if args.init_weight == 1:
+            args_txt += "init_{}-{}-{}_".format(args.init_linear, args.init_layernorm, args.init_conv)
+        args_txt += "patch_{}_seed_{}".format(args.patch_size, args.seed)
+        print(len(args_txt))
+        criterion = [args.loss]
+        if args.gamma:
+            args_txt += "_gamma_{}".format(args.gamma)
+            criterion.append(args.gamma)
+        use_pretrained = True if args.pretrained or args.resume != '' else False
+        train_pairwise_dual_stream(model, args.weight_importance, args.margin, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
+                           batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="pairwise_dual_cnn_feedforward_vit", args_txt=args_txt)

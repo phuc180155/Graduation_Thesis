@@ -9,6 +9,7 @@ import numpy as np
 import cv2
 import torch
 
+from dataloader.utils import azimuthalAverage
 from PIL import Image, ImageEnhance
 
 """
@@ -142,7 +143,7 @@ class ImageGeneratorDualFFTFeature(Dataset):
         fshift += 1e-8
         # Generate magnitude spectrum image
         magnitude_spectrum = 20 * np.log(np.abs(fshift))
-        psd1D = self.get_feature_vector(magnitude_spectrum)
+        psd1D = azimuthalAverage(magnitude_spectrum)
         # Calculate the azimuthally averaged 1D power spectrum
         psd1D = (psd1D-np.min(psd1D))/(np.max(psd1D)-np.min(psd1D))
 
@@ -158,44 +159,6 @@ class ImageGeneratorDualFFTFeature(Dataset):
         elif '1_df' in self.data_path[index] or '1_f2f' in self.data_path[index] or '1_fs' in self.data_path[index] or '1_nt' in self.data_path[index] or '1_fake' in self.data_path[index]:
             y = 1
         return PIL_img, psd1D, y
-
-    def get_feature_vector(self, magnitude_image, center=None):
-        """
-        Calculate the azimuthally averaged radial profile.
-        image - The 2D image
-        center - The [x,y] pixel coordinates used as the center. The default is
-                None, which then uses the center of the image (including
-                fracitonal pixels).
-
-        """
-        # Calculate the indices from the image
-        y, x = np.indices(magnitude_image.shape)
-
-        if not center:
-            center = np.array([(x.max() - x.min()) / 2.0, (y.max() - y.min()) / 2.0])
-
-        r = np.hypot(x - center[0], y - center[1])
-
-        # Get sorted radii
-        ind = np.argsort(r.flat)
-        r_sorted = r.flat[ind]
-        i_sorted = magnitude_image.flat[ind]
-
-        # Get the integer part of the radii (bin size = 1)
-        r_int = r_sorted.astype(int)
-
-        # Find all pixels that fall within each radial bin.
-        deltar = r_int[1:] - r_int[:-1]  # Assumes all radii represented
-        rind = np.where(deltar)[0]  # location of changed radius
-        nr = rind[1:] - rind[:-1]  # number of radius bin
-
-        # Cumulative sum to figure out sums for each radius bin
-        csim = np.cumsum(i_sorted, dtype=float)
-        tbin = csim[rind[1:]] - csim[rind[:-1]]
-
-        radial_prof = tbin / nr
-        return radial_prof
-
 
     def __len__(self):
         return int(np.floor(len(self.data_path)))

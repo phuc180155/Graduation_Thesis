@@ -178,7 +178,7 @@ def save_result_for_pairwise(text_writer, log, iteration, train_contrastive_loss
         }
         log.write_scalars(scalar_dict=scalar_dict_metric, global_step=iteration, tag="{} {} {}".format(phase, cls, eval_type))
 
-def eval_pairwise_dual_stream(model, dataloader, device, bce_loss, contrastive_loss, adj_brightness=1.0, adj_contrast=1.0):
+def eval_pairwise_dual_stream(model, weight_importance, dataloader, device, bce_loss, contrastive_loss, adj_brightness=1.0, adj_contrast=1.0):
     """ Evaluate model with dataloader
 
     Args:
@@ -218,7 +218,7 @@ def eval_pairwise_dual_stream(model, dataloader, device, bce_loss, contrastive_l
             bceloss_0 = bce_loss(logps0, labels0)
             # bceloss_1 = bce_loss(logps1, labels1)
             contrastiveloss = contrastive_loss(embedding_0, embedding_1, labels_contrastive)
-            batch_loss = bceloss_0 + contrastiveloss
+            batch_loss = weight_importance * bceloss_0 + contrastiveloss
 
             # Cumulate into running val loss
             contrastive_loss_ += contrastiveloss.item()
@@ -245,11 +245,15 @@ def eval_pairwise_dual_stream(model, dataloader, device, bce_loss, contrastive_l
     
 def train_pairwise_dual_stream(model, weight_importance=2, margin=2, train_dir = '', val_dir ='', test_dir= '', image_size=128, lr=3e-4, division_lr=True, use_pretrained=False,\
               batch_size=16, num_workers=8, checkpoint='', resume='', epochs=30, eval_per_iters=-1, seed=0, \
-              adj_brightness=1.0, adj_contrast=1.0, es_metric='val_loss', es_patience=5, model_name="pairwise-dual-efficient", args_txt=""):
+              adj_brightness=1.0, adj_contrast=1.0, es_metric='val_loss', es_patience=5, model_name="pairwise_dual_cnn_feedforward", args_txt=""):
     
     # Generate dataloader train and validation 
-    dataloader_train, dataloader_val = generate_dataloader_dual_stream_for_pairwise(train_dir, val_dir, image_size, batch_size, num_workers)
-    dataloader_test = generate_test_dataloader_dual_stream_for_pairwise(test_dir, image_size, 2*batch_size, num_workers)
+    if 'cnn_feedforward' in model_name:
+        dataloader_train, dataloader_val = generate_dataloader_dual_feature_stream_for_pairwise(train_dir, val_dir, image_size, batch_size, num_workers)
+        dataloader_test = generate_test_dataloader_dual_feature_stream_for_pairwise(test_dir, image_size, 2*batch_size, num_workers)
+    else:
+        dataloader_train, dataloader_val = generate_dataloader_dual_stream_for_pairwise(train_dir, val_dir, image_size, batch_size, num_workers)
+        dataloader_test = generate_test_dataloader_dual_stream_for_pairwise(test_dir, image_size, 2*batch_size, num_workers)
     
     # Define optimizer (Adam) and learning rate decay
     init_lr = lr
@@ -348,7 +352,7 @@ def train_pairwise_dual_stream(model, weight_importance=2, margin=2, train_dir =
             loss = weight_importance * bceloss_0 + contrastiveloss
 
             if global_step % 100 == 0:
-                print("Bceloss 0: {}  --- Contrastive: {} ".format(bceloss_0.item(), contrastiveloss.item()))
+                print("Bceloss 0: {}  --- Contrastive: {} - Total: {} ".format(bceloss_0.item(), contrastiveloss.item(), loss.item()))
             
             # Backpropagation and update weights
             loss.backward()
@@ -379,10 +383,10 @@ def train_pairwise_dual_stream(model, weight_importance=2, margin=2, train_dir =
                 if global_step % eval_per_iters == 0:
                     model.eval()
                     # Eval validation set
-                    val_contrastive_loss, val_bce_loss, val_total_loss, val_mac_acc, val_mic_acc, val_reals, val_fakes, val_micros, val_macros = eval_pairwise_dual_stream(model, dataloader_val, device, bce_loss, contrastive_loss, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
+                    val_contrastive_loss, val_bce_loss, val_total_loss, val_mac_acc, val_mic_acc, val_reals, val_fakes, val_micros, val_macros = eval_pairwise_dual_stream(model, weight_importance, dataloader_val, device, bce_loss, contrastive_loss, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
                     save_result_for_pairwise(step_val_writer, log, global_step, global_contrastive_loss/global_step, global_bce_loss/global_step, global_total_loss/global_step, global_acc/global_step, val_contrastive_loss, val_bce_loss, val_total_loss, val_mac_acc, val_mic_acc, val_reals, val_fakes, val_micros, val_macros, is_epoch=False, phase="val")
                     # Eval test set
-                    test_contrastive_loss, test_bce_loss, test_total_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros = eval_pairwise_dual_stream(model, dataloader_test, device, bce_loss, contrastive_loss, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
+                    test_contrastive_loss, test_bce_loss, test_total_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros = eval_pairwise_dual_stream(model, weight_importance, dataloader_test, device, bce_loss, contrastive_loss, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
                     save_result_for_pairwise(step_test_writer, log, global_step, global_contrastive_loss/global_step, global_bce_loss/global_step, global_total_loss/global_step, global_acc/global_step, test_contrastive_loss, test_bce_loss, test_total_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros, is_epoch=False, phase="test")
                     # Save model:
                     step_model_saver(global_step, [val_total_loss, val_mic_acc, test_total_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2]], step_ckcpoint, model)
@@ -401,10 +405,10 @@ def train_pairwise_dual_stream(model, weight_importance=2, margin=2, train_dir =
         # Eval
         # print("Validating epoch...")
         # model.eval()
-        # val_loss, val_mac_acc, val_mic_acc, val_reals, val_fakes, val_micros, val_macros = eval_pairwise_dual_stream(model, dataloader_val, device, bce_loss, contrastive_loss, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
+        # val_loss, val_mac_acc, val_mic_acc, val_reals, val_fakes, val_micros, val_macros = eval_pairwise_dual_stream(model, weight_importance, dataloader_val, device, bce_loss, contrastive_loss, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
         # save_result_for_pairwise(epoch_val_writer, log, epoch+1, running_loss/len(dataloader_train), running_acc/len(dataloader_train), val_loss, val_mac_acc, val_mic_acc, val_reals, val_fakes, val_micros, val_macros, is_epoch=True, phase="val")
         # # Eval test set
-        # test_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros = eval_pairwise_dual_stream(model, dataloader_test, device, bce_loss, contrastive_loss, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
+        # test_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros = eval_pairwise_dual_stream(model, weight_importance, dataloader_test, device, bce_loss, contrastive_loss, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
         # save_result_for_pairwise(epoch_test_writer, log, epoch+1, running_loss/len(dataloader_train), running_acc/len(dataloader_train), test_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros, is_epoch=True, phase="test")
         # # Save model:
         # epoch_model_saver(epoch+1, [val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2]], epoch_ckcpoint, model)

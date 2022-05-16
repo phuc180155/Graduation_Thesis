@@ -8,7 +8,7 @@ from torchvision import datasets, transforms
 
 from .utils import make_weights_for_balanced_classes
 from gen_dual_fft import ImageGeneratorDualFFT, ImageGeneratorDualFFTFeature
-from .pairwise_dataset import PairwiseDataset
+from .pairwise_dataset import PairwiseDualFFTDataset, PairwiseDualCNNFeedForwardDataset
 
 """
     Make dataloader for train and validation in trainning phase
@@ -126,7 +126,7 @@ def generate_dataloader_dual_stream(train_dir, val_dir, image_size, batch_size, 
     dataloader_val = torch.utils.data.DataLoader(fft_val_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
     return dataloader_train, dataloader_val, num_samples
 
-def generate_dataloader_dual_stream_for_cnnfeedforward(train_dir, val_dir, image_size, batch_size, num_workers, sampler_type='weight_random_sampler'):
+def generate_dataloader_dual_cnnfeedforward_stream(train_dir, val_dir, image_size, batch_size, num_workers, sampler_type='weight_random_sampler'):
     # Transform for image
     transform_fwd = transforms.Compose([transforms.Resize((image_size,image_size)),\
                                         transforms.ToTensor(),\
@@ -180,7 +180,7 @@ def generate_dataloader_dual_stream_for_pairwise(train_dir, val_dir, image_size,
                                         ])
     # Transform for spectrum image
     transform_fft = transforms.Compose([transforms.ToTensor()])
-    train_pairwise_dualfft_dataset = PairwiseDataset(path=train_dir, image_size=image_size, transform=transform_fwd, transform_fft=transform_fft)
+    train_pairwise_dualfft_dataset = PairwiseDualFFTDataset(path=train_dir, image_size=image_size, transform=transform_fwd, transform_fft=transform_fft)
 
     dataset_train = datasets.ImageFolder(train_dir, transform=transform_fwd)
     assert dataset_train
@@ -201,7 +201,7 @@ def generate_dataloader_dual_stream_for_pairwise(train_dir, val_dir, image_size,
                                             transforms.ToTensor(),\
                                             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
                                             ])
-    val_pairwise_dualfft_dataset = PairwiseDataset(path=val_dir, image_size=image_size, transform=transform_val_fwd, transform_fft=transform_fft)
+    val_pairwise_dualfft_dataset = PairwiseDualFFTDataset(path=val_dir, image_size=image_size, transform=transform_val_fwd, transform_fft=transform_fft)
     val_dataloader  = torch.utils.data.DataLoader(val_pairwise_dualfft_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
     assert val_pairwise_dualfft_dataset, "Val dataset is None!"
     return train_dataloader, val_dataloader
@@ -212,7 +212,7 @@ def generate_test_dataloader_dual_stream_for_pairwise(test_dir, image_size, batc
                                             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
                                             ])
     transform_fft = transforms.Compose([transforms.ToTensor()])                
-    test_pairwise_dualfft_dataset = PairwiseDataset(path=test_dir, image_size=image_size, transform=transform_test_fwd, transform_fft=transform_fft)
+    test_pairwise_dualfft_dataset = PairwiseDualFFTDataset(path=test_dir, image_size=image_size, transform=transform_test_fwd, transform_fft=transform_fft)
     test_dataloader  = torch.utils.data.DataLoader(test_pairwise_dualfft_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
     assert test_pairwise_dualfft_dataset, "Val dataset is None!"
     return test_dataloader
@@ -260,7 +260,7 @@ def generate_test_dataloader_dual_stream(test_dir, image_size, batch_size, num_w
     dataloader_test = torch.utils.data.DataLoader(test_dual_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
     return dataloader_test
 
-def generate_test_dataloader_dual_stream_for_cnnfeedforward(test_dir, image_size, batch_size, num_workers, adj_brightness=1.0, adj_contrast=1.0):
+def generate_test_dataloader_dual_cnnfeedforward_stream(test_dir, image_size, batch_size, num_workers, adj_brightness=1.0, adj_contrast=1.0):
     # Transform for spatial image
     transform_fwd = transforms.Compose([transforms.Resize((image_size,image_size)),\
                                         transforms.ToTensor(),\
@@ -280,3 +280,53 @@ def generate_test_dataloader_dual_stream_for_cnnfeedforward(test_dir, image_size
 
     dataloader_test = torch.utils.data.DataLoader(test_dual_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
     return dataloader_test
+
+###################### CNN - FEEDFORWARD ###################
+def generate_dataloader_dual_cnnfeedforward_stream_for_pairwise(train_dir, val_dir, image_size, batch_size, num_workers, sampler_type='weight_random_sampler'):
+    # Transform for image
+    transform_fwd = transforms.Compose([transforms.Resize((image_size,image_size)),\
+                                        transforms.RandomHorizontalFlip(p=0.5),\
+                                        transforms.RandomApply([
+                                            transforms.RandomRotation(5),\
+                                            transforms.RandomAffine(degrees=5, scale=(0.95, 1.05))
+                                        ], p=0.5),
+                                        transforms.ToTensor(),\
+                                        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+                                        ])
+    # Transform for spectrum image
+    transform_fft = None
+    train_pairwise_dualfft_dataset = PairwiseDualCNNFeedForwardDataset(path=train_dir, image_size=image_size, transform=transform_fwd, transform_fft=transform_fft)
+
+    dataset_train = datasets.ImageFolder(train_dir, transform=transform_fwd)
+    assert dataset_train
+    # Calculate weights for each sample
+    weights, num_samples = make_weights_for_balanced_classes(dataset_train.imgs, len(dataset_train.classes))
+    weights = torch.DoubleTensor(weights)
+    sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
+    # Make dataloader with WeightedRandomSampler
+    if sampler_type == 'none':
+        train_dataloader = torch.utils.data.DataLoader(train_pairwise_dualfft_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=True)
+    else:
+        train_dataloader = torch.utils.data.DataLoader(train_pairwise_dualfft_dataset, batch_size=batch_size, sampler=sampler, num_workers=num_workers)
+
+    assert train_pairwise_dualfft_dataset, "Train dataset is None!"
+    # Transform for val dataset:
+    transform_val_fwd = transforms.Compose([transforms.Resize((image_size,image_size)),\
+                                            transforms.ToTensor(),\
+                                            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+                                            ])
+    val_pairwise_dualfft_dataset = PairwiseDualCNNFeedForwardDataset(path=val_dir, image_size=image_size, transform=transform_val_fwd, transform_fft=transform_fft)
+    val_dataloader  = torch.utils.data.DataLoader(val_pairwise_dualfft_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
+    assert val_pairwise_dualfft_dataset, "Val dataset is None!"
+    return train_dataloader, val_dataloader
+
+def generate_test_dataloader_dual_cnnfeedforward_stream_for_pairwise(test_dir, image_size, batch_size, num_workers):
+    transform_test_fwd = transforms.Compose([transforms.Resize((image_size,image_size)),\
+                                            transforms.ToTensor(), \
+                                            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+                                            ])
+    transform_fft = None       
+    test_pairwise_dualfft_dataset = PairwiseDualCNNFeedForwardDataset(path=test_dir, image_size=image_size, transform=transform_test_fwd, transform_fft=transform_fft)
+    test_dataloader  = torch.utils.data.DataLoader(test_pairwise_dualfft_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
+    assert test_pairwise_dualfft_dataset, "Test dataset is None!"
+    return test_dataloader

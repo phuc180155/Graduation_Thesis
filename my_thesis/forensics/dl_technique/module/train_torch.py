@@ -532,8 +532,8 @@ def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', t
         dataloader_train, dataloader_val, num_samples = generate_dataloader_dual_stream(train_dir, val_dir, image_size, batch_size, num_workers)
         dataloader_test = generate_test_dataloader_dual_stream(test_dir, image_size, 2*batch_size, num_workers)
     else:
-        dataloader_train, dataloader_val, num_samples = generate_dataloader_dual_stream_for_cnnfeedforward(train_dir, val_dir, image_size, batch_size, num_workers)
-        dataloader_test = generate_test_dataloader_dual_stream_for_cnnfeedforward(test_dir, image_size, 2*batch_size, num_workers)        
+        dataloader_train, dataloader_val, num_samples = generate_dataloader_dual_cnnfeedforward_stream(train_dir, val_dir, image_size, batch_size, num_workers)
+        dataloader_test = generate_test_dataloader_dual_cnnfeedforward_stream(test_dir, image_size, 2*batch_size, num_workers)        
     
     # Define optimizer (Adam) and learning rate decay
     init_lr = lr
