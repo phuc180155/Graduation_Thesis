@@ -224,16 +224,16 @@ def train_capsulenet(train_dir = '', val_dir ='', test_dir = '', gpu_id=0, beta1
         running_acc = metrics.accuracy_score(y_label, y_pred_label)
         
         # Eval
-        print("Validating epoch...")
-        capnet.eval()
-        val_loss, val_mac_acc, val_mic_acc, val_reals, val_fakes, val_micros, val_macros = eval_capsulenet(capnet, vgg_ext, dataloader_val, device, capsule_loss, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
-        save_result(epoch_val_writer, log, epoch+1, running_loss/len(dataloader_train), running_acc, val_loss, val_mac_acc, val_mic_acc, val_reals, val_fakes, val_micros, val_macros, is_epoch=True, phase="val")
-        # Eval test set
-        test_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros = eval_capsulenet(capnet, vgg_ext, dataloader_test, device, capsule_loss, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
-        save_result(epoch_test_writer, log, epoch+1, running_loss/len(dataloader_train), running_acc, test_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros, is_epoch=True, phase="test")
-        # Save model:
-        epoch_model_saver(epoch+1, [val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2]], epoch_ckcpoint, capnet)
-        epoch_model_saver.save_last_model(epoch_ckcpoint, capnet, epoch+1)
+        # print("Validating epoch...")
+        # capnet.eval()
+        # val_loss, val_mac_acc, val_mic_acc, val_reals, val_fakes, val_micros, val_macros = eval_capsulenet(capnet, vgg_ext, dataloader_val, device, capsule_loss, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
+        # save_result(epoch_val_writer, log, epoch+1, running_loss/len(dataloader_train), running_acc, val_loss, val_mac_acc, val_mic_acc, val_reals, val_fakes, val_micros, val_macros, is_epoch=True, phase="val")
+        # # Eval test set
+        # test_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros = eval_capsulenet(capnet, vgg_ext, dataloader_test, device, capsule_loss, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
+        # save_result(epoch_test_writer, log, epoch+1, running_loss/len(dataloader_train), running_acc, test_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros, is_epoch=True, phase="test")
+        # # Save model:
+        # epoch_model_saver(epoch+1, [val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2]], epoch_ckcpoint, capnet)
+        # epoch_model_saver.save_last_model(epoch_ckcpoint, capnet, epoch+1)
         
         # Reset to the next epoch
         running_loss = 0
