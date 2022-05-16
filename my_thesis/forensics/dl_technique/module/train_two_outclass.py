@@ -219,6 +219,12 @@ def train_capsulenet(train_dir = '', val_dir ='', test_dir = '', gpu_id=0, beta1
                     # Save model:
                     step_model_saver(global_step, [val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2]], step_ckcpoint, capnet)
                     step_model_saver.save_last_model(step_ckcpoint, capnet, global_step)
+
+                    es_cur_score = find_current_earlystopping_score(es_metric, val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2])
+                    early_stopping(es_cur_score)
+                    if early_stopping.early_stop:
+                        print('Early stopping. Best {}: {:.6f}'.format(es_metric, early_stopping.best_score))
+                        break
                     capnet.train()
                     
         running_acc = metrics.accuracy_score(y_label, y_pred_label)
@@ -240,13 +246,8 @@ def train_capsulenet(train_dir = '', val_dir ='', test_dir = '', gpu_id=0, beta1
         running_acc = 0
         scheduler.step()
         capnet.train()
-
         # Early stopping:
-        es_cur_score = find_current_earlystopping_score(es_metric, val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2])
-        early_stopping(es_cur_score)
-        if early_stopping.early_stop:
-            print('Early stopping. Best {}: {:.6f}'.format(es_metric, early_stopping.best_score))
-            break
+        #
     time.sleep(5)
     os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, "({:.4f}_{:.4f}_{:.4f}_{:.4f})_{}".format(epoch_model_saver.best_scores[3], step_model_saver.best_scores[3], epoch_model_saver.best_scores[2], step_model_saver.best_scores[2], args_txt if resume == '' else 'resume')))
     return
