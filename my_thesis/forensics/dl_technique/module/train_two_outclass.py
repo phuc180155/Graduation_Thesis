@@ -50,6 +50,7 @@ def eval_capsulenet(capnet, vgg_ext, dataloader, device, capsule_loss, adj_brigh
     y_pred = []
     y_pred_label = []
     loss = 0
+    mac_accuracy = 0
     
     for inputs, labels in dataloader:
         labels[labels > 1] = 1
@@ -76,8 +77,9 @@ def eval_capsulenet(capnet, vgg_ext, dataloader, device, capsule_loss, adj_brigh
         y_label.extend(img_label)
         y_pred.extend(output_dis)
         y_pred_label.extend(output_pred)
+        mac_accuracy += metrics.accuracy_score(img_label, output_pred)
         
-    mac_accuracy = 0
+    mac_accuracy /= len(dataloader)
     loss /= len(dataloader)
     assert len(y_label) == len(y_pred_label), "Bug"
     ######## Calculate metrics:
@@ -88,10 +90,10 @@ def eval_capsulenet(capnet, vgg_ext, dataloader, device, capsule_loss, adj_brigh
 
 def train_capsulenet(train_dir = '', val_dir ='', test_dir = '', gpu_id=0, beta1=0.9, dropout=0.05, image_size=128, lr=3e-4, \
               batch_size=16, num_workers=4, checkpoint='', resume='', epochs=20, eval_per_iters=-1, seed=0, \
-              adj_brightness=1.0, adj_contrast=1.0, es_metric='val_loss', es_patience=5, model_name="capsule", args_txt=""):
+              adj_brightness=1.0, adj_contrast=1.0, es_metric='val_loss', es_patience=5, model_name="capsule", args_txt="", dropout_in_mlp=True, augmentation=False):
     # Generate dataloader train and validation 
-    dataloader_train, dataloader_val, num_samples = generate_dataloader_image_stream(train_dir, val_dir, image_size, batch_size, num_workers)
-    dataloader_test = generate_test_dataloader_image_stream(test_dir, image_size, batch_size, num_workers)
+    dataloader_train, dataloader_val, num_samples = generate_dataloader_single_cnn_stream(train_dir, val_dir, image_size, batch_size, num_workers, augmentation=augmentation)
+    dataloader_test = generate_test_dataloader_single_cnn_stream(test_dir, image_size, batch_size, num_workers)
     
     # Define devices
     device = define_device(seed=seed, model_name=model_name)
@@ -104,23 +106,29 @@ def train_capsulenet(train_dir = '', val_dir ='', test_dir = '', gpu_id=0, beta1
     init_lr = lr
     init_epoch = 0
     init_step = 0
+    init_global_acc = 0
+    init_global_loss = 0
     if resume != "":
         try:
             if 'epoch' in checkpoint:
                 init_epoch = int(resume.split('_')[3])
                 init_step = init_epoch * len(dataloader_train)
-                init_lr = lr * (0.8 ** ((init_epoch - 1) // 3))
+                init_lr = lr * (0.8 ** ((init_epoch - 1) // 2))
                 print('Resume epoch: {} - with step: {} - lr: {}'.format(init_epoch, init_step, init_lr))
             if 'step' in checkpoint:
                 init_step = int(resume.split('_')[3])
                 init_epoch = int(init_step / len(dataloader_train))
-                init_lr = lr * (0.8 ** (init_epoch // 3))
-                print('Resume step: {} - in epoch: {} - lr: {}'.format(init_step, init_epoch, init_lr))              
+                init_lr = lr * (0.8 ** (init_epoch // 2))
+                with open(osp.join(checkpoint, 'global_acc_loss.txt'), 'r') as f:
+                    line = f.read().strip()
+                    init_global_acc = float(line.split(',')[0])
+                    init_global_loss = float(line.split(',')[1])
+                print('Resume step: {} - in epoch: {} - lr: {} - global_acc: {} - global_loss: {}'.format(init_step, init_epoch, init_lr, init_global_acc, init_global_loss))              
         except:
             pass
         
     optimizer = optim.Adam(capnet.parameters(), lr=init_lr, betas=(beta1, 0.999))
-    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones = [3*i for i in range(1, epochs//3 + 1)], gamma = 0.8)
+    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones = [2*i for i in range(1, epochs//2 + 1)], gamma = 0.8)
 
     # Define criterion
     capsule_loss = CapsuleLoss().to(device)
@@ -145,8 +153,10 @@ def train_capsulenet(train_dir = '', val_dir ='', test_dir = '', gpu_id=0, beta1
                     if isinstance(v, torch.Tensor):
                         state[k] = v.cuda()
 
-    global_loss = 0.0
+    global_loss = init_global_loss
+    global_acc = init_global_acc
     global_step = init_step
+
     capnet.train()
 
     for epoch in range(init_epoch, epochs):
@@ -161,6 +171,9 @@ def train_capsulenet(train_dir = '', val_dir ='', test_dir = '', gpu_id=0, beta1
         running_acc = 0
         y_label = np.array([], dtype=np.float)
         y_pred_label = np.array([], dtype=np.float)
+
+        y_label_step = []
+        y_pred_label_step = []
         
         print("Training...")
         for inputs, labels in tqdm(dataloader_train):
@@ -200,6 +213,9 @@ def train_capsulenet(train_dir = '', val_dir ='', test_dir = '', gpu_id=0, beta1
                     
             running_loss += loss_dis_data
             global_loss += loss_dis_data
+            y_label_step.extend(img_label)
+            y_pred_label_step.extend(output_pred)
+            global_acc += metrics.accuracy_score(y_label_step, y_pred_label_step)
 
             # Save step's loss:
             # To tensorboard and to writer
@@ -212,13 +228,14 @@ def train_capsulenet(train_dir = '', val_dir ='', test_dir = '', gpu_id=0, beta1
                     capnet.eval()
                     # Eval validation set
                     val_loss, val_mac_acc, val_mic_acc, val_reals, val_fakes, val_micros, val_macros = eval_capsulenet(capnet, vgg_ext, dataloader_val, device, capsule_loss, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
-                    save_result(step_val_writer, log, global_step, global_loss/global_step, 0, val_loss, val_mac_acc, val_mic_acc, val_reals, val_fakes, val_micros, val_macros, is_epoch=False, phase="val")
+                    save_result(step_val_writer, log, global_step, global_loss/global_step, global_acc/global_step, val_loss, val_mac_acc, val_mic_acc, val_reals, val_fakes, val_micros, val_macros, is_epoch=False, phase="val")
                     # Eval test set
                     test_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros = eval_capsulenet(capnet, vgg_ext, dataloader_test, device, capsule_loss, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
-                    save_result(step_test_writer, log, global_step, global_loss/global_step, 0, test_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros, is_epoch=False, phase="test")
+                    save_result(step_test_writer, log, global_step, global_loss/global_step, global_acc/global_step, test_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros, is_epoch=False, phase="test")
                     # Save model:
                     step_model_saver(global_step, [val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2]], step_ckcpoint, capnet)
                     step_model_saver.save_last_model(step_ckcpoint, capnet, global_step)
+                    step_model_saver.save_model(step_ckcpoint, capnet, global_step, save_ckcpoint=False, global_acc=global_acc, global_loss=global_loss)
 
                     es_cur_score = find_current_earlystopping_score(es_metric, val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2])
                     early_stopping(es_cur_score)
@@ -228,9 +245,11 @@ def train_capsulenet(train_dir = '', val_dir ='', test_dir = '', gpu_id=0, beta1
                         os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, "({:.4f}_{:.4f}_{:.4f})_{}".format(step_model_saver.best_scores[0], step_model_saver.best_scores[1], step_model_saver.best_scores[3], args_txt if resume == '' else 'resume')))
                         return
                     capnet.train()
-                    
-        running_acc = metrics.accuracy_score(y_label, y_pred_label)
-        
+
+            y_label_step = []
+            y_pred_label_step = []
+       
+        running_acc = metrics.accuracy_score(y_label, y_pred_label)        
         # Eval
         # print("Validating epoch...")
         # capnet.eval()
@@ -251,5 +270,6 @@ def train_capsulenet(train_dir = '', val_dir ='', test_dir = '', gpu_id=0, beta1
         # Early stopping:
         #
     time.sleep(5)
-    os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, "({:.4f}_{:.4f}_{:.4f}_{:.4f})_{}".format(epoch_model_saver.best_scores[3], step_model_saver.best_scores[3], epoch_model_saver.best_scores[2], step_model_saver.best_scores[2], args_txt if resume == '' else 'resume')))
+    # Save epoch acc val, epoch acc test, step acc val, step acc test
+    # os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, "({:.4f}_{:.4f}_{:.4f}_{:.4f})_{}".format(epoch_model_saver.best_scores[1], epoch_model_saver.best_scores[3], step_model_saver.best_scores[1], step_model_saver.best_scores[3], args_txt if resume == '' else 'resume')))
     return

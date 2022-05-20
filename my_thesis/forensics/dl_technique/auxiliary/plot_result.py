@@ -53,6 +53,7 @@ def read_file(csv_file: str):
 
 def plot_loss_and_accuracy(iter_loop: List[int], iter_method: str, values: List[List[float]], phase="Val"):
     """ values: [train_loss, train_acc, val_loss, val_acc]
+        if pairwise: [train_contrastive_loss, train_bce_loss, train_total_loss, train_acc, val_contrastive, val_bce, val_total, val_accu]
     """
     plt.figure(figsize=(15, 5))
     plt.subplot(1, 2, 1)
@@ -119,4 +120,6 @@ if __name__ == '__main__':
     dict = {}
     methods = ['meso4', 'xception', 'dual_efficient', 'dual_attn_efficient', 'dual_efficient_vit']
     datasets = ['uadfv', 'ff_all', 'celeb_df', 'dfdc', 'df_in_the_wild']
-    plot_graph(dict[methods, datasets])
+    csv_file = "/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/dl_technique/auxiliary/result_val.csv"
+    # csv_file = "/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/dl_technique/auxiliary/result_test.csv"
+    plot_graph(csv_file)

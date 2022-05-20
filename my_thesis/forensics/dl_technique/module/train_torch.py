@@ -51,11 +51,11 @@ def find_current_earlystopping_score(es_metric, val_loss, val_mic_acc, test_loss
         return test_loss
     if es_metric == 'test_acc':
         return test_mic_acc
-    if es_metric == 'test_real_f1':
+    if es_metric == 'test_realf1':
         return test_real_f1
-    if es_metric == 'test_fake_f1':
+    if es_metric == 'test_fakef1':
         return test_fake_f1
-    if es_metric == 'test_macro_f1':
+    if es_metric == 'test_avgf1':
         return test_macro_f1
     
 def save_result(text_writer, log, iteration, train_loss, train_acc, val_loss, val_mac_acc, val_mic_acc, reals, fakes, micros, macros, is_epoch=True, phase='val'):
@@ -270,9 +270,9 @@ def calculate_metric(y_label: List[float], y_pred_label: List[float]):
                          (micro_precision, micro_recall, micro_f1),\
                          (macro_precision, macro_recall, macro_f1)
     
-#############################################
-################# SINGLE SPATIAL IMAGE STREAM
-#############################################
+###################################################################
+################# SINGLE CNN FOR RGB IMAGE STREAM #################
+###################################################################
 
 def eval_image_stream(model ,dataloader, device, criterion, adj_brightness=1.0, adj_contrast=1.0 ):
     loss = 0
@@ -312,12 +312,12 @@ def eval_image_stream(model ,dataloader, device, criterion, adj_brightness=1.0, 
     calculate_cls_metrics(y_label=np.array(y_label, dtype=np.float64), y_pred_label=np.array(y_pred_label, dtype=np.float64), save=True, print_metric=False)
     return loss, mac_accuracy, mic_accuracy, reals, fakes, micros, macros
 
-def train_image_stream(model, criterion_name=None, train_dir = '', val_dir ='', test_dir = '', image_size=256, lr=3e-4, \
+def train_image_stream(model, criterion_name=None, train_dir = '', val_dir ='', test_dir = '', image_size=256, lr=3e-4, division_lr=True, use_pretrained=False,\
               batch_size=16, num_workers=8, checkpoint='', resume='', epochs=20, eval_per_iters=-1, seed=0, \
-              adj_brightness=1.0, adj_contrast=1.0, es_metric='val_loss', es_patience=5, model_name="xception", args_txt=""):
+              adj_brightness=1.0, adj_contrast=1.0, es_metric='val_loss', es_patience=5, model_name="xception", args_txt="", augmentation=True):
     # Generate dataloader train and validation 
-    dataloader_train, dataloader_val, num_samples = generate_dataloader_image_stream(train_dir, val_dir, image_size, batch_size, num_workers)
-    dataloader_test = generate_test_dataloader_image_stream(test_dir, image_size, batch_size, num_workers)
+    dataloader_train, dataloader_val, num_samples = generate_dataloader_single_cnn_stream(train_dir, val_dir, image_size, batch_size, num_workers, augmentation=augmentation)
+    dataloader_test = generate_test_dataloader_single_cnn_stream(test_dir, image_size, batch_size, num_workers)
     
     # Define optimizer (Adam) and learning rate decay
     init_lr = lr
@@ -330,12 +330,12 @@ def train_image_stream(model, criterion_name=None, train_dir = '', val_dir ='', 
             if 'epoch' in checkpoint:
                 init_epoch = int(resume.split('_')[3])
                 init_step = init_epoch * len(dataloader_train)
-                init_lr = lr * (0.8 ** ((init_epoch - 1) // 3))
+                init_lr = lr * (0.8 ** ((init_epoch - 1) // 2))
                 print('Resume epoch: {} - with step: {} - lr: {}'.format(init_epoch, init_step, init_lr))
             if 'step' in checkpoint:
                 init_step = int(resume.split('_')[3])
                 init_epoch = int(init_step / len(dataloader_train))
-                init_lr = lr * (0.8 ** (init_epoch // 3))
+                init_lr = lr * (0.8 ** (init_epoch // 2))
                 with open(osp.join(checkpoint, 'global_acc_loss.txt'), 'r') as f:
                     line = f.read().strip()
                     init_global_acc = float(line.split(',')[0])
@@ -344,8 +344,8 @@ def train_image_stream(model, criterion_name=None, train_dir = '', val_dir ='', 
         except:
             pass
         
-    optimizer = optim.Adam(model.parameters(), lr=init_lr)
-    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones = [3*i for i in range(1, epochs//3 + 1)], gamma = 0.8)
+    optimizer = define_optimizer(model, model_name=model_name, init_lr=init_lr, division_lr=division_lr, use_pretrained=use_pretrained)
+    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones = [2*i for i in range(1, epochs//2 + 1)], gamma = 0.8)
     
     # Define devices
     device = define_device(seed=seed, model_name=model_name)
@@ -465,12 +465,13 @@ def train_image_stream(model, criterion_name=None, train_dir = '', val_dir ='', 
         #     print('Early stopping. Best {}: {:.6f}'.format(es_metric, early_stopping.best_score))
         #     break
     time.sleep(5)
-    os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, "({:.4f}_{:.4f}_{:.4f})_{}".format(step_model_saver.best_scores[0], step_model_saver.best_scores[1], step_model_saver.best_scores[3], args_txt if resume == '' else 'resume')))
+    # Save epoch acc val, epoch acc test, step acc val, step acc test
+    # os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, "({:.4f}_{:.4f}_{:.4f}_{:.4f})_{}".format(epoch_model_saver.best_scores[1], epoch_model_saver.best_scores[3], step_model_saver.best_scores[1], step_model_saver.best_scores[3], args_txt if resume == '' else 'resume')))
     return
 
-#############################################
-################# DUAL STREAM
-#############################################
+############################################################################################################
+################# DUAL CNN - <CNN/FEEDFORWARD> FOR RGB IMAGE AND FREQUENCY ANALYSIS STREAM #################
+############################################################################################################
 def eval_dual_stream(model, dataloader, device, criterion, adj_brightness=1.0, adj_contrast=1.0):
     """ Evaluate model with dataloader
 
@@ -525,14 +526,14 @@ def eval_dual_stream(model, dataloader, device, criterion, adj_brightness=1.0, a
     
 def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', test_dir= '', image_size=256, lr=3e-4, division_lr=True, use_pretrained=False,\
               batch_size=16, num_workers=8, checkpoint='', resume='', epochs=30, eval_per_iters=-1, seed=0, \
-              adj_brightness=1.0, adj_contrast=1.0, es_metric='val_loss', es_patience=5, model_name="dual-efficient", args_txt=""):
+              adj_brightness=1.0, adj_contrast=1.0, es_metric='val_loss', es_patience=5, model_name="dual-efficient", args_txt="", augmentation=True):
     
     # Generate dataloader train and validation 
     if model_name != "dual_cnn_feedforward_vit":
-        dataloader_train, dataloader_val, num_samples = generate_dataloader_dual_stream(train_dir, val_dir, image_size, batch_size, num_workers)
-        dataloader_test = generate_test_dataloader_dual_stream(test_dir, image_size, 2*batch_size, num_workers)
+        dataloader_train, dataloader_val, num_samples = generate_dataloader_dual_cnn_stream(train_dir, val_dir, image_size, batch_size, num_workers, augmentation=augmentation)
+        dataloader_test = generate_test_dataloader_dual_cnn_stream(test_dir, image_size, 2*batch_size, num_workers)
     else:
-        dataloader_train, dataloader_val, num_samples = generate_dataloader_dual_cnnfeedforward_stream(train_dir, val_dir, image_size, batch_size, num_workers)
+        dataloader_train, dataloader_val, num_samples = generate_dataloader_dual_cnnfeedforward_stream(train_dir, val_dir, image_size, batch_size, num_workers, augmentation=augmentation)
         dataloader_test = generate_test_dataloader_dual_cnnfeedforward_stream(test_dir, image_size, 2*batch_size, num_workers)        
     
     # Define optimizer (Adam) and learning rate decay
@@ -546,12 +547,12 @@ def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', t
             if 'epoch' in checkpoint:
                 init_epoch = int(resume.split('_')[3])
                 init_step = init_epoch * len(dataloader_train)
-                init_lr = lr * (0.8 ** ((init_epoch - 1) // 3))
+                init_lr = lr * (0.8 ** ((init_epoch - 1) // 2))
                 print('Resume epoch: {} - with step: {} - lr: {}'.format(init_epoch, init_step, init_lr))
             if 'step' in checkpoint:
                 init_step = int(resume.split('_')[3])
                 init_epoch = int(init_step / len(dataloader_train))
-                init_lr = lr * (0.8 ** (init_epoch // 3))
+                init_lr = lr * (0.8 ** (init_epoch // 2))
                 with open(osp.join(checkpoint, 'global_acc_loss.txt'), 'r') as f:
                     line = f.read().strip()
                     init_global_acc = float(line.split(',')[0])
@@ -561,7 +562,7 @@ def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', t
             pass
 
     optimizer = define_optimizer(model, model_name=model_name, init_lr=init_lr, division_lr=division_lr, use_pretrained=use_pretrained)
-    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones = [3*i for i in range(1, epochs//3 + 1)], gamma = 0.8)
+    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones = [2*i for i in range(1, epochs//2 + 1)], gamma = 0.8)
     
     # Define devices
     device = define_device(seed=seed, model_name=model_name)
@@ -685,5 +686,6 @@ def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', t
         #     break
     # Sleep 5 seconds for rename ckcpoint dir:
     time.sleep(5)
-    os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, "({:.4f}_{:.4f}_{:.4f})_{}".format(step_model_saver.best_scores[0], step_model_saver.best_scores[1], step_model_saver.best_scores[3], args_txt if resume == '' else 'resume')))
+    # Save epoch acc val, epoch acc test, step acc val, step acc test
+    # os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, "({:.4f}_{:.4f}_{:.4f}_{:.4f})_{}".format(epoch_model_saver.best_scores[1], epoch_model_saver.best_scores[3], step_model_saver.best_scores[1], step_model_saver.best_scores[3], args_txt if resume == '' else 'resume')))
     return

@@ -395,56 +395,7 @@ def check_synchronization(statistic_dir: str):
             else:
                 print("File {} and {} are ok!".format(file_1, file_2))
 
-def statistic_video(data_dir: str):
-    real_dir = join(data_dir, '0_real')
-    fake_dir = join(data_dir, '1_df')
-    real_imgs = os.listdir(real_dir)
-    fake_imgs = os.listdir(fake_dir)
-    real_videos, fake_videos = {}, {}
-
-    for img in real_imgs:
-        if '.jpg' not in img:
-            print('bug')
-            return
-        base_name = img.replace('.jpg', '').split('_')
-        video_name = '_'.join(base_name[:-1])
-        index = base_name[-1]
-        if video_name not in real_videos.keys():
-            real_videos[video_name] = [join(real_dir, img)]
-        else:
-            real_videos[video_name].append(join(real_dir, img))
-
-    for img in fake_imgs:
-        if '.jpg' not in img:
-            print('bug')
-            return
-        base_name = img.replace('.jpg', '').split('_')
-        video_name = '_'.join(base_name[:-1])
-        index = base_name[-1]
-        if video_name not in fake_videos.keys():
-            fake_videos[video_name] = [join(fake_dir, img)]
-        else:
-            fake_videos[video_name].append(join(fake_dir, img))
-
-    real_len_images = [len(v) for k, v in real_videos.items()]
-    fake_len_images = [len(v) for k, v in fake_videos.items()]
-    real_mean_len = sum(real_len_images)/len(real_len_images)
-    fake_mean_len = sum(fake_len_images)/len(fake_len_images)
-    return real_videos, fake_videos, real_len_images, fake_len_images, real_mean_len, fake_mean_len
-
-def move_image_from_train_to_val(dataset_path: str, expected_real_images=5000, expected_fake_images=5000):
-    train_dir = join(dataset_path, 'train')
-    val_dir = join(dataset_path, 'val')
-    for cls in ['0_real', '1_df']:
-        cls_train_dir = join(train_dir, cls)
-        cls_val_dir = join(val_dir, cls)
-        train_img = glob(join(cls_train_dir, '*'))
-        num_move = expected_real_images if 'real' in cls else expected_fake_images
-        train_img = random.sample(train_img, k=num_move)
-        for im in train_img:
-            shutil.move(im, cls_val_dir)
-
-def split_by_video(dataset_path: str, val_real_image=25000, val_fake_image=30000, move=False, phase_two=False):
+def remove(dataset_path: str,  num_real_v_remove=0, num_fake_v_remove=0, merge=True, remove_v=False, remove_i=False):
     # Merge train and val first:
     train_dir = join(dataset_path, 'train')
     val_dir = join(dataset_path, 'val')
@@ -453,61 +404,17 @@ def split_by_video(dataset_path: str, val_real_image=25000, val_fake_image=30000
     train_img_paths = glob(join(train_dir, '*/*'))
     val_img_paths = glob(join(val_dir, '*/*'))
     test_img_paths = glob(join(test_dir, '*/*'))
-
-    for v in val_img_paths:
-        cls = v.split('/')[-2]
-        if move:
-            shutil.move(v, join(train_dir, cls))
-        
-    # Statistic videos:
-    if phase_two:
-        real_v, fake_v, real_len_images, fake_len_images, real_mean_len, fake_mean_len = statistic_video(train_dir)
-        print("******NUmber of real videos in test: ", len(statistic_video(test_dir)[0].keys()))
-        print("******NUmber of fake videos in test: ", len(statistic_video(test_dir)[1].keys()))
-        print("******Number of all in train real videos: ", len(real_v.keys()))
-        # for k, v in real_v.items():
-        #     print(k, ' = ', v)
-        #     break
-        # print("******Number of all in train fake videos: ", len(fake_v.keys()))
-        # for k, v in fake_v.items():
-        #     print(k, ' = ', v)
-        #     break
-        # print("******Real videos: ", real_len_images)
-        print("******Real mean: ", real_mean_len)
-        # print("******Fake videos: ", fake_len_images)
-        print("******Fake mean: ", fake_mean_len)
-        num_val_real_v = int(val_real_image/real_mean_len)
-        num_val_fake_v = int(val_fake_image/fake_mean_len)
-        print("******Want val real video: ", num_val_real_v)
-        print("******Want val fake video: ", num_val_fake_v)
-        val_real_video = random.sample(list(real_v.keys()), k=num_val_real_v)
-        val_fake_video = random.sample(list(fake_v.keys()), k=num_val_fake_v)
-        val_r_v_dict = {k: real_v[k] for k in val_real_video}
-        val_f_v_dict = {k: fake_v[k] for k in val_fake_video}
-        print("******Expected val real images: ", sum([len(v) for k, v in val_r_v_dict.items()]))
-        print("******Expected val fake images: ", sum([len(v) for k, v in val_f_v_dict.items()]))
-        # # Move:
-        if move:
-            move_images(val_r_v_dict, dir=join(val_dir, '0_real'))
-            move_images(val_f_v_dict, dir=join(val_dir, '1_df'))
-
-def remove(dataset_path: str,  num_real_v_remove=0, num_fake_v_remove=0, remove_v=False, remove_i=False):
-    # Merge train and val first:
-    train_dir = join(dataset_path, 'train')
-    val_dir = join(dataset_path, 'val')
-    test_dir = join(dataset_path, 'test')
-
-    train_img_paths = glob(join(train_dir, '*/*'))
-    val_img_paths = glob(join(val_dir, '*/*'))
-    test_img_paths = glob(join(test_dir, '*/*'))
+    if merge:
+        for v in val_img_paths:
+            cls = v.split('/')[-2]
+            if move:
+                shutil.move(v, join(train_dir, cls))
 
     real_v, fake_v, real_len_images, fake_len_images, real_mean_len, fake_mean_len = statistic_video(train_dir)
     if remove_v:
         remove_video(real_v, fake_v, num_real=num_real_v_remove, num_fake=num_fake_v_remove)
     if remove_i:
         remove_image(real_v, fake_v, num_real=num_real_v_remove, num_fake=num_fake_v_remove)
-
-
 
 def remove_video(real_v, fake_v, num_real=0, num_fake=0):
     # Remove real:
@@ -545,6 +452,59 @@ def remove_image(real_v, fake_v, num_real=0, num_fake=0):
             for r in remove_lst:
                 os.remove(r)
 
+def statistic_video(data_dir: str):
+    real_dir = join(data_dir, '0_real')
+    fake_dir = join(data_dir, '1_df')
+    real_imgs = os.listdir(real_dir)
+    fake_imgs = os.listdir(fake_dir)
+    real_videos, fake_videos = {}, {}
+
+    for img in real_imgs:
+        if '.jpg' not in img:
+            print('bug')
+            return
+        base_name = img.replace('.jpg', '').split('_')
+        video_name = '_'.join(base_name[:-1])
+        index = base_name[-1]
+        if video_name not in real_videos.keys():
+            real_videos[video_name] = [join(real_dir, img)]
+        else:
+            real_videos[video_name].append(join(real_dir, img))
+
+    for img in fake_imgs:
+        if '.jpg' not in img:
+            print('bug')
+            return
+        base_name = img.replace('.jpg', '').split('_')
+        video_name = '_'.join(base_name[:-1])
+        index = base_name[-1]
+        if video_name not in fake_videos.keys():
+            fake_videos[video_name] = [join(fake_dir, img)]
+        else:
+            fake_videos[video_name].append(join(fake_dir, img))
+
+    real_len_images = [len(v) for k, v in real_videos.items()]
+    fake_len_images = [len(v) for k, v in fake_videos.items()]
+    real_mean_len = sum(real_len_images)/len(real_len_images)
+    fake_mean_len = sum(fake_len_images)/len(fake_len_images)
+
+    print("******Number of real videos: ", len(real_videos.keys()))
+    print("******Number of fake videos: ", len(fake_videos.keys()))
+    print("******Real mean: ", real_mean_len)
+    print("******Fake mean: ", fake_mean_len)
+    return real_videos, fake_videos, real_len_images, fake_len_images, real_mean_len, fake_mean_len
+
+def move_image_from_train_to_val(dataset_path: str, expected_real_images=5000, expected_fake_images=5000):
+    train_dir = join(dataset_path, 'train')
+    val_dir = join(dataset_path, 'val')
+    for cls in ['0_real', '1_df']:
+        cls_train_dir = join(train_dir, cls)
+        cls_val_dir = join(val_dir, cls)
+        train_img = glob(join(cls_train_dir, '*'))
+        num_move = expected_real_images if 'real' in cls else expected_fake_images
+        train_img = random.sample(train_img, k=num_move)
+        for im in train_img:
+            shutil.move(im, cls_val_dir)
 
 def mix(dataset_path, val_real_want=0, val_fake_want=0):
     # Merge train and val first:
@@ -588,26 +548,178 @@ def delete_in_test(dir, real=0, fake=0):
     imgs = random.sample(imgs, k=fake)
     for i in imgs:
         os.remove(i)
+        
+def split_by_video(dataset_path: str, val_real_image=25000, val_fake_image=30000, move=False, phase_two=False):
+    # Merge train and val first:
+    train_dir = join(dataset_path, 'train')
+    val_dir = join(dataset_path, 'val')
+    test_dir = join(dataset_path, 'test')
+
+    train_img_paths = glob(join(train_dir, '*/*'))
+    val_img_paths = glob(join(val_dir, '*/*'))
+    test_img_paths = glob(join(test_dir, '*/*'))
+
+    for v in val_img_paths:
+        cls = v.split('/')[-2]
+        if move:
+            shutil.move(v, join(train_dir, cls))
+        
+    # Statistic videos:
+    if phase_two:
+        real_v, fake_v, real_len_images, fake_len_images, real_mean_len, fake_mean_len = statistic_video(train_dir)
+        print("******NUmber of real videos in test: ", len(statistic_video(test_dir)[0].keys()))
+        print("******NUmber of fake videos in test: ", len(statistic_video(test_dir)[1].keys()))
+        print("******Number of all in train real videos: ", len(real_v.keys()))
+        print("******Number of all in train fake videos: ", len(fake_v.keys()))
+        # for k, v in real_v.items():
+        #     print(k, ' = ', v)
+        #     break
+        # print("******Number of all in train fake videos: ", len(fake_v.keys()))
+        # for k, v in fake_v.items():
+        #     print(k, ' = ', v)
+        #     break
+        # print("******Real videos: ", real_len_images)
+        print("******Real mean: ", real_mean_len)
+        # print("******Fake videos: ", fake_len_images)
+        print("******Fake mean: ", fake_mean_len)
+        num_val_real_v = int(val_real_image/real_mean_len)
+        num_val_fake_v = int(val_fake_image/fake_mean_len)
+        print("******Want val real video: ", num_val_real_v)
+        print("******Want val fake video: ", num_val_fake_v)
+        val_real_video = random.sample(list(real_v.keys()), k=num_val_real_v)
+        val_fake_video = random.sample(list(fake_v.keys()), k=num_val_fake_v)
+        val_r_v_dict = {k: real_v[k] for k in val_real_video}
+        val_f_v_dict = {k: fake_v[k] for k in val_fake_video}
+        print("******Expected val real images: ", sum([len(v) for k, v in val_r_v_dict.items()]))
+        print("******Expected val fake images: ", sum([len(v) for k, v in val_f_v_dict.items()]))
+        # # Move:
+        if move:
+            move_images(val_r_v_dict, dir=join(val_dir, '0_real'))
+            move_images(val_f_v_dict, dir=join(val_dir, '1_df'))
+
+def move(dataset_path: str,  num_real_v_move=0, num_fake_v_move=0, merge=True, move_v=False, move_i=False):
+    # Merge train and val first:
+    train_dir = join(dataset_path, 'train')
+    val_dir = join(dataset_path, 'val')
+    test_dir = join(dataset_path, 'test')
+
+    train_img_paths = glob(join(train_dir, '*/*'))
+    val_img_paths = glob(join(val_dir, '*/*'))
+    test_img_paths = glob(join(test_dir, '*/*'))
+    if merge:
+        for v in val_img_paths:
+            cls = v.split('/')[-2]
+            shutil.move(v, join(train_dir, cls))
+
+    real_v, fake_v, real_len_images, fake_len_images, real_mean_len, fake_mean_len = statistic_video(train_dir)
+    if move_v:
+        move_video(real_v, fake_v, num_real=num_real_v_move, num_fake=num_fake_v_move, val_dir=val_dir)
+    if move_i:
+        move_my_image(real_v, fake_v, num_real_image=num_real_v_move, num_fake_image=num_fake_v_move, val_dir=val_dir)
+
+def move_video(real_v, fake_v, val_dir=None, num_real=0, num_fake=0):
+    # move real:
+    num_real_v = len(real_v.keys())
+    num_fake_v = len(fake_v.keys())
+    print("Num video: ", num_real_v, num_fake_v)
+    move_r_idx = random.sample([i for i in range(num_real_v)], k=num_real)
+    # print(move_r_idx)
+    idx = 0
+    for k, v in real_v.items():
+        if idx in move_r_idx:
+            for path in v:
+                cls = path.split('/')[-2]
+                if 'real' not in cls:
+                    print("bug: ", path)
+                    return
+                shutil.move(path, join(val_dir, '0_real'))
+        idx += 1
+
+    move_r_idx = random.sample([i for i in range(num_fake_v)], k=num_fake)
+    # print(move_r_idx)
+    print("\n******************************************* FAKE VIDEO ***************************")
+    idx = 0
+    for k, v in fake_v.items():
+        if idx in move_r_idx:
+            for path in v:
+                cls = path.split('/')[-2]
+                if 'real' in cls:
+                    print("bug: ", path)
+                    return
+                shutil.move(path, join(val_dir, '1_df'))
+        idx += 1
+
+def move_my_image(real_v, fake_v, val_dir=None, num_real_image=0, num_fake_image=0):
+    real_v_cp = real_v.copy()
+    fake_v_cp = fake_v.copy()
+    real_v_cp = {k: v for k, v in sorted(real_v_cp.items(), key=lambda item: item[0])}
+    fake_v_cp = {k: v for k,v in sorted(fake_v_cp.items(), key=lambda item: item[0])}
+
+    total_real = []
+    real_len, fake_len = len(real_v_cp.keys()), len(fake_v_cp.keys())
+    cnt = 0
+    for k, v in real_v_cp.items():
+        cnt += 1
+        if cnt >= real_len / 2:
+            for path in v:
+                total_real.append(path)
+
+    total_fake = []
+    cnt = 0
+    for k, v in fake_v_cp.items():
+        cnt += 1
+        if cnt >= fake_len / 2:
+            for path in v:
+                total_fake.append(path)
+
+    # Move:
+    move_real = random.sample(total_real, k=num_real_image)
+    move_fake = random.sample(total_fake, k=num_fake_image)
+
+    # for r in move_real[:10]:
+    #     print(r)
+    # for r in move_fake[:10]:
+    #     print(r)
+
+    for p in move_real:
+        shutil.move(p, join(val_dir, '0_real'))
+    for p in move_fake:
+        shutil.move(p, join(val_dir, '1_df'))
 
 
 if __name__ == '__main__':
-    # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/Celeb-DFv4/image"
-    # # num_real_v_remove = 0
-    # # num_fake_v_remove = 0
-
-    # num_real_i_remove = 10
-    # num_fake_i_remove = 0
-    # remove_v = False
-    # remove_i = True
-    # # remove(dataset_path=dataset_path, num_real_v_remove=num_real_i_remove, num_fake_v_remove=num_fake_i_remove, remove_v=remove_v, remove_i=remove_i)
+    dataset_path = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv5/image"
+    num_real_v_move = 500
+    num_fake_v_move = 500
+    move_v = False
     
-    # # val_real_want = 20000
-    # # val_fake_want = 30000
-    # # # mix(dataset_path=dataset_path, val_real_want=val_real_want, val_fake_want=val_fake_want)
-    # # statisticize_dataset(dataset_path=dataset_path)
-    # # split_by_video(dataset_path, phase_two=True)
+    move_i = True
+    num_real_i_move = 10000
+    num_fake_i_move = 0
 
-    # # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv4/image"
+    merge = False
+    move(dataset_path=dataset_path, num_real_v_move=num_real_i_move if move_i else num_real_v_move, num_fake_v_move=num_fake_i_move if move_i else num_fake_v_move, merge=merge, move_v=move_v, move_i=move_i)
+
+    # statisticize_dataset(dataset_path=dataset_path)
+    # val_real_want = 20000
+    # val_fake_want = 30000
+    # # mix(dataset_path=dataset_path, val_real_want=val_real_want, val_fake_want=val_fake_want)
+    # statisticize_dataset(dataset_path=dataset_path)
+
+    # val_real_image = 12000
+    # val_fake_image = 25000
+    # move = False
+    # phase_two = True
+    # split_by_video(dataset_path, val_real_image=val_real_image,val_fake_image=val_fake_image, move=move, phase_two=phase_two)
+    statisticize_dataset(dataset_path=dataset_path)
+    print("\n")
+    statistic_video(data_dir="/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv5/image/train")
+    print("\n")
+    statistic_video(data_dir="/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv5/image/test")
+    print("\n")
+    statistic_video(data_dir="/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv5/image/val")
+    # # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv5/image"
+
     # val_real_image = 10000
     # val_fake_image = 25000
     # statisticize_dataset(dataset_path=dataset_path)
@@ -621,24 +733,24 @@ if __name__ == '__main__':
     # statisticize_dataset(dataset_path=dataset_path)
     # split_by_video(dataset_path=dataset_path, val_real_image=val_real_image, val_fake_image=val_fake_image, move=False, phase_two=True)
     # statisticize_dataset(dataset_path=dataset_path)
-    # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv4/image"
+    # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv5/image"
     # val_real_want = 20000
     # val_fake_want = 30000
     # mix(dataset_path=dataset_path, val_real_want=val_real_want, val_fake_want=val_fake_want)
-    # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/dfdcv4/image"
+    # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv5/image"
     # val_real_want = 25000
     # val_fake_want = 35000
     # mix(dataset_path=dataset_path, val_real_want=val_real_want, val_fake_want=val_fake_want)
-    # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/Celeb-DFv4/image"
+    # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv5/image"
     # val_real_want = 17500
     # val_fake_want = 30000
     # mix(dataset_path=dataset_path, val_real_want=val_real_want, val_fake_want=val_fake_want)
-    dataset_path = "/mnt/disk1/doan/phucnp/Dataset/dfdcv4/image"
-    statisticize_dataset(dataset_path=dataset_path)
-    log_dataset_statistic(dataset_path=dataset_path, dataset_name="dfdcv4", statistic_dir="/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/preprocess_data/deleted_statistic", device_name="server61")
-    dataset_path = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv4/image"
-    statisticize_dataset(dataset_path=dataset_path)
-    log_dataset_statistic(dataset_path=dataset_path, dataset_name="wildv4", statistic_dir="/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/preprocess_data/deleted_statistic", device_name="server61")
-    dataset_path = "/mnt/disk1/doan/phucnp/Dataset/Celeb-DFv4/image"
-    statisticize_dataset(dataset_path=dataset_path)
-    log_dataset_statistic(dataset_path=dataset_path, dataset_name="celeb_dfv4", statistic_dir="/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/preprocess_data/deleted_statistic", device_name="server61")
+    # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv5/image"
+    # statisticize_dataset(dataset_path=dataset_path)
+    # # log_dataset_statistic(dataset_path=dataset_path, dataset_name="df_in_the_wildv5", statistic_dir="/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/preprocess_data/deleted_statistic", device_name="server61")
+    # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv5/image"
+    # statisticize_dataset(dataset_path=dataset_path)
+    # # log_dataset_statistic(dataset_path=dataset_path, dataset_name="wildv5", statistic_dir="/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/preprocess_data/deleted_statistic", device_name="server61")
+    # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv5/image"
+    # statisticize_dataset(dataset_path=dataset_path)
+    # log_dataset_statistic(dataset_path=dataset_path, dataset_name="celeb_dfv5", statistic_dir="/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/preprocess_data/deleted_statistic", device_name="server61")

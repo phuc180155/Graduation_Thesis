@@ -3,6 +3,7 @@ import os, sys
 import os.path as osp
 from os.path import join
 from click import pass_context
+from grpc import stream_unary_rpc_method_handler
 
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
@@ -14,6 +15,7 @@ import json
 from typing import Dict, List
 from glob import glob
 import shutil
+from zdrive import Uploader, Downloader
 
 class GoogleDriveAPI(object):
     """
@@ -42,6 +44,9 @@ class GoogleDriveAPI(object):
             gauth = GoogleAuth()
             gauth.CommandLineAuth()
             self.drive = GoogleDrive(gauth)
+        elif method == 'zdrive':
+            self.uploader = Uploader()
+            self.downloader = Downloader()
             
         # Define root folder
         self.root_id = root_id
@@ -485,21 +490,40 @@ class GoogleDriveAPI(object):
         final_device_ = sorted(hierachy_drive_)
         return check_identical(final_drive_, final_device_, save=True)
 
-        
+    def upload_folder_to_drive_by_zdrive(self, folder_path: str, dest_id: str):
+        result = self.uploader.uploadFolder(folder_path, max_depth=100, parentId=dest_id)
+        print(result)
+
+    def download_folder_to_drive_by_zdrive(self, src_id: str, dest_dir: str):
+        result = self.downloader.downloadFolder(folderId=src_id, destinationFolder=dest_dir)
+        print(result)
+
+import argparse
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="")
+    sub_parser = parser.add_subparsers(dest="action", help="")
+
+    parser.add_argument("--uploader", type=str, default='server61')
+    parser_uploader = sub_parser.add_parser('uploader', help='')
+
+    parser_uploader.add_argument("--folder_path", type=str, required=True, help="")
+    parser_uploader.add_argument("--dst_id", type=str, required=True, help="")
+    return parser.parse_args()
+
+args = parse_args()
 if __name__ == '__main__':
     root_id = ""
-    print("/".join(["*"]*0))
-    print(join("1", ""))
     # root_id = "17Y6jdy74CQEpH2W-fDBHbcv5Duz-cAgT"
     gdrive = GoogleDriveAPI(root_id=root_id, method='pydrive', device='61', display_tree=False)
     
     ################################ TEST Upload Folder ################################
-    file_path = "/mnt/disk1/phucnp/Graduation_Thesis/review/forensics/dl_technique/test/test.txt"
-    dst_id = "1UKZa6PFKa8uqn0HsfXWE_8f7zmq4nAQd"
+    # file_path = "/mnt/disk1/phucnp/Graduation_Thesis/review/forensics/dl_technique/test/test.txt"
+    # dst_id = "1UKZa6PFKa8uqn0HsfXWE_8f7zmq4nAQd"
     
-    folder_path = "/mnt/disk1/doan/phucnp/Dataset/dfdcv4/image/train/1_df" #
-    dst_id = "1d5mO2KSdMuko-Vn2VGAsw4tPt63HQKgj"    #my repo
-    merge_id = gdrive.upload_folder_to_drive(folder_path=folder_path, dest_id=dst_id, overwrite=False, merge=False)
+    # folder_path = "/mnt/disk1/doan/phucnp/Dataset/dfdcv4/image" #
+    # dst_id = "1V2V8UPfqy0W5MN4TuR8yMPTEFgMuIRli"    #my repo
+    gdrive.upload_folder_to_drive(folder_path=args.folder_path, dest_id=args.dst_id, overwrite=False)
     
     # folder_path = "/mnt/disk1/phucnp/Graduation_Thesis/review/forensics/dl_technique/checkpoint" #
     # dst_id = "1QzAdW_4VFMeiLGoFowgb1lNQ4iFSazWA"    #my repo

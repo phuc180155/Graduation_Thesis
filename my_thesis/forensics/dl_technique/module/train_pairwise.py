@@ -233,15 +233,15 @@ def eval_pairwise_dual_stream(model, weight_importance, dataloader, device, bce_
     
 def train_pairwise_dual_stream(model, weight_importance=2, margin=2, train_dir = '', val_dir ='', test_dir= '', image_size=128, lr=3e-4, division_lr=True, use_pretrained=False,\
               batch_size=16, num_workers=8, checkpoint='', resume='', epochs=30, eval_per_iters=-1, seed=0, \
-              adj_brightness=1.0, adj_contrast=1.0, es_metric='val_loss', es_patience=5, model_name="pairwise_dual_cnn_feedforward", args_txt=""):
+              adj_brightness=1.0, adj_contrast=1.0, es_metric='val_loss', es_patience=5, model_name="pairwise_dual_cnn_feedforward", args_txt="", augmentation=True):
     
     # Generate dataloader train and validation 
     if 'cnn_feedforward' in model_name:
-        dataloader_train, dataloader_val = generate_dataloader_dual_cnnfeedforward_stream_for_pairwise(train_dir, val_dir, image_size, batch_size, num_workers)
+        dataloader_train, dataloader_val = generate_dataloader_dual_cnnfeedforward_stream_for_pairwise(train_dir, val_dir, image_size, batch_size, num_workers, augmentation=augmentation)
         dataloader_test = generate_test_dataloader_dual_cnnfeedforward_stream_for_pairwise(test_dir, image_size, 2*batch_size, num_workers)
     else:
-        dataloader_train, dataloader_val = generate_dataloader_dual_stream_for_pairwise(train_dir, val_dir, image_size, batch_size, num_workers)
-        dataloader_test = generate_test_dataloader_dual_stream_for_pairwise(test_dir, image_size, 2*batch_size, num_workers)
+        dataloader_train, dataloader_val = generate_dataloader_dual_cnn_stream_for_pairwise(train_dir, val_dir, image_size, batch_size, num_workers, augmentation=augmentation)
+        dataloader_test = generate_test_dataloader_dual_cnn_stream_for_pairwise(test_dir, image_size, 2*batch_size, num_workers)
     
     # Define optimizer (Adam) and learning rate decay
     init_lr = lr
@@ -417,5 +417,6 @@ def train_pairwise_dual_stream(model, weight_importance=2, margin=2, train_dir =
         #     break
     # Sleep 5 seconds for rename ckcpoint dir:
     time.sleep(5)
-    os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, "({:.4f}_{:.4f}_{:.4f})_{}".format(step_model_saver.best_scores[0], step_model_saver.best_scores[1], step_model_saver.best_scores[3], args_txt if resume == '' else 'resume')))
+    # Save epoch acc val, epoch acc test, step acc val, step acc test
+    # os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, "({:.4f}_{:.4f}_{:.4f}_{:.4f})_{}".format(epoch_model_saver.best_scores[1], epoch_model_saver.best_scores[3], step_model_saver.best_scores[1], step_model_saver.best_scores[3], args_txt if resume == '' else 'resume')))
     return
