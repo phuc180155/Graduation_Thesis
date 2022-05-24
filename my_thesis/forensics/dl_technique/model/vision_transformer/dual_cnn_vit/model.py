@@ -11,7 +11,8 @@ import re
 import torch.nn.functional as F
 
 import re, math
-from model.vision_transformer.vit.vit import Transformer
+from model.vision_transformer.vit.vit import ViT, Transformer
+from model.vision_transformer.cnn_vit.efficient_vit import EfficientViT
 from pytorchcv.model_provider import get_model
 
 class CrossAttention(nn.Module):
@@ -75,7 +76,7 @@ class CrossAttention(nn.Module):
         return output, attn
 
 class DualCNNViT(nn.Module):
-    def __init__(self, \
+    def __init__(self, gpu_id=-1, \
                 image_size=224, num_classes=1, dim=1024,\
                 depth=6, heads=8, mlp_dim=2048,\
                 dim_head=64, dropout=0.15, emb_dropout=0.15,\
@@ -118,6 +119,10 @@ class DualCNNViT(nn.Module):
         self.rgb_extractor = self.get_feature_extractor(architecture=backbone, pretrained=pretrained, unfreeze_blocks=unfreeze_blocks, num_classes=num_classes, in_channels=3)   # efficient_net-b0, return shape (1280, 8, 8) or (1280, 7, 7)
         self.freq_extractor = self.get_feature_extractor(architecture=backbone, pretrained=pretrained, unfreeze_blocks=unfreeze_blocks, num_classes=num_classes, in_channels=1)     
         self.normalize_ifft = normalize_ifft
+        if self.normalize_ifft == 'batchnorm':
+            self.batchnorm_ifft = nn.BatchNorm2d(num_features=self.out_ext_channels)
+        if self.normalize_ifft == 'layernorm':
+            self.layernorm_ifft = nn.LayerNorm(normalized_shape=self.features_size[self.backbone])
         ############################# PATCH CONFIG ################################
         
         if self.flatten_type == 'patch':
@@ -154,6 +159,13 @@ class DualCNNViT(nn.Module):
         # Thêm 1 embedding vector cho classify token:
         self.cls_token = nn.Parameter(torch.randn(1, 1, self.dim))
         self.dropout = nn.Dropout(self.emb_dropout)
+        # vit = ViT(image_size, 16, 1, dim, depth, heads, mlp_dim, 'cls')
+        # ckcpoint = "/home/phucnp/Graduation_Thesis/my_thesis/forensics/dl_technique/checkpoint/datasetv5/dfdcv5/vit/batch_32_pool_cls_lr_0.0003-0_patch_16_h_8_d_6_dim_1024_mlpdim_2048_es_none_loss_bce_seed_0_drmlp_0.2_aug_0/step/best_val_loss_3000_0.680992.pt"
+        # vit.load_state_dict(torch.load(ckcpoint, map_location=torch.device('cuda')))
+        # effvit = EfficientViT(image_size=128, patch_size=2, dropout_in_mlp=0.2)
+        # ckcpoint = "/home/phucnp/Graduation_Thesis/my_thesis/forensics/dl_technique/checkpoint/datasetv5/dfdcv5/efficient_vit/batch_32_pool_cls_lr_0.0003-1_patch_2_h_8_d_6_dim_1024_mlpdim_2048_es_none_loss_bce_pre_1_freeze_0_seed_0_drmlp_0.2_aug_0/step/best_val_loss_5000_0.382877.pt"
+        # effvit.load_state_dict(torch.load(ckcpoint, map_location=torch.device('cuda')))
+        # self.transformer = effvit.transformer
         self.transformer = Transformer(self.dim, self.depth, self.heads, self.dim_head, self.mlp_dim, self.dropout_value)
         self.to_cls_token = nn.Identity()
         self.mlp_head = nn.Sequential(
@@ -276,9 +288,9 @@ class DualCNNViT(nn.Module):
         if norm_type == 'none':
             pass
         elif norm_type == 'batchnorm':
-            ifreq_feature = nn.BatchNorm2d(num_features=self.out_ext_channels)(ifreq_feature)
+            ifreq_feature = self.batchnorm_ifft(ifreq_feature)
         elif norm_type == 'layernorm':
-            ifreq_feature = nn.LayerNorm(normalized_shape=self.features_size[self.backbone])(ifreq_feature)
+            ifreq_feature = self.layernorm_ifft(ifreq_feature)
         elif norm_type == 'normal':
             ifreq_feature = F.normalize(ifreq_feature)
         return ifreq_feature

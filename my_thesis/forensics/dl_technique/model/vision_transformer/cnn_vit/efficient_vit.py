@@ -66,9 +66,9 @@ class EfficientViT(nn.Module):
 
         # Nếu không sử dụng pretrain model, sử dụng features là efficient_net-b0
         if selected_efficient_net == 0:
-            self.extractor = EfficientNet.from_pretrained('efficientnet-b0', num_classes=num_classes, in_channels=3, pretrained=False)
+            self.extractor = EfficientNet.from_pretrained('efficientnet-b0', num_classes=num_classes, in_channels=3, pretrained=pretrained)
         else:
-            self.extractor = EfficientNet.from_pretrained('efficientnet-b7', num_classes=num_classes, in_channels=3, pretrained=False)
+            self.extractor = EfficientNet.from_pretrained('efficientnet-b7', num_classes=num_classes, in_channels=3, pretrained=pretrained)
             checkpoint = torch.load("weights/final_999_DeepFakeClassifier_tf_efficientnet_b7_ns_0_23",
                                     map_location="cpu")
             state_dict = checkpoint.get("state_dict", checkpoint)

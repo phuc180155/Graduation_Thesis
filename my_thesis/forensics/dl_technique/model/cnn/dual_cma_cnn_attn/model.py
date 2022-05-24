@@ -11,7 +11,9 @@ import re
 import torch.nn.functional as F
 
 import re, math
-from model.vision_transformer.vit.vit import Transformer
+from model.vision_transformer.vit.vit import ViT, Transformer
+from model.vision_transformer.cnn_vit.efficient_vit import EfficientViT
+from model.vision_transformer.dual_cnn_vit.modelv2 import CrossModalAttention
 from pytorchcv.model_provider import get_model
 
 class CrossAttention(nn.Module):
@@ -74,27 +76,24 @@ class CrossAttention(nn.Module):
         output = torch.bmm(attn, v)
         return output, attn
 
-class PairwiseDualCNNViT(nn.Module):
-    def __init__(self, \
-                image_size=224, num_classes=1, dim=1024,\
-                depth=6, heads=8, mlp_dim=2048,\
+
+class DualCMACNNAttn(nn.Module):
+    def __init__(self, image_size=224, num_classes=1, dim=1024,\
+                mlp_dim=2048,\
                 dim_head=64, dropout=0.15, emb_dropout=0.15,\
                 backbone='xception_net', pretrained=True,\
-                normalize_ifft=True,\
+                normalize_ifft='batchnorm',\
                 flatten_type='patch',\
-                conv_attn=False, ratio=5, qkv_embed=True, init_ca_weight=True, prj_out=False, inner_ca_dim=512, act='none',\
-                patch_size=7, position_embed=False, pool='cls',\
-                version='ca-rmifft-fcat-0.5', unfreeze_blocks=-1, \
+                conv_attn=False, ratio=5, qkv_embed=True, init_ca_weight=True, prj_out=False, inner_ca_dim=512, act_fusion='selu', act_cma='relu', gamma_cma=0.5, \
+                patch_size=7, version='ca-fcat-0.5', unfreeze_blocks=-1, \
                 init_weight=False, init_linear="xavier", init_layernorm="normal", init_conv="kaiming", \
                 dropout_in_mlp=0.0):  
-        super(PairwiseDualCNNViT, self).__init__()
+        super(DualCMACNNAttn, self).__init__()
 
         self.image_size = image_size
         self.patch_size = patch_size
         self.num_classes = num_classes
         self.dim = dim
-        self.depth = depth
-        self.heads = heads
         self.mlp_dim = mlp_dim
         self.dim_head = dim_head
         self.dropout_value = dropout
@@ -109,15 +108,22 @@ class PairwiseDualCNNViT(nn.Module):
         
         self.flatten_type = flatten_type # in ['patch', 'channel']
         self.version = version  # in ['ca-rgb_cat-0.5', 'ca-freq_cat-0.5']
-        self.position_embed = position_embed
-        self.pool = pool
         self.conv_attn = conv_attn
-        self.activation = self.get_activation(act)
+        self.activation_fusion = self.get_activation(act_fusion)
+        self.activation_cma = self.get_activation(act_cma)
 
         self.pretrained = pretrained
         self.rgb_extractor = self.get_feature_extractor(architecture=backbone, pretrained=pretrained, unfreeze_blocks=unfreeze_blocks, num_classes=num_classes, in_channels=3)   # efficient_net-b0, return shape (1280, 8, 8) or (1280, 7, 7)
         self.freq_extractor = self.get_feature_extractor(architecture=backbone, pretrained=pretrained, unfreeze_blocks=unfreeze_blocks, num_classes=num_classes, in_channels=1)     
+        if 'efficient' in backbone:
+            self.cma0 = CrossModalAttention(in_dim=40, ratio=2, activation=self.activation_cma, gamma=gamma_cma)
+            self.cma1 = CrossModalAttention(in_dim=112, ratio=4, activation=self.activation_cma, gamma=gamma_cma)
+        
         self.normalize_ifft = normalize_ifft
+        if self.normalize_ifft == 'batchnorm':
+            self.batchnorm_ifft = nn.BatchNorm2d(num_features=self.out_ext_channels)
+        if self.normalize_ifft == 'layernorm':
+            self.layernorm_ifft = nn.LayerNorm(normalized_shape=self.features_size[self.backbone])
         ############################# PATCH CONFIG ################################
         
         if self.flatten_type == 'patch':
@@ -139,7 +145,6 @@ class PairwiseDualCNNViT(nn.Module):
             self.value_conv = nn.Conv2d(in_channels=self.out_ext_channels, out_channels=self.out_ext_channels//ratio, kernel_size=1)
 
         self.CA = CrossAttention(in_dim=self.in_dim, inner_dim=inner_ca_dim, prj_out=prj_out, qkv_embed=qkv_embed, init_weight=init_ca_weight)
-
         ############################# VIT #########################################
         # Number of vectors:
         self.num_vecs = self.num_patches if self.flatten_type == 'patch' else self.out_ext_channels//ratio
@@ -152,15 +157,12 @@ class PairwiseDualCNNViT(nn.Module):
             self.embedding = nn.Linear(self.in_dim, self.dim)
 
         # Thêm 1 embedding vector cho classify token:
-        self.cls_token = nn.Parameter(torch.randn(1, 1, self.dim))
-        self.dropout = nn.Dropout(self.emb_dropout)
-        self.transformer = Transformer(self.dim, self.depth, self.heads, self.dim_head, self.mlp_dim, self.dropout_value)
-        self.to_cls_token = nn.Identity()
-        self.mlp_head_hidden = nn.Linear(self.dim, self.mlp_dim)
         self.mlp_relu = nn.ReLU(inplace=True)
+        self.mlp_head_hidden = nn.Linear(self.dim, self.mlp_dim)
         self.mlp_dropout = nn.Dropout(dropout_in_mlp)
         self.mlp_head_out = nn.Linear(self.mlp_dim, self.num_classes)
 
+        self.sigmoid = nn.Sigmoid()
         self.sigmoid = nn.Sigmoid()
         self.init_linear, self.init_layernorm, self.init_conv = init_linear, init_layernorm, init_conv
         if init_weight:
@@ -278,9 +280,9 @@ class PairwiseDualCNNViT(nn.Module):
         if norm_type == 'none':
             pass
         elif norm_type == 'batchnorm':
-            ifreq_feature = nn.BatchNorm2d(num_features=self.out_ext_channels)(ifreq_feature)
+            ifreq_feature = self.batchnorm_ifft(ifreq_feature)
         elif norm_type == 'layernorm':
-            ifreq_feature = nn.LayerNorm(normalized_shape=self.features_size[self.backbone])(ifreq_feature)
+            ifreq_feature = self.layernorm_ifft(ifreq_feature)
         elif norm_type == 'normal':
             ifreq_feature = F.normalize(ifreq_feature)
         return ifreq_feature
@@ -296,19 +298,27 @@ class PairwiseDualCNNViT(nn.Module):
             out = torch.cat([rgb, weight * out_attn], dim=2)
         elif 'add' in self.version:
             out = torch.add(rgb, weight * out_attn)
-        # print(out.shape)
         return out
 
     def extract_feature(self, rgb_imgs, freq_imgs):
-        if self.backbone == 'efficient_net':
-            rgb_features = self.rgb_extractor.extract_features(rgb_imgs)                 # shape (batchsize, 1280, 8, 8)
-            freq_features = self.freq_extractor.extract_features(freq_imgs)              # shape (batchsize, 1280, 4, 4)
+        if 'efficient' in self.backbone:
+            # 
+            rgb_features = self.rgb_extractor.extract_features_block_4(rgb_imgs)                 # shape (batchsize, 1280, 8, 8)
+            freq_features = self.freq_extractor.extract_features_block_4(freq_imgs)              # shape (batchsize, 1280, 4, 4)
+            rgb_features = self.cma0(rgb_features, freq_features, freq_features)
+            #
+            rgb_features = self.rgb_extractor.extract_features_block_11(rgb_features)                 # shape (batchsize, 1280, 8, 8)
+            freq_features = self.freq_extractor.extract_features_block_11(freq_features)              # shape (batchsize, 1280, 4, 4)
+            rgb_features = self.cma1(rgb_features, freq_features, freq_features)
+            #
+            rgb_features = self.rgb_extractor.extract_features_last_block(rgb_features)
+            freq_features = self.freq_extractor.extract_features_last_block(freq_features)
         else:
             rgb_features = self.rgb_extractor(rgb_imgs)
             freq_features = self.freq_extractor(freq_imgs)
         return rgb_features, freq_features
 
-    def forward_once(self, rgb_imgs, freq_imgs):
+    def forward(self, rgb_imgs, freq_imgs):
         rgb_features, freq_features = self.extract_feature(rgb_imgs, freq_imgs)
         ifreq_features = self.ifft(freq_features, norm_type=self.normalize_ifft)
         # print("Features shape: ", rgb_features.shape, freq_features.shape, ifreq_features.shape)
@@ -335,46 +345,32 @@ class PairwiseDualCNNViT(nn.Module):
         out, attn_weight = self.CA(rgb_query_vectors, ifreq_key_vectors, ifreq_value_vectors)
         attn_out = torch.bmm(attn_weight, freq_value_vectors)
         fusion_out = self.fusion(rgb_query_vectors, attn_out)
-        if self.activation is not None:
-            fusion_out = self.activation(fusion_out)
+        if self.activation_fusion is not None:
+            fusion_out = self.activation_fusion(fusion_out)
         # print("Fusion shape: ", fusion_out.shape)
         embed = self.embedding(fusion_out)
-        # print("Inner ViT shape: ", embed.shape)
 
-        ##### Forward to ViT
-        # Expand classify token to batchsize and add to patch embeddings:
-        cls_tokens = self.cls_token.expand(embed.shape[0], -1, -1)
-        x = torch.cat((cls_tokens, embed), dim=1)   # (batchsize, in_dim+1, dim)
-        if self.position_embed:
-            x += self.pos_embedding
-        x = self.dropout(x)
-        x = self.transformer(x)
-        x = self.to_cls_token(x.mean(dim = 1) if self.pool == 'mean' else x[:, 0])
-        embedding_feature = self.mlp_dropout(x)
-        embedding_feature = self.mlp_head_hidden(embedding_feature)
-        embedding_feature = F.relu(embedding_feature)
-        embedding_feature = self.mlp_dropout(embedding_feature)
-        out = self.mlp_head_out(embedding_feature)
-        out = self.sigmoid(out)
-        return x, out
-
-    def forward(self, rgb_imgs0, freq_imgs0, rgb_imgs1, freq_imgs1):
-        embedding_0, out_0 = self.forward_once(rgb_imgs0, freq_imgs0)
-        embedding_1, out_1 = self.forward_once(rgb_imgs1, freq_imgs1)
-        return embedding_0, out_0, embedding_1, out_1
+        ##### Forward to MLP
+        embed = embed.mean(dim = 1).squeeze(dim=1)     # B, N, D => B, 1, D
+        x = self.mlp_dropout(embed)         
+        x = self.mlp_head_hidden(embed) # B, 1, D => 
+        x = self.mlp_relu(x)
+        x = self.mlp_dropout(x)
+        x = self.mlp_head_out(x)
+        out = self.sigmoid(x)
+        return out
 
 from torchsummary import summary
 if __name__ == '__main__':
     x = torch.ones(32, 3, 128, 128)
     y = torch.ones(32, 1, 128, 128)
-    model_ = PairwiseDualCNNViT(  image_size=128, num_classes=1, dim=1024,\
-                                depth=6, heads=8, mlp_dim=2048,\
-                                dim_head=64, dropout=0.15, emb_dropout=0.15,\
-                                backbone='xception_net', pretrained=False,\
-                                normalize_ifft=True,\
-                                flatten_type='patch',\
-                                conv_attn=True, ratio=8, qkv_embed=True, inner_ca_dim=0, init_ca_weight=True, prj_out=False, act='none',\
-                                patch_size=1, position_embed=False, pool='cls',\
-                                version='ca-fcat-0.5', unfreeze_blocks=-1)
+    model_ = DualCMACNNAttn(  image_size=128, num_classes=1, dim=1024, mlp_dim=2048,\
+                                backbone='xception_net', pretrained=False, unfreeze_blocks=-1, gamma_cma=0.5, \
+                                normalize_ifft='batchnorm',\
+                                flatten_type='patch', patch_size=2,\
+                                conv_attn=True, ratio=1, qkv_embed=True, inner_ca_dim=0, init_ca_weight=True, prj_out=False, act_fusion='none',act_cma='none',\
+                                version='ca-fcat-0.5', \
+                                init_weight=False, init_linear="xavier", init_layernorm="normal", init_conv="kaiming", \
+                                dropout_in_mlp=0.0)
     out = model_(x, y)
     print(out.shape)

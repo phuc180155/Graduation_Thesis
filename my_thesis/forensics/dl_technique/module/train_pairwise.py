@@ -228,7 +228,7 @@ def eval_pairwise_dual_stream(model, weight_importance, dataloader, device, bce_
     mac_accuracy /= len(dataloader)
     # built-in methods for calculating metrics
     mic_accuracy, reals, fakes, micros, macros = calculate_metric(y_label, y_pred_label)
-    calculate_cls_metrics(y_label=np.array(y_label, dtype=np.float64), y_pred_label=np.array(y_pred_label, dtype=np.float64), save=True, print_metric=True)
+    # calculate_cls_metrics(y_label=np.array(y_label, dtype=np.float64), y_pred_label=np.array(y_pred_label, dtype=np.float64), save=True, print_metric=True)
     return contrastive_loss_, bce_loss_, total_loss_, mac_accuracy, mic_accuracy, reals, fakes, micros, macros
     
 def train_pairwise_dual_stream(model, weight_importance=2, margin=2, train_dir = '', val_dir ='', test_dir= '', image_size=128, lr=3e-4, division_lr=True, use_pretrained=False,\
@@ -292,8 +292,8 @@ def train_pairwise_dual_stream(model, weight_importance=2, margin=2, train_dir =
         
     # Define Early stopping and Model saver
     early_stopping = EarlyStopping(patience=es_patience, verbose=True, tunning_metric=es_metric)
-    epoch_model_saver = ModelSaver(save_metrics=["val_loss", "val_acc", "test_loss", 'test_acc', "test_realf1", "test_fakef1", "test_avgf1"])
-    step_model_saver = ModelSaver(save_metrics=["val_loss", "val_acc", "test_loss", 'test_acc', "test_realf1", "test_fakef1", "test_avgf1"])
+    epoch_model_saver = ModelSaver(save_metrics=["val_bceloss", "val_totalloss", "val_acc", "test_bceloss", "test_totalloss", 'test_acc'])
+    step_model_saver = ModelSaver(save_metrics=["val_bceloss", "val_totalloss", "val_acc", "test_bceloss", "test_totalloss", 'test_acc'])
     
     # Define and load model
     model = model.to(device)
@@ -339,7 +339,7 @@ def train_pairwise_dual_stream(model, weight_importance=2, margin=2, train_dir =
             contrastiveloss = contrastive_loss(embedding_0, embedding_1, labels_contrastive)
             loss = weight_importance * bceloss_0 + contrastiveloss
 
-            if global_step % 100 == 0:
+            if global_step % 500 == 0:
                 print("Bceloss 0: {}  --- Contrastive: {} - Total: {} ".format(bceloss_0.item(), contrastiveloss.item(), loss.item()))
             
             # Backpropagation and update weights
@@ -377,7 +377,7 @@ def train_pairwise_dual_stream(model, weight_importance=2, margin=2, train_dir =
                     test_contrastive_loss, test_bce_loss, test_total_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros = eval_pairwise_dual_stream(model, weight_importance, dataloader_test, device, bce_loss, contrastive_loss, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
                     save_result_for_pairwise(step_test_writer, log, global_step, global_contrastive_loss/global_step, global_bce_loss/global_step, global_total_loss/global_step, global_acc/global_step, test_contrastive_loss, test_bce_loss, test_total_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros, is_epoch=False, phase="test")
                     # Save model:
-                    step_model_saver(global_step, [val_total_loss, val_mic_acc, test_total_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2]], step_ckcpoint, model)
+                    step_model_saver(global_step, [val_bce_loss, val_total_loss, val_mic_acc, test_bce_loss, test_total_loss, test_mic_acc], step_ckcpoint, model)
                     step_model_saver.save_last_model(step_ckcpoint, model, global_step)
                     step_model_saver.save_model_for_pairwise(step_ckcpoint, model, global_step, save_ckcpoint=False, global_acc=global_acc, global_contrastive_loss=global_contrastive_loss, global_bce_loss=global_bce_loss, global_total_loss=global_total_loss)
 
@@ -386,7 +386,7 @@ def train_pairwise_dual_stream(model, weight_importance=2, margin=2, train_dir =
                     if early_stopping.early_stop:
                         print('Early stopping. Best {}: {:.6f}'.format(es_metric, early_stopping.best_score))
                         time.sleep(5)
-                        os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, "({:.4f}_{:.4f}_{:.4f})_{}".format(step_model_saver.best_scores[0], step_model_saver.best_scores[1], step_model_saver.best_scores[3], args_txt if resume == '' else 'resume')))
+                        os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, "({:.4f}_{:.4f}_{:.4f}_{:.4f})_{}".format(step_model_saver.best_scores[0], step_model_saver.best_scores[2], step_model_saver.best_scores[3], step_model_saver.best_scores[5], args_txt if resume == '' else 'resume')))
                         return
                     model.train()
 
@@ -418,5 +418,6 @@ def train_pairwise_dual_stream(model, weight_importance=2, margin=2, train_dir =
     # Sleep 5 seconds for rename ckcpoint dir:
     time.sleep(5)
     # Save epoch acc val, epoch acc test, step acc val, step acc test
+    os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, "({:.4f}_{:.4f}_{:.4f}_{:.4f})_{}".format(step_model_saver.best_scores[0], step_model_saver.best_scores[2], step_model_saver.best_scores[3], step_model_saver.best_scores[5], args_txt if resume == '' else 'resume')))
     # os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, "({:.4f}_{:.4f}_{:.4f}_{:.4f})_{}".format(epoch_model_saver.best_scores[1], epoch_model_saver.best_scores[3], step_model_saver.best_scores[1], step_model_saver.best_scores[3], args_txt if resume == '' else 'resume')))
     return

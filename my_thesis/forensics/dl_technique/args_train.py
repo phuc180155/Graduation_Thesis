@@ -65,6 +65,29 @@ def parse_args():
     parser_dual_attn_cnn.add_argument("--init_layernorm", type=str, default="normal", help="")
     parser_dual_attn_cnn.add_argument("--init_conv", type=str, default="kaiming", help="")
     parser_dual_attn_cnn.add_argument("--division_lr", type=int, default=1, help="")
+
+    parser_dual_cma_cnn_attn = sub_parser.add_parser('dual_cma_cnn_attn', help="Ablation Study")
+    parser_dual_cma_cnn_attn.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
+    parser_dual_cma_cnn_attn.add_argument("--version",type=str, default="ca-fadd-0.8", required=False, help="Some changes in model")
+    parser_dual_cma_cnn_attn.add_argument("--backbone",type=str, default="efficient_net", required=False, help="Type of backbone")
+    parser_dual_cma_cnn_attn.add_argument("--pretrained",type=int, default=1, required=False, help="Load pretrained backbone")
+    parser_dual_cma_cnn_attn.add_argument("--unfreeze_blocks", type=int, default=-1, help="Unfreeze blocks in backbone")
+    parser_dual_cma_cnn_attn.add_argument("--gamma_cma", type=float, default=0.5)
+    parser_dual_cma_cnn_attn.add_argument("--normalize_ifft", type=str, default='batchnorm', help="Normalize after ifft")
+    parser_dual_cma_cnn_attn.add_argument("--flatten_type", type=str, default='patch', help="in ['patch', 'channel']")
+    parser_dual_cma_cnn_attn.add_argument("--conv_attn", type=int, default=0, help="")   
+    parser_dual_cma_cnn_attn.add_argument("--ratio", type=int, default=1, help="")   
+    parser_dual_cma_cnn_attn.add_argument("--qkv_embed", type=int, default=1, help="")   
+    parser_dual_cma_cnn_attn.add_argument("--inner_ca_dim", type=int, default=0, help="") 
+    parser_dual_cma_cnn_attn.add_argument("--init_ca_weight", type=int, default=1, help="") 
+    parser_dual_cma_cnn_attn.add_argument("--prj_out", type=int, default=0, help="")
+    parser_dual_cma_cnn_attn.add_argument("--act_fusion", type=str, default='relu', help="")
+    parser_dual_cma_cnn_attn.add_argument("--act_cma", type=str, default='relu', help="")
+    parser_dual_cma_cnn_attn.add_argument("--init_weight", type=int, default=0, help="")
+    parser_dual_cma_cnn_attn.add_argument("--init_linear", type=str, default="xavier", help="")
+    parser_dual_cma_cnn_attn.add_argument("--init_layernorm", type=str, default="normal", help="")
+    parser_dual_cma_cnn_attn.add_argument("--init_conv", type=str, default="kaiming", help="")
+    parser_dual_cma_cnn_attn.add_argument("--division_lr", type=int, default=1, help="")
     
     ######################## Vision transformer architecture ########################
     parser.add_argument('--dim',type=int, default = 1024, help='dim of embeding')
@@ -75,6 +98,7 @@ def parse_args():
     parser.add_argument('--pool',type=str, default = "cls", help='in transformer layer ')
     
     parser_vit = sub_parser.add_parser('vit', help='ViT transformer Net')
+    parser_vit.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
 
     parser_efficientvit = sub_parser.add_parser('efficient_vit', help='CrossViT transformer Net')
     parser_efficientvit.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
@@ -82,7 +106,16 @@ def parse_args():
     parser_efficientvit.add_argument("--freeze", type=int, default=0, help="Freeze backbone")
     parser_efficientvit.add_argument("--division_lr", type=int, default=1, help="")
 
-    parser_swin_vit = sub_parser.add_parser('swin_vit', help='Swim transformer')
+    parser_swin_vit = sub_parser.add_parser('swin_vit', help='Swin transformer')
+    parser_swin_vit.add_argument("--window_size",type=int,default=7,help="window size in swin vit")
+
+    parser_m2tr = sub_parser.add_parser('m2tr', help='')
+    parser_m2tr.add_argument("--backbone",type=str,default="efficientnet-b0",help="")
+    parser_m2tr.add_argument("--texture_layer",type=str,default="",help="")
+    parser_m2tr.add_argument("--feature_layer",type=str,default="",help="")
+    parser_m2tr.add_argument("--depth",type=int,default=0,help="")
+    parser_m2tr.add_argument("--drop_ratio",type=float,default=0.0,help="")
+    parser_m2tr.add_argument("--has_decoder",type=int,default=0,help="")
     
     # My refined model:
     parser_dual_cnn_vit = sub_parser.add_parser('dual_cnn_vit', help='My model')
@@ -106,6 +139,42 @@ def parse_args():
     parser_dual_cnn_vit.add_argument("--init_layernorm", type=str, default="normal", help="")
     parser_dual_cnn_vit.add_argument("--init_conv", type=str, default="kaiming", help="")
     parser_dual_cnn_vit.add_argument("--division_lr", type=int, default=1, help="")
+
+    parser_dual_cma_cnn_vit = sub_parser.add_parser('dual_cma_cnn_vit', help='My model')
+    parser_dual_cma_cnn_vit.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
+    parser_dual_cma_cnn_vit.add_argument("--version",type=str, default="ca-fadd-0.8", required=False, help="Some changes in model")
+    parser_dual_cma_cnn_vit.add_argument("--backbone",type=str, default="efficient_net", required=False, help="Type of backbone")
+    parser_dual_cma_cnn_vit.add_argument("--gamma_cma", type=float, default=0.5)
+    parser_dual_cma_cnn_vit.add_argument("--pretrained",type=int, default=1, required=False, help="Load pretrained backbone")
+    parser_dual_cma_cnn_vit.add_argument("--unfreeze_blocks", type=int, default=-1, help="Unfreeze blocks in backbone")
+    parser_dual_cma_cnn_vit.add_argument("--normalize_ifft", type=str, default='batchnorm', help="Normalize after ifft")
+    parser_dual_cma_cnn_vit.add_argument("--flatten_type", type=str, default='patch', help="in ['patch', 'channel']")
+    parser_dual_cma_cnn_vit.add_argument("--conv_attn", type=int, default=0, help="")   
+    parser_dual_cma_cnn_vit.add_argument("--ratio", type=int, default=1, help="")   
+    parser_dual_cma_cnn_vit.add_argument("--qkv_embed", type=int, default=1, help="")   
+    parser_dual_cma_cnn_vit.add_argument("--inner_ca_dim", type=int, default=0, help="") 
+    parser_dual_cma_cnn_vit.add_argument("--init_ca_weight", type=int, default=1, help="") 
+    parser_dual_cma_cnn_vit.add_argument("--prj_out", type=int, default=0, help="")
+    parser_dual_cma_cnn_vit.add_argument("--act_fusion", type=str, default='relu', help="")
+    parser_dual_cma_cnn_vit.add_argument("--act_cma", type=str, default='relu', help="")
+    parser_dual_cma_cnn_vit.add_argument("--position_embed", type=int, default=1, help="")
+    parser_dual_cma_cnn_vit.add_argument("--init_weight", type=int, default=0, help="")
+    parser_dual_cma_cnn_vit.add_argument("--init_linear", type=str, default="xavier", help="")
+    parser_dual_cma_cnn_vit.add_argument("--init_layernorm", type=str, default="normal", help="")
+    parser_dual_cma_cnn_vit.add_argument("--init_conv", type=str, default="kaiming", help="")
+    parser_dual_cma_cnn_vit.add_argument("--division_lr", type=int, default=1, help="")
+
+    parser_dual_cnn_cma_transformer = sub_parser.add_parser('dual_cnn_cma_transformer', help='My model')
+    parser_dual_cnn_cma_transformer.add_argument("--backbone",type=str, default="efficient_net", required=False, help="Type of backbone")
+    parser_dual_cnn_cma_transformer.add_argument("--pretrained",type=int, default=1, required=False, help="Load pretrained backbone")
+    parser_dual_cnn_cma_transformer.add_argument("--unfreeze_blocks", type=int, default=-1, help="Unfreeze blocks in backbone")
+    parser_dual_cnn_cma_transformer.add_argument("--normalize_ifft", type=str, default='batchnorm', help="Normalize after ifft")
+    parser_dual_cnn_cma_transformer.add_argument("--act", type=str, default='relu', help="")
+    parser_dual_cnn_cma_transformer.add_argument("--position_embed", type=int, default=1, help="")
+    parser_dual_cnn_cma_transformer.add_argument("--init_type", type=str, default="normal", help="")
+    parser_dual_cnn_cma_transformer.add_argument("--division_lr", type=int, default=1, help="")
+    parser_dual_cnn_cma_transformer.add_argument("--depth", type=int, default=4, help="")
+    parser_dual_cnn_cma_transformer.add_argument("--patch_resolution", type=str, default="1-2-4-8", help="")
 
     parser_pairwise_dual_cnn_vit = sub_parser.add_parser('pairwise_dual_cnn_vit', help='My model')
     parser_pairwise_dual_cnn_vit.add_argument("--weight_importance", type=float, default=2.0)
@@ -213,11 +282,11 @@ if __name__ == "__main__":
         from module.train_torch import train_image_stream
         from model.cnn.xception_net.model import xception
         model = xception(pretrained=args.pretrained)
-        args_txt = "lr_{}_batch_{}_es_{}_loss_{}_pre_{}_seed_{}".format(args.lr, args.batch_size, args.es_metric, args.loss, args.pretrained, args.seed)
-        args_txt += "_drmlp_{}_aug_{}".format(0.0, args.augmentation)
+        args_txt = "lr{}_batch{}_es{}_loss{}_pre{}_seed{}".format(args.lr, args.batch_size, args.es_metric, args.loss, args.pretrained, args.seed)
+        args_txt += "_drmlp{}_aug{}".format(0.0, args.augmentation)
         criterion = [args.loss]
         if args.gamma:
-            args_txt += "_gamma_{}".format(args.gamma)
+            args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
             
         train_image_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir, image_size=args.image_size, lr=args.lr,\
@@ -226,7 +295,7 @@ if __name__ == "__main__":
     
     elif model == 'capsule':
         from module.train_two_outclass import train_capsulenet
-        args_txt = "lr_{}_batch_{}_es_{}_beta_{}_dropout_{}_seed_{}_drmlp_0.0_aug_{}".format(args.lr, args.batch_size, args.es_metric, args.beta, args.dropout, args.seed, args.augmentation)
+        args_txt = "lr{}_batch{}_es{}_beta{}_dropout{}_seed{}_drmlp0.0_aug{}".format(args.lr, args.batch_size, args.es_metric, args.beta, args.dropout, args.seed, args.augmentation)
         train_capsulenet(train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir, gpu_id=args.gpu_id, beta1=args.beta, dropout=args.dropout, image_size=args.image_size, lr=args.lr,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="capsulenet", args_txt=args_txt, augmentation=args.augmentation)
@@ -236,11 +305,11 @@ if __name__ == "__main__":
         from model.cnn.srm_two_stream.twostream import Two_Stream_Net
         
         model = Two_Stream_Net()
-        args_txt = "lr_{}_batch_{}_es_{}_loss_{}_seed_{}".format(args.lr, args.batch_size, args.es_metric, args.loss, args.seed)
-        args_txt += "_drmlp_{}_aug_{}".format(0.0, args.augmentation)
+        args_txt = "lr{}_batch{}_es{}_loss{}_seed{}".format(args.lr, args.batch_size, args.es_metric, args.loss, args.seed)
+        args_txt += "_drmlp{}_aug{}".format(0.0, args.augmentation)
         criterion = [args.loss]
         if args.gamma:
-            args_txt += "_gamma_{}".format(args.gamma)
+            args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
             
         train_image_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir, image_size=args.image_size, lr=args.lr,\
@@ -251,11 +320,11 @@ if __name__ == "__main__":
         from model.cnn.mesonet4.model import mesonet
         from module.train_torch import train_image_stream
         model = mesonet(image_size=args.image_size)
-        args_txt = "lr_{}_batch_{}_es_{}_loss_{}_seed_{}".format(args.lr, args.batch_size, args.es_metric, args.loss, args.seed)
-        args_txt += "_drmlp_{}_aug_{}".format(0.0, args.augmentation)
+        args_txt = "lr{}_batch{}_es{}_loss{}_seed{}".format(args.lr, args.batch_size, args.es_metric, args.loss, args.seed)
+        args_txt += "_drmlp{}_aug{}".format(0.0, args.augmentation)
         criterion = [args.loss]
         if args.gamma:
-            args_txt += "_gamma_{}".format(args.gamma)
+            args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
             
         train_image_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir, image_size=args.image_size, lr=args.lr,\
@@ -267,11 +336,11 @@ if __name__ == "__main__":
         from model.cnn.dual_cnn.dual_efficient import DualEfficient
         
         model = DualEfficient(pretrained=args.pretrained)
-        args_txt = "lr_{}_batch_{}_es_{}_loss_{}_pre_{}_seed_{}".format(args.lr, args.batch_size, args.es_metric,args.loss, args.pretrained, args.seed)
-        args_txt += "_drmlp_{}_aug_{}".format(0.0, args.augmentation)
+        args_txt = "lr{}_batch{}_es{}_loss{}_pre{}_seed{}".format(args.lr, args.batch_size, args.es_metric,args.loss, args.pretrained, args.seed)
+        args_txt += "_drmlp{}_aug{}".format(0.0, args.augmentation)
         criterion = [args.loss]
         if args.gamma:
-            args_txt += "_gamma_{}".format(args.gamma)
+            args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
         
         use_pretrained = True if args.pretrained or args.resume != '' else False
@@ -292,19 +361,19 @@ if __name__ == "__main__":
                                 init_weight=args.init_weight, init_linear=args.init_linear, init_layernorm=args.init_layernorm, init_conv=args.init_conv, \
                                 dropout_in_mlp=args.dropout_in_mlp)
         
-        args_txt = "lr_{}-{}_batch_{}_es_{}_loss_{}_v_{}_pool_{}_bb_{}_pre_{}_unf_{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.version, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
-        args_txt += "norm_{}_".format(args.normalize_ifft)
-        args_txt += "flat_{}_patch_{}_".format(args.flatten_type, args.patch_size)
-        args_txt += "convattn_{}_r_{}_qkvemb_{}_incadim_{}_prj_{}_act_{}_".format(args.conv_attn, args.ratio, args.qkv_embed, args.inner_ca_dim, args.prj_out, args.act)
-        args_txt += "dim_{}_mlpdim_{}_".format(args.dim, args.mlp_dim)
+        args_txt = "lr{}-{}_batch{}_es{}_loss{}_v{}_pool{}_bb{}_pre{}_unf{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.version, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
+        args_txt += "norm{}_".format(args.normalize_ifft)
+        args_txt += "flat{}_patch{}_".format(args.flatten_type, args.patch_size)
+        args_txt += "convattn{}_r{}_qkvemb{}_incadim{}_prj{}_act{}_".format(args.conv_attn, args.ratio, args.qkv_embed, args.inner_ca_dim, args.prj_out, args.act)
+        args_txt += "dim{}_mlpdim{}_".format(args.dim, args.mlp_dim)
         if args.init_weight == 1:
             args_txt += "init_{}-{}-{}_".format(args.init_linear, args.init_layernorm, args.init_conv)
-        args_txt += "seed_{}".format(args.seed)
-        args_txt += "_drmlp_{}_aug_{}".format(args.dropout_in_mlp, args.augmentation)
+        args_txt += "seed{}".format(args.seed)
+        args_txt += "_drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
         print(len(args_txt))
         criterion = [args.loss]
         if args.gamma:
-            args_txt += "_gamma_{}".format(args.gamma)
+            args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
         use_pretrained = True if args.pretrained or args.resume != '' else False
         train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=False,\
@@ -333,11 +402,11 @@ if __name__ == "__main__":
             pretrained=args.pretrained,
             freeze=args.freeze
         )
-        args_txt = "batch_{}_pool_{}_lr_{}-{}_patch_{}_h_{}_d_{}_dim_{}_mlpdim_{}_es_{}_loss_{}_pre_{}_freeze_{}_seed_{}".format(args.batch_size, args.pool, args.lr, args.division_lr, args.patch_size, args.heads, args.depth, args.dim, args.mlp_dim, args.es_metric, args.loss, args.pretrained, args.freeze, args.seed)
-        args_txt += "_drmlp_{}_aug_{}".format(args.dropout_in_mlp, args.augmentation)
+        args_txt = "batch{}_pool{}_lr{}-{}_patch{}_h{}_d{}_dim{}_mlpdim{}_es{}_loss{}_pre{}_freeze{}_seed{}".format(args.batch_size, args.pool, args.lr, args.division_lr, args.patch_size, args.heads, args.depth, args.dim, args.mlp_dim, args.es_metric, args.loss, args.pretrained, args.freeze, args.seed)
+        args_txt += "_drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
         criterion = [args.loss]
         if args.gamma:
-            args_txt += "_gamma_{}".format(args.gamma)
+            args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
         
         use_pretrained = True if args.pretrained or args.resume != '' else False
@@ -349,9 +418,9 @@ if __name__ == "__main__":
         from module.train_torch import train_dual_stream
         from model.vision_transformer.dual_cnn_vit.model import DualCNNViT
         
-        dropout = 0.15
-        emb_dropout = 0.15
-        model = DualCNNViT(image_size=args.image_size, num_classes=1, dim=args.dim,\
+        dropout = 0.0
+        emb_dropout = 0.0
+        model = DualCNNViT(gpu_id=args.gpu_id, image_size=args.image_size, num_classes=1, dim=args.dim,\
                                 depth=args.depth, heads=args.heads, mlp_dim=args.mlp_dim,\
                                 dim_head=args.dim_head, dropout=0.15, emb_dropout=0.15,\
                                 backbone=args.backbone, pretrained=bool(args.pretrained),\
@@ -363,18 +432,18 @@ if __name__ == "__main__":
                                 init_weight=args.init_weight, init_linear=args.init_linear, init_layernorm=args.init_layernorm, init_conv=args.init_conv, \
                                 dropout_in_mlp=args.dropout_in_mlp)
         
-        args_txt = "lr_{}-{}_batch_{}_es_{}_loss_{}_v_{}_dim_{}_mlpdim_{}_h_{}_d_{}_pool_{}_bb_{}_pre_{}_unf_{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.version, args.dim, args.mlp_dim, args.heads, args.depth, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
-        args_txt += "norm_{}_".format(args.normalize_ifft)
-        args_txt += "flat_{}_patch_{}_".format(args.flatten_type, args.patch_size)
-        args_txt += "convattn_{}_r_{}_qkvemb_{}_incadim_{}_prj_{}_act_{}_".format(args.conv_attn, args.ratio, args.qkv_embed, args.inner_ca_dim, args.prj_out, args.act)
+        args_txt = "lr{}-{}_batch{}_es_{}_loss_{}_v_{}_dim{}_mlpdim{}_h{}_d{}_pool_{}_bb_{}_pre{}_unf{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.version, args.dim, args.mlp_dim, args.heads, args.depth, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
+        args_txt += "norm{}_".format(args.normalize_ifft)
+        args_txt += "flat_{}_patch{}_".format(args.flatten_type, args.patch_size)
+        args_txt += "convattn{}_r{}_qkvemb{}_incadim{}_prj{}_act{}_".format(args.conv_attn, args.ratio, args.qkv_embed, args.inner_ca_dim, args.prj_out, args.act)
         if args.init_weight == 1:
             args_txt += "init_{}-{}-{}_".format(args.init_linear, args.init_layernorm, args.init_conv)
-        args_txt += "seed_{}".format(args.seed)
-        args_txt += "_drmlp_{}_aug_{}".format(args.dropout_in_mlp, args.augmentation)
+        args_txt += "seed{}".format(args.seed)
+        args_txt += "_drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
         print(len(args_txt))
         criterion = [args.loss]
         if args.gamma:
-            args_txt += "_gamma_{}".format(args.gamma)
+            args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
         use_pretrained = True if args.pretrained or args.resume != '' else False
         train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
@@ -404,11 +473,11 @@ if __name__ == "__main__":
             pretrained=args.pretrained,
         )
         
-        args_txt = "batch_{}_v_{}_w_{}_lr_{}-{}_patch_{}_mlpdim_{}_dim_{}_h_{}_d_{}_es_{}_loss_{}_pre_{}_freeze_{}_seed_{}".format(args.batch_size, args.version, args.weight, args.lr, args.division_lr, args.patch_size, args.mlp_dim, args.dim, args.heads, args.depth, args.es_metric, args.loss, args.pretrained, args.freeze, args.seed)
-        args_txt += "_drmlp_{}_aug_{}".format(args.dropout_in_mlp, args.augmentation)
+        args_txt = "batch{}_v{}_w{}_lr{}-{}_patch{}_mlpdim{}_dim{}_h{}_d{}_es{}_loss{}_pre{}_freeze{}_seed{}".format(args.batch_size, args.version, args.weight, args.lr, args.division_lr, args.patch_size, args.mlp_dim, args.dim, args.heads, args.depth, args.es_metric, args.loss, args.pretrained, args.freeze, args.seed)
+        args_txt += "_drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
         criterion = [args.loss]
         if args.gamma:
-            args_txt += "_gamma_{}".format(args.gamma)
+            args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
         
         use_pretrained = True if args.pretrained or args.resume != '' else False
@@ -439,11 +508,11 @@ if __name__ == "__main__":
             pretrained=args.pretrained
         )
         
-        args_txt = "batch_{}_v_{}_w_{}_lr_{}-{}_patch_{}_mlpdim_{}_dim_{}_h_{}_d_{}_es_{}_loss_{}_pre_{}_freeze_{}_seed_{}".format(args.batch_size, args.version, args.weight, args.lr, args.division_lr, args.patch_size, args.mlp_dim, args.dim, args.heads, args.depth, args.es_metric, args.loss, args.pretrained, args.freeze, args.seed)
-        args_txt += "_drmlp_{}_aug_{}".format(args.dropout_in_mlp, args.augmentation)
+        args_txt = "batch{}_v{}_w{}_lr{}-{}_patch{}_mlpdim{}_dim{}_h{}_d{}_es{}_loss{}_pre{}_freeze{}_seed{}".format(args.batch_size, args.version, args.weight, args.lr, args.division_lr, args.patch_size, args.mlp_dim, args.dim, args.heads, args.depth, args.es_metric, args.loss, args.pretrained, args.freeze, args.seed)
+        args_txt += "_drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
         criterion = [args.loss]
         if args.gamma:
-            args_txt += "_gamma_{}".format(args.gamma)
+            args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
         
         use_pretrained = True if args.pretrained or args.resume != '' else False
@@ -469,18 +538,18 @@ if __name__ == "__main__":
                                 init_weight=args.init_weight, init_linear=args.init_linear, init_layernorm=args.init_layernorm, init_conv=args.init_conv, \
                                 dropout_in_mlp=args.dropout_in_mlp)
         
-        args_txt = "lr_{}-{}_batch_{}_es_{}_loss_{}_im_{}_mar_{}_v_{}_mlpdim_{}_dim_{}_h_{}_d{}_pool_{}_bb_{}_pre_{}_unf_{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.weight_importance, args.margin, args.version, args.mlp_dim, args.dim, args.heads, args.depth, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
-        args_txt += "norm_{}_".format(args.normalize_ifft)
-        args_txt += "flat_{}_patch_{}_".format(args.flatten_type, args.patch_size)
-        args_txt += "convattn_{}_r_{}_qkvemb_{}_incadim_{}_prj_{}_act_{}_".format(args.conv_attn, args.ratio, args.qkv_embed, args.inner_ca_dim, args.prj_out, args.act)
+        args_txt = "lr{}-{}_batch{}_es{}_loss{}_im{}_mar{}_v{}_mlpdim{}_dim{}_h{}_d{}_pool{}_bb{}_pre{}_unf{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.weight_importance, args.margin, args.version, args.mlp_dim, args.dim, args.heads, args.depth, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
+        args_txt += "norm{}_".format(args.normalize_ifft)
+        args_txt += "flat{}_patch{}_".format(args.flatten_type, args.patch_size)
+        args_txt += "convattn{}_r{}_qkvemb{}_incadim{}_prj{}_act{}_".format(args.conv_attn, args.ratio, args.qkv_embed, args.inner_ca_dim, args.prj_out, args.act)
         if args.init_weight == 1:
             args_txt += "init_{}-{}-{}_".format(args.init_linear, args.init_layernorm, args.init_conv)
-        args_txt += "seed_{}".format(args.seed)
-        args_txt += "_drmlp_{}_aug_{}".format(args.dropout_in_mlp, args.augmentation)
+        args_txt += "seed{}".format(args.seed)
+        args_txt += "_drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
         print(len(args_txt))
         criterion = [args.loss]
         if args.gamma:
-            args_txt += "_gamma_{}".format(args.gamma)
+            args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
         use_pretrained = True if args.pretrained or args.resume != '' else False
         train_pairwise_dual_stream(model, args.weight_importance, args.margin, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
@@ -505,18 +574,18 @@ if __name__ == "__main__":
                                     init_weight=args.init_weight, init_linear=args.init_linear, init_layernorm=args.init_layernorm, init_conv=args.init_conv, \
                                     dropout_in_mlp=args.dropout_in_mlp)
         
-        args_txt = "lr_{}-{}_batch_{}_es_{}_loss_{}_agg_{}_mlpdim_{}_dim_{}_h_{}_d_{}_pool_{}_bb_{}_pre_{}_unf_{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.aggregation, args.mlp_dim, args.dim, args.heads, args.depth, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
-        args_txt += "flat_{}_patch_{}_".format(args.flatten_type, args.patch_size)
-        args_txt += "convredu_{}_r_{}_".format(args.conv_reduction_channels, args.ratio_reduction)
-        args_txt += "inpffdim_{}_hidffdim_{}_".format(args.input_freq_dim, args.hidden_freq_dim)
+        args_txt = "lr{}-{}_batch{}_es{}_loss{}_agg{}_mlpdim{}_dim{}_h{}_d{}_pool{}_bb{}_pre{}_unf{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.aggregation, args.mlp_dim, args.dim, args.heads, args.depth, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
+        args_txt += "flat{}_patch{}_".format(args.flatten_type, args.patch_size)
+        args_txt += "convredu{}_r{}_".format(args.conv_reduction_channels, args.ratio_reduction)
+        args_txt += "inpffdim{}_hidffdim{}_".format(args.input_freq_dim, args.hidden_freq_dim)
         if args.init_weight == 1:
             args_txt += "init_{}-{}-{}_".format(args.init_linear, args.init_layernorm, args.init_conv)
         args_txt += "seed_{}".format(args.seed)
-        args_txt += "_drmlp_{}_aug_{}".format(args.dropout_in_mlp, args.augmentation)
+        args_txt += "_drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
         print(len(args_txt))
         criterion = [args.loss]
         if args.gamma:
-            args_txt += "_gamma_{}".format(args.gamma)
+            args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
         use_pretrained = True if args.pretrained or args.resume != '' else False
         train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
@@ -541,20 +610,175 @@ if __name__ == "__main__":
                                     init_weight=args.init_weight, init_linear=args.init_linear, init_layernorm=args.init_layernorm, init_conv=args.init_conv, \
                                     dropout_in_mlp=args.dropout_in_mlp)
         
-        args_txt = "lr_{}-{}_batch_{}_es_{}_loss_{}_im_{}_mar_{}_agg_{}_mlpdim_{}_dim_{}_h_{}_d_{}_pool_{}_bb_{}_pre_{}_unf_{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.weight_importance, args.margin, args.aggregation, args.mlp_dim, args.dim, args.heads, args.depth, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
-        args_txt += "flat_{}_patch_{}_".format(args.flatten_type, args.patch_size)
-        args_txt += "convredu_{}_r_{}_".format(args.conv_reduction_channels, args.ratio_reduction)
-        args_txt += "inpffdim_{}_hidffdim_{}_".format(args.input_freq_dim, args.hidden_freq_dim)
+        args_txt = "lr{}-{}_batch{}_es{}_loss{}_im{}_mar{}_agg{}_mlpdim{}_dim{}_h{}_d{}_pool{}_bb{}_pre{}_unf{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.weight_importance, args.margin, args.aggregation, args.mlp_dim, args.dim, args.heads, args.depth, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
+        args_txt += "flat{}_patch{}_".format(args.flatten_type, args.patch_size)
+        args_txt += "convredu{}_r{}_".format(args.conv_reduction_channels, args.ratio_reduction)
+        args_txt += "inpffdim{}_hidffdim{}_".format(args.input_freq_dim, args.hidden_freq_dim)
         if args.init_weight == 1:
             args_txt += "init_{}-{}-{}_".format(args.init_linear, args.init_layernorm, args.init_conv)
-        args_txt += "seed_{}".format(args.seed)
-        args_txt += "_drmlp_{}_aug_{}".format(args.dropout_in_mlp, args.augmentation)
+        args_txt += "seed{}".format(args.seed)
+        args_txt += "_drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
         print(len(args_txt))
         criterion = [args.loss]
         if args.gamma:
-            args_txt += "_gamma_{}".format(args.gamma)
+            args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
         use_pretrained = True if args.pretrained or args.resume != '' else False
         train_pairwise_dual_stream(model, args.weight_importance, args.margin, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="pairwise_dual_cnn_feedforward_vit", args_txt=args_txt, augmentation=args.augmentation)
+    
+    elif model == "vit":
+        from module.train_torch import train_image_stream
+        from model.vision_transformer.vit.vit import ViT
+
+        model = ViT(args.image_size, args.patch_size, 1, args.dim, args.depth, args.heads, args.mlp_dim, pool = args.pool, channels = 3, dim_head = args.dim_head, dropout = 0., emb_dropout = 0.)
+        args_txt = "batch{}_pool{}_lr{}-{}_patch{}_h{}_d{}_dim{}_mlpdim{}_es{}_loss{}_seed{}".format(args.batch_size, args.pool, args.lr, 0, args.patch_size, args.heads, args.depth, args.dim, args.mlp_dim, args.es_metric, args.loss, args.seed)
+        args_txt += "_drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
+        criterion = [args.loss]
+        if args.gamma:
+            args_txt += "_gamma{}".format(args.gamma)
+            criterion.append(args.gamma)
+        
+        train_image_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=0, use_pretrained=False,\
+                           batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed, \
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="vit", args_txt=args_txt, augmentation=args.augmentation)
+
+    elif model == "swin_vit":
+        from module.train_torch import train_image_stream
+        from model.vision_transformer.vit.swin_vit import *
+
+        model = swin_t(window_size=args.window_size)
+        args_txt = "batch{}_lr{}-{}_window{}_es{}_loss{}_seed{}".format(args.batch_size, args.lr, 0, args.window_size,args.es_metric, args.loss, args.seed)
+        args_txt += "_drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
+        criterion = [args.loss]
+        if args.gamma:
+            args_txt += "_gamma{}".format(args.gamma)
+            criterion.append(args.gamma)
+        
+        train_image_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=0, use_pretrained=False,\
+                           batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed, \
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="vit", args_txt=args_txt, augmentation=args.augmentation)
+
+    elif model == 'm2tr':
+        from module.train_torch import train_image_stream
+        from model.vision_transformer.m2tr.m2tr import M2TR
+
+        model_cfg = {
+            'IMG_SIZE': args.image_size,
+            'BACKBONE': args.backbone,
+            'TEXTURE_LAYER': args.texture_layer,
+            'FEATURE_LAYER': args.feature_layer,
+            'DEPTH': args.depth,
+            'NUM_CLASSES': 1,
+            'DROP_RATIO': args.drop_ratio,
+            'HAS_DECODER': args.has_decoder
+        }
+        model = M2TR(model_cfg)
+        args_txt = "batch{}_lr{}-{}_bb{}_texture{}_feature{}_d{}_drop{}_decoder{}_es{}_loss{}_seed{}".format(args.batch_size, args.lr, 0, args.backbone, args.texture_layer, args.feature_layer, args.depth, args.drop_ratio, args.has_decoder, args.es_metric, args.loss, args.seed)
+        args_txt += "_drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
+        criterion = [args.loss]
+        if args.gamma:
+            args_txt += "_gamma{}".format(args.gamma)
+            criterion.append(args.gamma)
+        
+        train_image_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=0, use_pretrained=False,\
+                           batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed, \
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="m2tr", args_txt=args_txt, augmentation=args.augmentation)
+
+    elif model == "dual_cnn_cma_transformer":
+        from model.vision_transformer.dual_cnn_vit.modelv2 import DualCNNCMATransformer
+        from module.train_torch import train_dual_stream
+
+        model = DualCNNCMATransformer(image_size=args.image_size, num_classes=1, depth=args.depth, \
+                            backbone=args.backbone, pretrained=args.pretrained, unfreeze_blocks=args.unfreeze_blocks, \
+                            normalize_ifft=args.normalize_ifft,\
+                            act=args.act,\
+                            patch_resolution=args.patch_resolution,\
+                            init_type=args.init_type,
+                            mlp_dim=args.mlp_dim, dropout_in_mlp=args.dropout_in_mlp)
+        
+        args_txt = "lr{}-{}_batch{}_es{}_loss{}_d{}_bb{}_pre{}_unf{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.depth, args.backbone, args.pretrained, args.unfreeze_blocks)
+        args_txt += "norm{}_".format(args.normalize_ifft)
+        args_txt += "act{}_".format(args.act)
+        args_txt += "reso{}_".format(args.patch_resolution)
+        args_txt += "init_{}_".format(args.init_type)
+        args_txt += "seed{}".format(args.seed)
+        args_txt += "_drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
+        print(len(args_txt))
+        criterion = [args.loss]
+        if args.gamma:
+            args_txt += "_gamma{}".format(args.gamma)
+            criterion.append(args.gamma)
+        use_pretrained = True if args.pretrained or args.resume != '' else False
+        train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
+                           batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual_cnn_cma_transformer", args_txt=args_txt, augmentation=args.augmentation)
+
+    elif model == "dual_cma_cnn_vit":
+        from module.train_torch import train_dual_stream
+        from model.vision_transformer.dual_cnn_vit.modelv3 import DualCMACNNViT
+        
+        dropout = 0.0
+        emb_dropout = 0.0
+        model = DualCMACNNViT(gpu_id=args.gpu_id, image_size=args.image_size, num_classes=1, dim=args.dim,\
+                                depth=args.depth, heads=args.heads, mlp_dim=args.mlp_dim,\
+                                dim_head=args.dim_head, dropout=0.15, emb_dropout=0.15,\
+                                backbone=args.backbone, pretrained=bool(args.pretrained), gamma_cma=args.gamma_cma,\
+                                normalize_ifft=args.normalize_ifft,\
+                                flatten_type=args.flatten_type,\
+                                conv_attn=bool(args.conv_attn), ratio=args.ratio, qkv_embed=bool(args.qkv_embed), inner_ca_dim=args.inner_ca_dim, init_ca_weight=bool(args.init_ca_weight), prj_out=bool(args.prj_out), act_fusion=args.act_fusion, act_cma=args.act_cma,\
+                                patch_size=args.patch_size, position_embed=bool(args.position_embed), pool=args.pool,\
+                                version=args.version, unfreeze_blocks=args.unfreeze_blocks, \
+                                init_weight=args.init_weight, init_linear=args.init_linear, init_layernorm=args.init_layernorm, init_conv=args.init_conv, \
+                                dropout_in_mlp=args.dropout_in_mlp)
+        
+        args_txt = "lr{}-{}_batch{}_es{}_loss{}_v{}_dim{}_mlpdim{}_h{}_d{}_pool{}_bb{}_pre{}_unf{}_gamma{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.version, args.dim, args.mlp_dim, args.heads, args.depth, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks, args.gamma_cma)
+        args_txt += "norm{}_".format(args.normalize_ifft)
+        args_txt += "flat{}_patch{}_".format(args.flatten_type, args.patch_size)
+        args_txt += "convattn{}_r{}_qkvemb{}_incadim{}_prj{}_actf{}-c{}_".format(args.conv_attn, args.ratio, args.qkv_embed, args.inner_ca_dim, args.prj_out, args.act_fusion, args.act_cma)
+        if args.init_weight == 1:
+            args_txt += "init_{}-{}-{}_".format(args.init_linear, args.init_layernorm, args.init_conv)
+        args_txt += "seed{}".format(args.seed)
+        args_txt += "_drmlp{}_aug{}_".format(args.dropout_in_mlp, args.augmentation)
+        print(len(args_txt))
+        criterion = [args.loss]
+        if args.gamma:
+            args_txt += "_gamma{}".format(args.gamma)
+            criterion.append(args.gamma)
+        use_pretrained = True if args.pretrained or args.resume != '' else False
+        train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
+                           batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual_cma_cnn_vit", args_txt=args_txt, augmentation=args.augmentation)
+
+    elif model == "dual_cma_cnn_attn":
+        from module.train_torch import train_dual_stream
+        from model.cnn.dual_cma_cnn_attn.model import DualCMACNNAttn
+    
+        model = DualCMACNNAttn(image_size=args.image_size, num_classes=1, dim=args.dim, mlp_dim=args.mlp_dim,\
+                                backbone=args.backbone, pretrained=bool(args.pretrained), unfreeze_blocks=args.unfreeze_blocks, gamma_cma=args.gamma_cma,\
+                                normalize_ifft=args.normalize_ifft,\
+                                flatten_type=args.flatten_type, patch_size=args.patch_size,\
+                                conv_attn=bool(args.conv_attn), ratio=args.ratio, qkv_embed=bool(args.qkv_embed), inner_ca_dim=args.inner_ca_dim, init_ca_weight=bool(args.init_ca_weight), prj_out=bool(args.prj_out), act_fusion=args.act_fusion, act_cma=args.act_cma,\
+                                version=args.version, 
+                                init_weight=args.init_weight, init_linear=args.init_linear, init_layernorm=args.init_layernorm, init_conv=args.init_conv, \
+                                dropout_in_mlp=args.dropout_in_mlp)
+        
+        args_txt = "lr{}-{}_batch{}_es{}_loss{}_v{}_pool{}_bb{}_pre{}_unf{}_gamma{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.version, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks, args.gamma_cma)
+        args_txt += "norm{}_".format(args.normalize_ifft)
+        args_txt += "flat{}_patch{}_".format(args.flatten_type, args.patch_size)
+        args_txt += "convattn{}_r{}_qkvemb{}_incadim{}_prj{}_actf{}-c{}_".format(args.conv_attn, args.ratio, args.qkv_embed, args.inner_ca_dim, args.prj_out, args.act_fusion, args.act_cma)
+        args_txt += "dim{}_mlpdim{}_".format(args.dim, args.mlp_dim)
+        if args.init_weight == 1:
+            args_txt += "init{}-{}-{}_".format(args.init_linear, args.init_layernorm, args.init_conv)
+        args_txt += "seed{}".format(args.seed)
+        args_txt += "_drmlp{}_aug{}_".format(args.dropout_in_mlp, args.augmentation)
+        print(len(args_txt))
+        criterion = [args.loss]
+        if args.gamma:
+            args_txt += "_gamma{}".format(args.gamma)
+            criterion.append(args.gamma)
+        use_pretrained = True if args.pretrained or args.resume != '' else False
+        train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=False,\
+                           batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual_cma_cnn_attn", args_txt=args_txt, augmentation=args.augmentation)
