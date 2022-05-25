@@ -16,36 +16,11 @@ from model.vision_transformer.cnn_vit.efficient_vit import EfficientViT
 from pytorchcv.model_provider import get_model
 from model.backbone.efficient_net.utils import Conv2dStaticSamePadding
 
-def attention(query, key, value):
-    scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(
-        query.size(-1)
-    )
-    p_attn = F.softmax(scores, dim=-1)
-    p_val = torch.matmul(p_attn, value)
-    return p_val, p_attn
-
-class BaseNetwork(nn.Module):
-    def __init__(self):
-        super(BaseNetwork, self).__init__()
-
-    def print_network(self):
-        if isinstance(self, list):
-            self = self[0]
-        num_params = 0
-        for param in self.parameters():
-            num_params += param.numel()
-        print(
-            'Network [%s] was created. Total number of parameters: %.1f million. '
-            'To see the architecture, do print(network).'
-            % (type(self).__name__, num_params / 1000000)
-        )
-
-
 class CrossModalAttention(nn.Module):
     """ CMA attention Layer"""
 
-    def __init__(self, in_dim, activation=None, ratio=8, cross_value=True, gamma=None):
-        super(CrossModalAttention, self).__init__()
+    def __init__(self, in_dim, activation=None, ratio=8, cross_value=True, gamma_cma=-1):
+        super().__init__()
         self.chanel_in = in_dim
         self.activation = activation
         self.cross_value = cross_value
@@ -56,12 +31,10 @@ class CrossModalAttention(nn.Module):
             in_channels=in_dim, out_channels=in_dim//ratio, kernel_size=1)
         self.value_conv = nn.Conv2d(
             in_channels=in_dim, out_channels=in_dim, kernel_size=1)
-        
-        if gamma is None:
+        if gamma_cma == -1:
             self.gamma = nn.Parameter(torch.zeros(1))
         else:
-            assert isinstance(gamma, float), "Gamma shouble be a float scalar"
-            self.gamma = gamma
+            self.gamma = gamma_cma
 
         self.softmax = nn.Softmax(dim=-1)
 
@@ -125,6 +98,14 @@ class MultiHeadedAttention(nn.Module):
             nn.LeakyReLU(0.2, inplace=True),
         )
 
+    def attention(self, query, key, value):
+        scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(
+            query.size(-1)
+        )
+        p_attn = F.softmax(scores, dim=-1)
+        p_val = torch.matmul(p_attn, value)
+        return p_val, p_attn
+
     def forward(self, x):
         b, c, h, w = x.size()   # 32, 1280, 8, 8
         # print("x size:", x.size())
@@ -141,6 +122,7 @@ class MultiHeadedAttention(nn.Module):
             torch.chunk(_key, len(self.patchsize), dim=1),
             torch.chunk(_value, len(self.patchsize), dim=1),
         ):
+            # print('query: ', query.shape)   # (B, )
             out_w, out_h = w // width, h // height
 
             # 1) embedding and reshape
@@ -163,7 +145,7 @@ class MultiHeadedAttention(nn.Module):
                 .view(b, out_h * out_w, d_k * height * width)
             )
 
-            y, _ = attention(query, key, value)
+            y, _ = self.attention(query, key, value)
 
             # 3) "Concat" using a view and apply a final linear.
             y = y.view(b, out_h, out_w, d_k, height, width)
@@ -175,6 +157,123 @@ class MultiHeadedAttention(nn.Module):
         self_attention = self.output_linear(output)
 
         return self_attention
+
+class MultiHeadedAttentionv2(nn.Module):
+    """
+    Take in model size and number of heads.
+    """
+
+    def __init__(self, patchsize, d_model):
+        super().__init__()
+        self.patchsize = patchsize
+        self.query_embedding = nn.Conv2d(
+            d_model, d_model, kernel_size=1, padding=0
+        )
+        self.value_embedding = nn.Conv2d(
+            d_model, d_model, kernel_size=1, padding=0
+        )
+        self.key_embedding = nn.Conv2d(
+            d_model, d_model, kernel_size=1, padding=0
+        )
+        self.output_linear = nn.Sequential(
+            nn.Conv2d(d_model, d_model, kernel_size=3, padding=1),
+            nn.BatchNorm2d(d_model),
+            nn.LeakyReLU(0.2, inplace=True),
+        )
+
+    def attention(self, query, key, value):
+        scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(
+            query.size(-1)
+        )
+        p_attn = F.softmax(scores, dim=-1)
+        p_val = torch.matmul(p_attn, value)
+        return p_val, p_attn
+
+    def forward(self, x, y):
+        b, c, h, w = x.size()   # 32, 1280, 8, 8
+        # print("x size:", x.size())
+        d_k = c // len(self.patchsize)  # 320
+        output = []
+        _query = self.query_embedding(x)
+        _key = self.key_embedding(y)
+        _value = self.value_embedding(y)
+        attentions = []
+        # print("_query: ", _query.shape)
+        for (width, height), query, key, value in zip(
+            self.patchsize,
+            torch.chunk(_query, len(self.patchsize), dim=1),
+            torch.chunk(_key, len(self.patchsize), dim=1),
+            torch.chunk(_value, len(self.patchsize), dim=1),
+        ):
+            # print('query: ', query.shape)   # (B, )
+            out_w, out_h = w // width, h // height
+
+            # 1) embedding and reshape
+            query = query.view(b, d_k, out_h, height, out_w, width)
+            query = (
+                query.permute(0, 2, 4, 1, 3, 5)
+                .contiguous()
+                .view(b, out_h * out_w, d_k * height * width)
+            )
+            key = key.view(b, d_k, out_h, height, out_w, width)
+            key = (
+                key.permute(0, 2, 4, 1, 3, 5)
+                .contiguous()
+                .view(b, out_h * out_w, d_k * height * width)
+            )
+            value = value.view(b, d_k, out_h, height, out_w, width)
+            value = (
+                value.permute(0, 2, 4, 1, 3, 5)
+                .contiguous()
+                .view(b, out_h * out_w, d_k * height * width)
+            )
+
+            out, attn = self.attention(query, key, value)
+
+            # 3) "Concat" using a view and apply a final linear.
+            out = out.view(b, out_h, out_w, d_k, height, width)
+            out = out.permute(0, 3, 1, 4, 2, 5).contiguous().view(b, d_k, h, w)
+            attentions.append(attn)
+            output.append(out)
+
+        output = torch.cat(output, 1)
+        self_attention = self.output_linear(output)
+        return self_attention
+
+class FeedForward2D(nn.Module):
+    def __init__(self, in_channel, out_channel):
+        super().__init__()
+        self.conv = nn.Sequential(
+            nn.Conv2d(
+                in_channel, out_channel, kernel_size=3, padding=2, dilation=2
+            ),
+            nn.BatchNorm2d(out_channel),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(out_channel, out_channel, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channel),
+            nn.LeakyReLU(0.2, inplace=True),
+        )
+
+    def forward(self, x):
+        x = self.conv(x)
+        return x
+
+class PatchTrans(nn.Module):
+    def __init__(self, in_channel, in_size, patch_resolution="1-2-4-8"):
+        super().__init__()
+        self.in_size = in_size
+
+        patchsize = []
+        reso = map(float, patch_resolution.split("-"))
+        for r in reso:
+            patchsize.append((int(in_size//r), int(in_size//r)))
+        # print(patchsize)
+        self.transform_ = TransformerBlock(patchsize, in_channel=in_channel)
+        # print(in_channel)
+
+    def forward(self, enc_feat):
+        output = self.transform_(enc_feat)
+        return output
 
 class TransformerBlock(nn.Module):
     """
@@ -194,28 +293,27 @@ class TransformerBlock(nn.Module):
         output = output + self.feed_forward(output)
         return output
 
-class FeedForward2D(nn.Module):
-    def __init__(self, in_channel, out_channel):
-        super(FeedForward2D, self).__init__()
-        self.conv = nn.Sequential(
-            nn.Conv2d(
-                in_channel, out_channel, kernel_size=3, padding=2, dilation=2
-            ),
-            nn.BatchNorm2d(out_channel),
-            nn.LeakyReLU(0.2, inplace=True),
-            nn.Conv2d(out_channel, out_channel, kernel_size=3, padding=1),
-            nn.BatchNorm2d(out_channel),
-            nn.LeakyReLU(0.2, inplace=True),
+class TransformerBlockv2(nn.Module):
+    """
+    Transformer = MultiHead_Attention + Feed_Forward with sublayer connection
+    """
+
+    def __init__(self, patchsize, in_channel=256):
+        super().__init__()
+        self.attention = MultiHeadedAttentionv2(patchsize, d_model=in_channel)
+        self.feed_forward = FeedForward2D(
+            in_channel=in_channel, out_channel=in_channel
         )
 
-    def forward(self, x):
-        x = self.conv(x)
-        return x
+    def forward(self, rgb, freq):
+        self_attention = self.attention(rgb, freq)
+        output = rgb + self_attention
+        output = output + self.feed_forward(output)
+        return output
 
-
-class PatchTrans(nn.Module):
+class PatchTransv2(nn.Module):
     def __init__(self, in_channel, in_size, patch_resolution="1-2-4-8"):
-        super(PatchTrans, self).__init__()
+        super().__init__()
         self.in_size = in_size
 
         patchsize = []
@@ -223,33 +321,38 @@ class PatchTrans(nn.Module):
         for r in reso:
             patchsize.append((int(in_size//r), int(in_size//r)))
         # print(patchsize)
-        self.transform_ = TransformerBlock(patchsize, in_channel=in_channel)
+        self.transform_ = TransformerBlockv2(patchsize, in_channel=in_channel)
         # print(in_channel)
 
-    def forward(self, enc_feat):
-        output = self.transform_(enc_feat)
+    def forward(self, rgb_fea, freq_fea):
+        output = self.transform_(rgb_fea, freq_fea)
         return output
 
-class DualCNNCMATransformer(nn.Module):
-    def __init__(self, image_size=224, num_classes=1, depth=4, \
+class DualPatchCNNCMAViT(nn.Module):
+    def __init__(self, image_size=224, num_classes=1, depth_block4=2, \
                 backbone='xception_net', pretrained=True, unfreeze_blocks=-1, \
                 normalize_ifft='batchnorm',\
                 act='none',\
-                patch_resolution="1-2-4-8",\
-                init_type="xavier_uniform",
-                mlp_dim=2048, dropout_in_mlp=0.0):  
-        super(DualCNNCMATransformer, self).__init__()
+                init_type="xavier_uniform", \
+                gamma_cma=-1, flatten_type='patch', patch_size=2, \
+                dim=1024, depth_vit=2, heads=3, dim_head=64, dropout=0.15, emb_dropout=0.15, mlp_dim=2048, dropout_in_mlp=0.0, \
+                classifier='mlp', in_vit_channels=64):  
+        super(DualPatchCNNCMAViT, self).__init__()
 
         self.image_size = image_size
         self.num_classes = num_classes
-        # self.dim = dim
-        self.depth = depth
-        # self.heads = heads
+        self.depth_block4 = depth_block4
+
+        self.depth_vit = depth_vit
+        self.dim = dim
+        self.heads = heads
         self.mlp_dim = mlp_dim
-        # self.dim_head = dim_head
-        # self.dropout_value = dropout
-        # self.emb_dropout = emb_dropout
-        
+        self.dim_head = dim_head
+        self.dropout_value = dropout
+        self.emb_dropout = emb_dropout
+        self.flatten_type = flatten_type
+        self.patch_size = patch_size
+
         self.backbone = backbone
         self.features_size = {
             'efficient_net': (1280, 8, 8),
@@ -268,45 +371,66 @@ class DualCNNCMATransformer(nn.Module):
         self.rgb_extractor = self.get_feature_extractor(architecture=backbone, pretrained=pretrained, unfreeze_blocks=unfreeze_blocks, num_classes=num_classes, in_channels=3)   # efficient_net-b0, return shape (1280, 8, 8) or (1280, 7, 7)
         self.freq_extractor = self.get_feature_extractor(architecture=backbone, pretrained=pretrained, unfreeze_blocks=unfreeze_blocks, num_classes=num_classes, in_channels=1)     
         self.normalize_ifft = normalize_ifft
-        self.batchnorm_ifft = nn.BatchNorm2d(num_features=self.out_ext_channels)
-        self.layernorm_ifft = nn.LayerNorm(normalized_shape=self.features_size[self.backbone])
+        if self.normalize_ifft == 'batchnorm':
+            self.batchnorm_ifft = nn.BatchNorm2d(num_features=self.out_ext_channels if classifier == 'mlp' else 320)
+        if self.normalize_ifft == 'layernorm':
+            self.layernorm_ifft = nn.LayerNorm(normalized_shape=self.features_size[self.backbone])
         ############################# PATCH CONFIG ################################
 
         # self.CA = CrossAttention(in_dim=self.in_dim, inner_dim=inner_ca_dim, prj_out=prj_out, qkv_embed=qkv_embed, init_weight=init_ca_weight)
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.cma = CrossModalAttention(in_dim=self.out_ext_channels, activation=self.activation, ratio=4, cross_value=True).to(device)
+        device = torch.device('cpu')
+        self.cma = CrossModalAttention(in_dim=self.out_ext_channels if classifier=='mlp' else 320, activation=self.activation, ratio=4, cross_value=True, gamma_cma=gamma_cma).to(device)
 
         # Thêm 1 embedding vector cho classify token:
         # self.cls_token = nn.Parameter(torch.randn(1, 1, self.dim))
         # self.dropout = nn.Dropout(self.emb_dropout)
-        self.transformer = []
-        for _ in range(depth):
-            self.transformer.append(
-                PatchTrans(in_channel=self.out_ext_channels, in_size=self.features_size[backbone][1], patch_resolution=patch_resolution).to(device)
+        self.transformer_block_4 = nn.ModuleList([])
+        for _ in range(depth_block4):
+            self.transformer_block_4.append(PatchTrans(in_channel=40, in_size=16, patch_resolution='1-2-4-8').to(device))
+        self.transformer_block_10_rgb = PatchTransv2(in_channel=112, in_size=8, patch_resolution='1-2-4-8').to(device)
+        self.transformer_block_10_freq = PatchTransv2(in_channel=112, in_size=8, patch_resolution='1-2-4-8').to(device)
+
+        # Classifier:
+        self.classifier = classifier
+        if self.classifier == 'mlp':
+            self.mlp_head = nn.Sequential(
+                nn.Dropout(dropout_in_mlp),
+                nn.Linear(1280, self.mlp_dim),
+                nn.ReLU(),
+                nn.Dropout(dropout_in_mlp),
+                nn.Linear(self.mlp_dim, self.num_classes)
             )
-        # self.transformer = Transformer(self.dim, self.depth, self.heads, self.dim_head, self.mlp_dim, self.dropout_value)
-        # self.to_cls_token = nn.Identity()
-        self.mlp_head = nn.Sequential(
-            nn.Dropout(dropout_in_mlp),
-            nn.Linear(1280, self.mlp_dim),
-            nn.ReLU(),
-            nn.Dropout(dropout_in_mlp),
-            nn.Linear(self.mlp_dim, self.num_classes)
-        )
+        if self.classifier == 'vit':
+            self.convr = nn.Conv2d(in_channels=320, out_channels=in_vit_channels, kernel_size=1)
+            self.embedding = nn.Linear(self.patch_size*self.patch_size *in_vit_channels if flatten_type=='patch' else 16, self.dim)
+            self.dropout = nn.Dropout(self.emb_dropout)
+            self.transformer = Transformer(self.dim, self.depth_vit, self.heads, self.dim_head, self.mlp_dim, self.dropout_value)
+            self.mlp_dropout = nn.Dropout(dropout_in_mlp)
+            self.mlp_hidden = nn.Linear(self.dim, self.mlp_dim)
+            self.mlp_relu = nn.ReLU()
+            self.mlp_out = nn.Linear(self.mlp_dim, self.num_classes)
+            self.mlp_head = nn.Sequential(
+                nn.Dropout(dropout_in_mlp),
+                nn.Linear(self.dim, self.mlp_dim),
+                nn.ReLU(),
+                nn.Dropout(dropout_in_mlp),
+                nn.Linear(self.mlp_dim, self.num_classes)
+            )
+
         self.sigmoid = nn.Sigmoid()
         # self.init_weights(init_type=init_type)
 
     def get_activation(self, act):
         if act == 'relu':
             activation = nn.ReLU(inplace=True)
+        elif act == 'leakyrelu':
+            activation = nn.LeakyReLU(0.01, inplace=True)
         elif act == 'tanh':
             activation = nn.Tanh()
         elif act == 'sigmoid':
             activation = nn.Sigmoid()
-        elif act == 'leakyrelu':
-            activation = nn.LeakyReLU(inplace=True)
         elif act == 'selu':
-            activation = nn.SELU(inplace=True)
+            activation = nn.SELU()
         else:
             activation = None
         return activation
@@ -315,7 +439,8 @@ class DualCNNCMATransformer(nn.Module):
         extractor = None
         if architecture == "efficient_net":
             extractor = EfficientNet.from_pretrained('efficientnet-b0', num_classes=num_classes,in_channels = in_channels, pretrained=bool(pretrained))
-            extractor._blocks[11]._depthwise_conv = Conv2dStaticSamePadding(in_channels=672, out_channels=672, kernel_size=(5, 5), stride=(1, 1), groups=672, image_size=224)
+            # extractor._blocks[11]._depthwise_conv = Conv2dStaticSamePadding(in_channels=672, out_channels=672, kernel_size=(5, 5), stride=(1, 1), groups=672, image_size=224)
+            # extractor._conv_head = nn.Identity()
             if unfreeze_blocks != -1:
                 # Freeze the first (num_blocks - 3) blocks and unfreeze the rest 
                 for i in range(0, len(extractor._blocks)):
@@ -324,6 +449,7 @@ class DualCNNCMATransformer(nn.Module):
                             param.requires_grad = True
                         else:
                             param.requires_grad = False
+            # print(extractor)
         
         if architecture == 'xception_net':
             xception = get_model("xception", pretrained=bool(pretrained))
@@ -347,7 +473,7 @@ class DualCNNCMATransformer(nn.Module):
         #     self.init_conv_weight(extractor)
         return extractor
 
-    def init_weights(self, init_type='xavier_uniform', gain=0.02):
+    def init_weights(self, init_type='normal', gain=0.02):
         '''
         initialize network's weights
         init_type: normal | xavier | kaiming | orthogonal
@@ -400,27 +526,32 @@ class DualCNNCMATransformer(nn.Module):
             ifreq_feature = self.layernorm_ifft(ifreq_feature)
         elif norm_type == 'normal':
             ifreq_feature = F.normalize(ifreq_feature)
-        elif norm_type == 'no_ifft':
-            return freq_feature
         return ifreq_feature
 
-    def fusion(self, rgb, out_attn):
-        """
-        Arguments:
-            rgb --      b, n, d
-            out_attn -- b, n, d
-        """
-        weight = float(self.version.split('-')[-1])
-        if 'cat' in self.version:
-            out = torch.cat([rgb, weight * out_attn], dim=2)
-        elif 'add' in self.version:
-            out = torch.add(rgb, weight * out_attn)
-        return out
+    def flatten_to_vectors(self, feature):
+        vectors = None
+        if self.flatten_type == 'patch':
+            vectors = rearrange(feature, 'b c (h p1) (w p2) -> b (h w) (p1 p2 c)', p1=self.patch_size, p2=self.patch_size)
+        elif self.flatten_type == 'channel':
+            vectors = rearrange(feature, 'b c h w -> b c (h w)')
+        else:
+            pass
+        return vectors
 
     def extract_feature(self, rgb_imgs, freq_imgs):
         if self.backbone == 'efficient_net':
-            rgb_features = self.rgb_extractor.extract_features(rgb_imgs)                 # shape (batchsize, 1280, 8, 8)
-            freq_features = self.freq_extractor.extract_features(freq_imgs)              # shape (batchsize, 1280, 4, 4)
+            #
+            rgb_features = self.rgb_extractor.extract_features_block_4(rgb_imgs)                 # shape (batchsize, 1280, 8, 8)
+            for attn in self.transformer_block_4:
+                rgb_features = attn(rgb_features)
+            freq_features = self.freq_extractor.extract_features_block_4(freq_imgs)              # shape (batchsize, 1280, 4, 4)
+            #
+            rgb_features = self.rgb_extractor.extract_features_block_11(rgb_features)
+            freq_features = self.freq_extractor.extract_features_block_11(freq_features)
+            rgb_features_1 = self.transformer_block_10_rgb(rgb_features, freq_features)
+            freq_features_1 = self.transformer_block_10_freq(freq_features, rgb_features)
+            rgb_features = self.rgb_extractor.extract_features_last_block(rgb_features_1, classifier=self.classifier)
+            freq_features = self.freq_extractor.extract_features_last_block(freq_features_1, classifier=self.classifier)
         else:
             rgb_features = self.rgb_extractor(rgb_imgs)
             freq_features = self.freq_extractor(freq_imgs)
@@ -431,30 +562,41 @@ class DualCNNCMATransformer(nn.Module):
         ifreq_features = self.ifft(freq_features, norm_type=self.normalize_ifft)
         # print("Features shape: ", rgb_features.shape, freq_features.shape, ifreq_features.shape)
         out = self.cma(rgb_features, ifreq_features, freq_features)
-        for idx, attn in enumerate(self.transformer):
-            # print("out {}: ".format(idx), out.shape)
-            # print(attn)
-            out = attn(out)
 
-        out = F.adaptive_avg_pool2d(out, (1, 1))
-        # print(out.shape)
-        out = out.squeeze().squeeze()
-        # print(out.shape)
-        out = self.mlp_head(out)
-        out = self.sigmoid(out)
-        # print(out.shape)
-        return out
+        if self.classifier == 'mlp':
+            x = F.adaptive_avg_pool2d(out, (1, 1))
+            x = x.squeeze().squeeze()
+            x = self.mlp_head(x)
+
+        if self.classifier == 'vit':
+            x = self.convr(out)
+            # print(x.shape)
+            x = self.flatten_to_vectors(x)
+            x = self.embedding(x)
+            # print(x.shape)
+            x = self.dropout(x)
+            x = self.transformer(x)
+            x = x.mean(dim = 1)
+            x = self.mlp_dropout(x)
+            x = self.mlp_hidden(x)
+            x = self.mlp_relu(x)
+            x = self.mlp_dropout(x)
+            x = self.mlp_out(x)
+        return self.sigmoid(x)
 
 from torchsummary import summary
 if __name__ == '__main__':
     x = torch.ones(32, 3, 128, 128)
     y = torch.ones(32, 1, 128, 128)
-    model_ = DualCNNCMATransformer(image_size=224, num_classes=1, depth=4, \
+    model_ = DualPatchCNNCMAViT(image_size=128, num_classes=1, depth_block4=2, \
                 backbone='efficient_net', pretrained=True, unfreeze_blocks=-1, \
                 normalize_ifft='batchnorm',\
-                act='none',\
-                patch_resolution="1-2-4-8",\
-                init_type="xavier_uniform",
-                mlp_dim=2048, dropout_in_mlp=0.0)
+                act='selu',\
+                init_type="xavier_uniform", \
+                gamma_cma=-1, flatten_type='patch', patch_size=2, \
+                    
+                dim=1024, depth_vit=2, heads=3, dim_head=64, dropout=0.15, emb_dropout=0.15, mlp_dim=2048, dropout_in_mlp=0.0, \
+                classifier='vit', in_vit_channels=64)
     out = model_(x, y)
     print(out.shape)
+    # summary(model_, [(3, 128, 128), (1, 128, 128)], batch_size=32, device='cpu')

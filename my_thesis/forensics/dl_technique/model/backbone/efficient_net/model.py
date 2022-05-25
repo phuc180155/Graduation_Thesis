@@ -141,6 +141,7 @@ class EfficientNet(nn.Module):
             )
 
             # The first block needs to take care of stride and filter size increase.
+            # print("Block args: \n", block_args, "\n", self._global_params)
             self._blocks.append(MBConvBlock(block_args, self._global_params))
             if block_args.num_repeat > 1:
                 block_args = block_args._replace(input_filters=block_args.output_filters, stride=1)
@@ -165,20 +166,62 @@ class EfficientNet(nn.Module):
         for block in self._blocks:
             block.set_swish(memory_efficient)
 
-    def extract_features(self, inputs):
-        """ Returns output of the final convolution layer """
-
-        # Stem
+    def extract_features_block_4(self, inputs):
+       # Stem
+        # print("Input: ", inputs.shape)
         x = self._swish(self._bn0(self._conv_stem(inputs)))
         # Blocks
-        for idx, block in enumerate(self._blocks):
+        for idx, block in enumerate(self._blocks[:5]):
             drop_connect_rate = self._global_params.drop_connect_rate
             if drop_connect_rate:
                 drop_connect_rate *= float(idx) / len(self._blocks)
             x = block(x, drop_connect_rate=drop_connect_rate)
+        return x    # (B, 40, 16, 16) if image_size=128
 
+    def extract_features_block_11(self, inputs):
+        x = inputs
+        for idx, block in enumerate(self._blocks[5:11]):
+            drop_connect_rate = self._global_params.drop_connect_rate
+            if drop_connect_rate:
+                drop_connect_rate *= float(idx) / len(self._blocks)
+            x = block(x, drop_connect_rate=drop_connect_rate)
+        return x    # (B, 112, 8, 8) if image_size=128
+
+    def extract_features_last_block(self, inputs, classifier='mlp'):
+        x = inputs
+        for idx, block in enumerate(self._blocks[11:]):
+            drop_connect_rate = self._global_params.drop_connect_rate
+            if drop_connect_rate:
+                drop_connect_rate *= float(idx) / len(self._blocks)
+            x = block(x, drop_connect_rate=drop_connect_rate)
+        if classifier == 'mlp':
+            x = self._swish(self._bn1(self._conv_head(x)))
+        return x    # (B, )
+
+
+    def extract_features(self, inputs):
+        """ Returns output of the final convolution layer """
+
+        # Stem
+        # print("Input: ", inputs.shape)
+        x = self._swish(self._bn0(self._conv_stem(inputs)))
+        # Blocks
+        # print("After        Stem: ", x.shape)
+        for idx, block in enumerate(self._blocks):
+            # if idx == 11:
+            #     continue
+            # print("\n Block ", idx)
+            drop_connect_rate = self._global_params.drop_connect_rate
+            if drop_connect_rate:
+                drop_connect_rate *= float(idx) / len(self._blocks)
+            x = block(x, drop_connect_rate=drop_connect_rate)
+            # print("After    block ", idx, "  : ", x.shape)
+
+        # print("\nOut      blocks: ", x.shape)
         # Head
+        # print(self._conv_head)
         x = self._swish(self._bn1(self._conv_head(x)))
+        # print(" After   conv head: ", x.shape)
 
         return x
 

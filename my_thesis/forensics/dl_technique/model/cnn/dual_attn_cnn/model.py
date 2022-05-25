@@ -185,6 +185,8 @@ class DualCrossAttnCNN(nn.Module):
             ifreq_feature = nn.LayerNorm(normalized_shape=self.features_size[self.backbone])(ifreq_feature)
         elif norm_type == 'normal':
             ifreq_feature = F.normalize(ifreq_feature)
+        elif norm_type == 'no_ifft':
+            return freq_feature
         return ifreq_feature
 
     def fusion(self, rgb, out_attn):
