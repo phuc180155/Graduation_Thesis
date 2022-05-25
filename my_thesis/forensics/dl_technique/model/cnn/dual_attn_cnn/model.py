@@ -213,9 +213,10 @@ class DualCrossAttnCNN(nn.Module):
 
     def forward(self, rgb_imgs, freq_imgs):
         rgb_features, freq_features = self.extract_feature(rgb_imgs, freq_imgs)
+        
         ifreq_features = self.ifft(freq_features, norm_type=self.normalize_ifft)
         # print("Features shape: ", rgb_features.shape, freq_features.shape, ifreq_features.shape)
-
+        
         # Turn to q, k, v if use conv-attention, and then flatten to vector:
         if self.conv_attn:
             rgb_query = self.query_conv(rgb_features)
@@ -235,9 +236,11 @@ class DualCrossAttnCNN(nn.Module):
         # print("Vectors shape: ", rgb_query_vectors.shape, freq_value_vectors.shape, ifreq_key_vectors.shape, ifreq_value_vectors.shape)
 
         ##### Cross attention and fusion:
+
         out, attn_weight = self.CA(rgb_query_vectors, ifreq_key_vectors, ifreq_value_vectors)
         attn_out = torch.bmm(attn_weight, freq_value_vectors)
         fusion_out = self.fusion(rgb_query_vectors, attn_out)
+        
         if self.activation is not None:
             fusion_out = self.activation(fusion_out)
         # print("Fusion shape: ", fusion_out.shape)

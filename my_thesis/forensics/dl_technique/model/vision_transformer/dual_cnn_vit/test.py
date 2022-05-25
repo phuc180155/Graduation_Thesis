@@ -365,7 +365,7 @@ class DualCNNViTTest(nn.Module):
             x = self.mlp_relu(x)
             x = self.mlp_dropout(x)
             x = self.mlp_head_out(x)
-            x = self.sigmoid(x)
+        x = self.sigmoid(x)
         return x
 
 from torchsummary import summary
