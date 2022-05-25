@@ -153,9 +153,10 @@ class DualCNNViTTest(nn.Module):
 
         # Thêm 1 embedding vector cho classify token:
         self.classifier = classifier
+        self.num_vecs = self.num_patches if self.flatten_type == 'patch' else self.out_ext_channels//ratio
         if 'vit' in self.classifier:
             self.transformer = Transformer(self.dim, self.depth, self.heads, self.dim_head, self.mlp_dim, self.dropout_value)
-
+            self.batchnorm = nn.BatchNorm1d(self.num_vecs)
         self.mlp_relu = nn.ReLU(inplace=True)
         self.mlp_head_hidden = nn.Linear(self.dim, self.mlp_dim)
         self.mlp_dropout = nn.Dropout(dropout_in_mlp)
@@ -348,6 +349,9 @@ class DualCNNViTTest(nn.Module):
 
         if self.classifier == 'vit':
             x = self.transformer(embed)
+            # sys.stdout = open('/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/dl_technique/check.txt', 'w')
+            # print(x[0])
+            # sys.stdout = sys.__stdout__
             x = x.mean(dim = 1).squeeze(dim=1)
             x = self.mlp_dropout(x)         
             x = self.mlp_head_hidden(x) # B, 1, D => 
@@ -357,6 +361,7 @@ class DualCNNViTTest(nn.Module):
 
         if 'vit_aggregate' in self.classifier:
             x = self.transformer(embed)
+            x = self.batchnorm(x)
             gamma = float(self.classifier.split('_')[-1])
             x = embed + gamma * x
             x = x.mean(dim = 1).squeeze(dim=1)
