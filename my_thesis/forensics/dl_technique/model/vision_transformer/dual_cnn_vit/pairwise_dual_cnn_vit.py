@@ -118,6 +118,10 @@ class PairwiseDualCNNViT(nn.Module):
         self.rgb_extractor = self.get_feature_extractor(architecture=backbone, pretrained=pretrained, unfreeze_blocks=unfreeze_blocks, num_classes=num_classes, in_channels=3)   # efficient_net-b0, return shape (1280, 8, 8) or (1280, 7, 7)
         self.freq_extractor = self.get_feature_extractor(architecture=backbone, pretrained=pretrained, unfreeze_blocks=unfreeze_blocks, num_classes=num_classes, in_channels=1)     
         self.normalize_ifft = normalize_ifft
+        if self.normalize_ifft == 'batchnorm':
+            self.batchnorm_ifft = nn.BatchNorm2d(num_features=self.out_ext_channels)
+        if self.normalize_ifft == 'layernorm':
+            self.layernorm_ifft = nn.LayerNorm(normalized_shape=self.features_size[self.backbone])
         ############################# PATCH CONFIG ################################
         
         if self.flatten_type == 'patch':
@@ -279,9 +283,9 @@ class PairwiseDualCNNViT(nn.Module):
         if norm_type == 'none':
             pass
         elif norm_type == 'batchnorm':
-            ifreq_feature = nn.BatchNorm2d(num_features=self.out_ext_channels)(ifreq_feature)
+            ifreq_feature = self.batchnorm_ifft(ifreq_feature)
         elif norm_type == 'layernorm':
-            ifreq_feature = nn.LayerNorm(normalized_shape=self.features_size[self.backbone])(ifreq_feature)
+            ifreq_feature = self.layernorm_ifft(ifreq_feature)
         elif norm_type == 'normal':
             ifreq_feature = F.normalize(ifreq_feature)
         elif norm_type == 'no_ifft':
