@@ -237,6 +237,7 @@ def parse_args():
     parser_pairwise_dual_cnn_vit.add_argument("--init_layernorm", type=str, default="normal", help="")
     parser_pairwise_dual_cnn_vit.add_argument("--init_conv", type=str, default="kaiming", help="")
     parser_pairwise_dual_cnn_vit.add_argument("--division_lr", type=int, default=1, help="")
+    parser_pairwise_dual_cnn_vit.add_argument("--embedding_return", type=str, default='mlp_hidden', help="")
 
     parser_ori_dual_eff_vit = sub_parser.add_parser('origin_dual_efficient_vit', help='My model')
     parser_ori_dual_eff_vit.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
@@ -574,9 +575,9 @@ if __name__ == "__main__":
                                 patch_size=args.patch_size, position_embed=bool(args.position_embed), pool=args.pool,\
                                 version=args.version, unfreeze_blocks=args.unfreeze_blocks, \
                                 init_weight=args.init_weight, init_linear=args.init_linear, init_layernorm=args.init_layernorm, init_conv=args.init_conv, \
-                                dropout_in_mlp=args.dropout_in_mlp)
+                                dropout_in_mlp=args.dropout_in_mlp, embedding_return=args.embedding_return)
         
-        args_txt = "lr{}-{}_batch{}_es{}_loss{}_im{}_mar{}_v{}_mlpdim{}_dim{}_h{}_d{}_pool{}_bb{}_pre{}_unf{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.weight_importance, args.margin, args.version, args.mlp_dim, args.dim, args.heads, args.depth, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
+        args_txt = "lr{}-{}_batch{}_es{}_loss{}_ret{}_im{}_mar{}_v{}_mlpdim{}_dim{}_h{}_d{}_pool{}_bb{}_pre{}_unf{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.embedding_return, args.weight_importance, args.margin, args.version, args.mlp_dim, args.dim, args.heads, args.depth, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
         args_txt += "norm{}_".format(args.normalize_ifft)
         args_txt += "flat{}_patch{}_".format(args.flatten_type, args.patch_size)
         args_txt += "convattn{}_r{}_qkvemb{}_incadim{}_prj{}_act{}_".format(args.conv_attn, args.ratio, args.qkv_embed, args.inner_ca_dim, args.prj_out, args.act)
@@ -592,7 +593,7 @@ if __name__ == "__main__":
         use_pretrained = True if args.pretrained or args.resume != '' else False
         train_pairwise_dual_stream(model, args.weight_importance, args.margin, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
-                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="pairwise_dual_efficient_vit", args_txt=args_txt, augmentation=args.augmentation)
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="pairwise_dual_cnn_vit", args_txt=args_txt, augmentation=args.augmentation)
 
     elif model == "dual_cnn_feedforward_vit":
         from module.train_torch import train_dual_stream
@@ -696,7 +697,7 @@ if __name__ == "__main__":
         
         train_image_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=0, use_pretrained=False,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed, \
-                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="vit", args_txt=args_txt, augmentation=args.augmentation)
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="swn_vit", args_txt=args_txt, augmentation=args.augmentation)
 
     elif model == 'm2tr':
         from module.train_torch import train_image_stream
