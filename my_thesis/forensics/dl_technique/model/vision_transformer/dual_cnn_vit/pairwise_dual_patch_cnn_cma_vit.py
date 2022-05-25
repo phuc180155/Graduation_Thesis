@@ -298,30 +298,34 @@ class TransformerBlockv2(nn.Module):
     Transformer = MultiHead_Attention + Feed_Forward with sublayer connection
     """
 
-    def __init__(self, patchsize, in_channel=256):
+    def __init__(self, patchsize, in_channel=256, gamma_patchtrans=-1):
         super().__init__()
         self.attention = MultiHeadedAttentionv2(patchsize, d_model=in_channel)
         self.feed_forward = FeedForward2D(
             in_channel=in_channel, out_channel=in_channel
         )
+        if gamma_patchtrans == -1:
+            self.gamma = nn.Parameter(torch.zeros(1))
+        else:
+            self.gamma = gamma_patchtrans
 
     def forward(self, rgb, freq):
         self_attention = self.attention(rgb, freq)
-        output = rgb + self_attention
+        output = rgb + self.gamma * self_attention
         output = output + self.feed_forward(output)
         return output
 
 class PatchTransv2(nn.Module):
-    def __init__(self, in_channel, in_size, patch_resolution="1-2-4-8"):
+    def __init__(self, in_channel, in_size, patch_crossattn_resolution="1-2-4-8", gamma_patchtrans=-1):
         super().__init__()
         self.in_size = in_size
 
         patchsize = []
-        reso = map(float, patch_resolution.split("-"))
+        reso = map(float, patch_crossattn_resolution.split("-"))
         for r in reso:
             patchsize.append((int(in_size//r), int(in_size//r)))
         # print(patchsize)
-        self.transform_ = TransformerBlockv2(patchsize, in_channel=in_channel)
+        self.transform_ = TransformerBlockv2(patchsize, in_channel=in_channel, gamma_patchtrans=gamma_patchtrans)
         # print(in_channel)
 
     def forward(self, rgb_fea, freq_fea):
@@ -334,9 +338,9 @@ class PairwiseDualPatchCNNCMAViT(nn.Module):
                 normalize_ifft='batchnorm',\
                 act='none',\
                 init_type="xavier_uniform", \
-                gamma_cma=-1, flatten_type='patch', patch_size=2, \
+                gamma_cma=-1, flatten_type='patch', gamma_patchtrans=0.3, patch_crossattn_resolution='1-2', patch_size=2, \
                 dim=1024, depth_vit=2, heads=3, dim_head=64, dropout=0.15, emb_dropout=0.15, mlp_dim=2048, dropout_in_mlp=0.0, \
-                classifier='mlp', in_vit_channels=64):  
+                classifier='mlp', in_vit_channels=64, embedding_return='mlp_out'):  
         super(PairwiseDualPatchCNNCMAViT, self).__init__()
 
         self.image_size = image_size
@@ -387,8 +391,9 @@ class PairwiseDualPatchCNNCMAViT(nn.Module):
         self.transformer_block_4 = nn.ModuleList([])
         for _ in range(depth_block4):
             self.transformer_block_4.append(PatchTrans(in_channel=40, in_size=16, patch_resolution='1-2-4-8').to(device))
-        self.transformer_block_10_rgb = PatchTransv2(in_channel=112, in_size=8, patch_resolution='1-2-4-8').to(device)
-        self.transformer_block_10_freq = PatchTransv2(in_channel=112, in_size=8, patch_resolution='1-2-4-8').to(device)
+        self.transformer_block_10_rgb = PatchTransv2(in_channel=112, in_size=8, patch_crossattn_resolution=patch_crossattn_resolution, gamma_patchtrans=gamma_patchtrans).to(device)
+        self.transformer_block_10_freq = PatchTransv2(in_channel=112, in_size=8, patch_crossattn_resolution=patch_crossattn_resolution, gamma_patchtrans=gamma_patchtrans).to(device)
+        self.embedding_return = embedding_return
 
         # Classifier:
         self.classifier = classifier
@@ -561,7 +566,7 @@ class PairwiseDualPatchCNNCMAViT(nn.Module):
             y = self.mlp_hidden(x)
             x = self.mlp_relu(y)
             x = self.mlp_dropout(x)
-            x = self.mlp_out(x)
+            z = self.mlp_out(x)
 
         if self.classifier == 'vit':
             x = self.convr(out)
@@ -576,8 +581,8 @@ class PairwiseDualPatchCNNCMAViT(nn.Module):
             y = self.mlp_hidden(x)
             x = self.mlp_relu(y)
             x = self.mlp_dropout(x)
-            x = self.mlp_out(x)
-        return y, self.sigmoid(x)
+            z = self.mlp_out(x)
+        return y if self.embedding_return == 'mlp_hidden' else z, self.sigmoid(x)
 
     def forward(self, rgb_imgs0, freq_imgs0, rgb_imgs1, freq_imgs1):
         embedding0, out0 = self.forward_once(rgb_imgs0, freq_imgs0)
@@ -593,10 +598,10 @@ if __name__ == '__main__':
                 normalize_ifft='batchnorm',\
                 act='selu',\
                 init_type="xavier_uniform", \
-                gamma_cma=-1, flatten_type='patch', patch_size=2, \
-                    
+                gamma_cma=-1, gamma_patchtrans=-1, patch_crossattn_resolution='1-2',\
+                flatten_type='patch', patch_size=2, \
                 dim=1024, depth_vit=2, heads=3, dim_head=64, dropout=0.15, emb_dropout=0.15, mlp_dim=2048, dropout_in_mlp=0.0, \
-                classifier='vit', in_vit_channels=64)
-    out = model_(x, y)
+                classifier='vit', in_vit_channels=64, embedding_return='mlp_out')
+    out, out1, out2, ou3 = model_(x, y, x, y)
     print(out.shape)
     # summary(model_, [(3, 128, 128), (1, 128, 128)], batch_size=32, device='cpu')

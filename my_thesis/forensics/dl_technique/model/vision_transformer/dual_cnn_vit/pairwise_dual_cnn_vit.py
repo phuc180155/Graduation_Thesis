@@ -86,7 +86,7 @@ class PairwiseDualCNNViT(nn.Module):
                 patch_size=7, position_embed=False, pool='cls',\
                 version='ca-rmifft-fcat-0.5', unfreeze_blocks=-1, \
                 init_weight=False, init_linear="xavier", init_layernorm="normal", init_conv="kaiming", \
-                dropout_in_mlp=0.0):  
+                dropout_in_mlp=0.0, embedding_return='mlp_out'):  
         super(PairwiseDualCNNViT, self).__init__()
 
         self.image_size = image_size
@@ -152,6 +152,7 @@ class PairwiseDualCNNViT(nn.Module):
             self.embedding = nn.Linear(self.in_dim, self.dim)
 
         # Thêm 1 embedding vector cho classify token:
+        self.embedding_return = embedding_return
         self.cls_token = nn.Parameter(torch.randn(1, 1, self.dim))
         self.dropout = nn.Dropout(self.emb_dropout)
         self.transformer = Transformer(self.dim, self.depth, self.heads, self.dim_head, self.mlp_dim, self.dropout_value)
@@ -352,13 +353,13 @@ class PairwiseDualCNNViT(nn.Module):
         x = self.dropout(x)
         x = self.transformer(x)
         x = self.to_cls_token(x.mean(dim = 1) if self.pool == 'mean' else x[:, 0])
-        embedding_feature = self.mlp_dropout(x)
-        embedding_feature = self.mlp_head_hidden(embedding_feature)
-        embedding_feature = F.relu(embedding_feature)
-        embedding_feature = self.mlp_dropout(embedding_feature)
-        out = self.mlp_head_out(embedding_feature)
-        out = self.sigmoid(out)
-        return x, out
+        x = self.mlp_dropout(x)
+        y = self.mlp_head_hidden(x)
+        x = F.relu(y)
+        x = self.mlp_dropout(x)
+        z = self.mlp_head_out(x)
+        out = self.sigmoid(z)
+        return y if self.embedding_return=='mlp_hidden' else z, out
 
     def forward(self, rgb_imgs0, freq_imgs0, rgb_imgs1, freq_imgs1):
         embedding_0, out_0 = self.forward_once(rgb_imgs0, freq_imgs0)
@@ -377,6 +378,6 @@ if __name__ == '__main__':
                                 flatten_type='patch',\
                                 conv_attn=True, ratio=8, qkv_embed=True, inner_ca_dim=0, init_ca_weight=True, prj_out=False, act='none',\
                                 patch_size=1, position_embed=False, pool='cls',\
-                                version='ca-fcat-0.5', unfreeze_blocks=-1)
+                                version='ca-fcat-0.5', unfreeze_blocks=-1, embedding_return='mlp_hidden')
     out = model_(x, y)
     print(out.shape)
