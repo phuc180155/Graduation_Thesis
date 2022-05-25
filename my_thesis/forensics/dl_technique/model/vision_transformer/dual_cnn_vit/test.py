@@ -145,10 +145,6 @@ class DualCNNViTTest(nn.Module):
         self.CA = CrossAttention(in_dim=self.in_dim, inner_dim=inner_ca_dim, prj_out=prj_out, qkv_embed=qkv_embed, init_weight=init_ca_weight)
 
         ############################# VIT #########################################
-        # Number of vectors:
-        self.num_vecs = self.num_patches if self.flatten_type == 'patch' else self.out_ext_channels//ratio
-        # Embed vị trí cho từng vectors (nếu chia theo patch):
-        self.pos_embedding = nn.Parameter(torch.randn(1, self.num_vecs+1, self.dim))
         # Giảm chiều vector sau concat 2*patch_dim về D:
         if 'cat' in self.version:
             self.embedding = nn.Linear(2 * self.in_dim, self.dim)
@@ -160,13 +156,10 @@ class DualCNNViTTest(nn.Module):
         if 'vit' in self.classifier:
             self.transformer = Transformer(self.dim, self.depth, self.heads, self.dim_head, self.mlp_dim, self.dropout_value)
 
-        self.mlp_head = nn.Sequential(
-            nn.Dropout(dropout_in_mlp),
-            nn.Linear(self.dim, self.mlp_dim),
-            nn.ReLU(),
-            nn.Dropout(dropout_in_mlp),
-            nn.Linear(self.mlp_dim, self.num_classes)
-        )
+        self.mlp_relu = nn.ReLU(inplace=True)
+        self.mlp_head_hidden = nn.Linear(self.dim, self.mlp_dim)
+        self.mlp_dropout = nn.Dropout(dropout_in_mlp)
+        self.mlp_head_out = nn.Linear(self.mlp_dim, self.num_classes)
         self.sigmoid = nn.Sigmoid()
         self.init_linear, self.init_layernorm, self.init_conv = init_linear, init_layernorm, init_conv
         if init_weight:
@@ -347,20 +340,32 @@ class DualCNNViTTest(nn.Module):
         ##### Forward to ViT
         if self.classifier == 'mlp':
             x = embed.mean(dim = 1).squeeze(dim=1)     # B, N, D => B, 1, D
-            x = self.mlp_head(x)
+            x = self.mlp_dropout(x)         
+            x = self.mlp_head_hidden(x) # B, 1, D => 
+            x = self.mlp_relu(x)
+            x = self.mlp_dropout(x)
+            x = self.mlp_head_out(x)
 
         if self.classifier == 'vit':
             x = self.transformer(embed)
             x = x.mean(dim = 1).squeeze(dim=1)
-            x = self.mlp_head(x)
+            x = self.mlp_dropout(x)         
+            x = self.mlp_head_hidden(x) # B, 1, D => 
+            x = self.mlp_relu(x)
+            x = self.mlp_dropout(x)
+            x = self.mlp_head_out(x)
 
         if 'vit_aggregate' in self.classifier:
             x = self.transformer(embed)
             gamma = float(self.classifier.split('_')[-1])
             x = embed + gamma * x
             x = x.mean(dim = 1).squeeze(dim=1)
-            x = self.mlp_head(x)
-        x = self.sigmoid(x)
+            x = self.mlp_dropout(x)         
+            x = self.mlp_head_hidden(x) # B, 1, D => 
+            x = self.mlp_relu(x)
+            x = self.mlp_dropout(x)
+            x = self.mlp_head_out(x)
+            x = self.sigmoid(x)
         return x
 
 from torchsummary import summary
