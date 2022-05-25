@@ -354,7 +354,7 @@ class DualCNNViTTest(nn.Module):
             x = x.mean(dim = 1).squeeze(dim=1)
             x = self.mlp_head(x)
 
-        if self.classifier == 'vit_aggregate_0.3':
+        if 'vit_aggregate' in self.classifier:
             x = self.transformer(embed)
             gamma = float(self.classifier.split('_')[-1])
             x = embed + gamma * x
