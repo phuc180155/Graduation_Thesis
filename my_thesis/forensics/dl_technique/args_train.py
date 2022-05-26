@@ -859,7 +859,7 @@ if __name__ == "__main__":
                 normalize_ifft=args.normalize_ifft,\
                 act=args.act,\
                 init_type=args.init_type, \
-                gamma_cma=args.gamma_cma, gamma_crossattn_patchtrans=args.gamma_crossattn_patchtrans, patch_crossattn_resolution=args.patch_resolution, \
+                gamma_cma=args.gamma_cma, gamma_crossattn_patchtrans=args.gamma_crossattn_patchtrans, patch_crossattn_resolution=args.patch_crossattn_resolution, \
                 gamma_self_patchtrans=args.gamma_self_patchtrans, patch_self_resolution=args.patch_self_resolution, flatten_type='patch', patch_size=2, \
                 dim=args.dim, depth_vit=args.depth, heads=args.heads, dim_head=args.dim_head, dropout=0.0, emb_dropout=0.0, mlp_dim=args.mlp_dim, dropout_in_mlp=args.dropout_in_mlp, \
                 classifier=args.classifier, in_vit_channels=args.in_vit_channels)
@@ -891,7 +891,7 @@ if __name__ == "__main__":
                 normalize_ifft=args.normalize_ifft,\
                 act=args.act,\
                 init_type=args.init_type, \
-                gamma_cma=args.gamma_cma, gamma_crossattn_patchtrans=args.gamma_crossattn_patchtrans, patch_crossattn_resolution=args.patch_resolution, \
+                gamma_cma=args.gamma_cma, gamma_crossattn_patchtrans=args.gamma_crossattn_patchtrans, patch_crossattn_resolution=args.patch_crossattn_resolution, \
                 gamma_self_patchtrans=args.gamma_self_patchtrans, patch_self_resolution=args.patch_self_resolution, flatten_type='patch', patch_size=2, \
                 dim=args.dim, depth_vit=args.depth, heads=args.heads, dim_head=args.dim_head, dropout=0.0, emb_dropout=0.0, mlp_dim=args.mlp_dim, dropout_in_mlp=args.dropout_in_mlp, \
                 classifier=args.classifier, in_vit_channels=args.in_vit_channels, embedding_return=args.embedding_return)
