@@ -259,16 +259,16 @@ class FeedForward2D(nn.Module):
         return x
 
 class PatchTrans(nn.Module):
-    def __init__(self, in_channel, in_size, patch_resolution="1-2-4-8"):
+    def __init__(self, in_channel, in_size, patch_self_resolution="1-2-4-8", gamma_self_patchtrans=-1):
         super().__init__()
         self.in_size = in_size
 
         patchsize = []
-        reso = map(float, patch_resolution.split("-"))
+        reso = map(float, patch_self_resolution.split("-"))
         for r in reso:
             patchsize.append((int(in_size//r), int(in_size//r)))
         # print(patchsize)
-        self.transform_ = TransformerBlock(patchsize, in_channel=in_channel)
+        self.transform_ = TransformerBlock(patchsize, in_channel=in_channel, gamma_self_patchtrans=gamma_self_patchtrans)
         # print(in_channel)
 
     def forward(self, enc_feat):
@@ -280,16 +280,21 @@ class TransformerBlock(nn.Module):
     Transformer = MultiHead_Attention + Feed_Forward with sublayer connection
     """
 
-    def __init__(self, patchsize, in_channel=256):
+    def __init__(self, patchsize, in_channel=256, gamma_self_patchtrans=-1):
         super().__init__()
         self.attention = MultiHeadedAttention(patchsize, d_model=in_channel)
         self.feed_forward = FeedForward2D(
             in_channel=in_channel, out_channel=in_channel
         )
+        if gamma_self_patchtrans == -1:
+            self.gamma = nn.Parameter(torch.zeros(1))
+        else:
+            self.gamma = gamma_self_patchtrans
+
 
     def forward(self, rgb):
         self_attention = self.attention(rgb)
-        output = rgb + self_attention
+        output = rgb + self.gamma * self_attention
         output = output + self.feed_forward(output)
         return output
 
@@ -338,7 +343,8 @@ class PairwiseDualPatchCNNCMAViT(nn.Module):
                 normalize_ifft='batchnorm',\
                 act='none',\
                 init_type="xavier_uniform", \
-                gamma_cma=-1, gamma_patchtrans=-1, patch_crossattn_resolution='1-2', \
+                gamma_cma=-1, gamma_crossattn_patchtrans=-1, patch_crossattn_resolution='1-2', \
+                gamma_self_patchtrans=-1, patch_self_resolution='1-2', \
                 flatten_type='patch', patch_size=2, \
                 dim=1024, depth_vit=2, heads=3, dim_head=64, dropout=0.15, emb_dropout=0.15, mlp_dim=2048, dropout_in_mlp=0.0, \
                 classifier='mlp', in_vit_channels=64, embedding_return='mlp_hidden'):  
@@ -385,9 +391,9 @@ class PairwiseDualPatchCNNCMAViT(nn.Module):
         # self.dropout = nn.Dropout(self.emb_dropout)
         self.transformer_block_4 = nn.ModuleList([])
         for _ in range(depth_block4):
-            self.transformer_block_4.append(PatchTrans(in_channel=40, in_size=16, patch_resolution='1-2-4-8'))
-        self.transformer_block_10_rgb = PatchTransv2(in_channel=112, in_size=8, patch_crossattn_resolution=patch_crossattn_resolution, gamma_patchtrans=gamma_patchtrans)
-        self.transformer_block_10_freq = PatchTransv2(in_channel=112, in_size=8, patch_crossattn_resolution=patch_crossattn_resolution, gamma_patchtrans=gamma_patchtrans)
+            self.transformer_block_4.append(PatchTrans(in_channel=40, in_size=16, patch_self_resolution=patch_self_resolution, gamma_self_patchtrans=gamma_self_patchtrans))
+        self.transformer_block_10_rgb = PatchTransv2(in_channel=112, in_size=8, patch_crossattn_resolution=patch_crossattn_resolution, gamma_patchtrans=gamma_crossattn_patchtrans)
+        self.transformer_block_10_freq = PatchTransv2(in_channel=112, in_size=8, patch_crossattn_resolution=patch_crossattn_resolution, gamma_patchtrans=gamma_crossattn_patchtrans)
 
         # Classifier:
         self.classifier = classifier
@@ -622,10 +628,11 @@ if __name__ == '__main__':
                 normalize_ifft='batchnorm',\
                 act='selu',\
                 init_type="xavier_uniform",\
-                gamma_cma=-1, gamma_patchtrans=-1, patch_crossattn_resolution='1-2',\
+                gamma_cma=-1, gamma_crossattn_patchtrans=-1, patch_crossattn_resolution='1-2',\
+                gamma_self_patchtrans=-1, patch_self_resolution='1-2', \
                 flatten_type='channel', patch_size=2, \
                 dim=1024, depth_vit=2, heads=3, dim_head=64, dropout=0.15, emb_dropout=0.15, mlp_dim=2048, dropout_in_mlp=0.0, \
-                classifier='vit_aggregate_0.3', in_vit_channels=64, embedding_return='mlp_out')
+                classifier='mlp', in_vit_channels=64, embedding_return='mlp_out')
     out1, out2, _, _ = model_(x, y,x, y)
     print(out1.shape)
     print(out2.shape)

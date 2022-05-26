@@ -214,8 +214,10 @@ def parse_args():
     parser_dual_patch_cnn_cma_vit.add_argument("--classifier", type=str, default='mlp', help="")
     parser_dual_patch_cnn_cma_vit.add_argument("--in_vit_channels", type=int, default=64, help="")
     parser_dual_patch_cnn_cma_vit.add_argument("--init_type", type=str, default='xavier_uniform', help="")
-    parser_dual_patch_cnn_cma_vit.add_argument("--gamma_trans", type=float, default=-1, help="")
-    parser_dual_patch_cnn_cma_vit.add_argument("--patch_resolution", type=str, default='1-2', help="in_size=8, in_channels=112")
+    parser_dual_patch_cnn_cma_vit.add_argument("--gamma_crossattn_patchtrans", type=float, default=-1, help="")
+    parser_dual_patch_cnn_cma_vit.add_argument("--patch_crossattn_resolution", type=str, default='1-2', help="in_size=8, in_channels=112")
+    parser_dual_patch_cnn_cma_vit.add_argument("--gamma_self_patchtrans", type=float, default=-1, help="")
+    parser_dual_patch_cnn_cma_vit.add_argument("--patch_self_resolution", type=str, default='1-2', help="in_size=16, in_channels=80")
 
     parser_pairwise_dual_patch_cnn_cma_vit = sub_parser.add_parser('pairwise_dual_patch_cnn_cma_vit', help='My model')
     parser_pairwise_dual_patch_cnn_cma_vit.add_argument("--weight_importance", type=float, default=2.0)
@@ -233,9 +235,11 @@ def parse_args():
     parser_pairwise_dual_patch_cnn_cma_vit.add_argument("--classifier", type=str, default='mlp', help="")
     parser_pairwise_dual_patch_cnn_cma_vit.add_argument("--in_vit_channels", type=int, default=64, help="")
     parser_pairwise_dual_patch_cnn_cma_vit.add_argument("--init_type", type=str, default='xavier_uniform', help="")
-    parser_pairwise_dual_patch_cnn_cma_vit.add_argument("--gamma_trans", type=float, default=-1, help="")
-    parser_pairwise_dual_patch_cnn_cma_vit.add_argument("--patch_resolution", type=str, default='1-2', help="in_size=8, in_channels=112")
     parser_pairwise_dual_patch_cnn_cma_vit.add_argument("--embedding_return", type=str, default='mlp_hidden')
+    parser_pairwise_dual_patch_cnn_cma_vit.add_argument("--gamma_crossattn_patchtrans", type=float, default=-1, help="")
+    parser_pairwise_dual_patch_cnn_cma_vit.add_argument("--patch_crossattn_resolution", type=str, default='1-2', help="in_size=8, in_channels=112")
+    parser_pairwise_dual_patch_cnn_cma_vit.add_argument("--gamma_self_patchtrans", type=float, default=-1, help="")
+    parser_pairwise_dual_patch_cnn_cma_vit.add_argument("--patch_self_resolution", type=str, default='1-2', help="in_size=16, in_channels=80")
 
     parser_pairwise_dual_cnn_vit = sub_parser.add_parser('pairwise_dual_cnn_vit', help='My model')
     parser_pairwise_dual_cnn_vit.add_argument("--weight_importance", type=float, default=2.0)
@@ -855,12 +859,13 @@ if __name__ == "__main__":
                 normalize_ifft=args.normalize_ifft,\
                 act=args.act,\
                 init_type=args.init_type, \
-                gamma_cma=args.gamma_cma, gamma_patchtrans=args.gamma_trans, patch_crossattn_resolution=args.patch_resolution, flatten_type='patch', patch_size=2, \
+                gamma_cma=args.gamma_cma, gamma_crossattn_patchtrans=args.gamma_crossattn_patchtrans, patch_crossattn_resolution=args.patch_resolution, \
+                gamma_self_patchtrans=args.gamma_self_patchtrans, patch_self_resolution=args.patch_self_resolution, flatten_type='patch', patch_size=2, \
                 dim=args.dim, depth_vit=args.depth, heads=args.heads, dim_head=args.dim_head, dropout=0.0, emb_dropout=0.0, mlp_dim=args.mlp_dim, dropout_in_mlp=args.dropout_in_mlp, \
                 classifier=args.classifier, in_vit_channels=args.in_vit_channels)
         
-        args_txt = "lr{}-{}_batch{}_es{}_loss{}_bb{}_pre{}_unf{}_gammacma{}_gammatrans{}_depthblock4{}_flatten{}_patch{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.backbone, args.pretrained, args.unfreeze_blocks, args.gamma_cma,args.gamma_trans, args.depth_block4, args.flatten_type, args.patch_size)
-        args_txt += "norm{}_patchreso{}_".format(args.normalize_ifft, args.patch_resolution)
+        args_txt = "lr{}-{}_batch{}_es{}_loss{}_bb{}_pre{}_unf{}_gammacma{}_gammaselftrans{}_gammaattntrans{}_depthblock4{}_flatten{}_patch{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.backbone, args.pretrained, args.unfreeze_blocks, args.gamma_cma,args.gamma_self_patchtrans, args.gamma_crossattn_patchtrans, args.depth_block4, args.flatten_type, args.patch_size)
+        args_txt += "norm{}_selfpatchreso{}_attnpatchreso{}_".format(args.normalize_ifft, args.patch_self_resolution, args.patch_crossattn_resolution)
         args_txt += "act{}_".format(args.act)
         args_txt += "init_{}_".format(args.init_type)
         args_txt += "seed{}_cls{}_".format(args.seed, args.classifier)
@@ -886,12 +891,13 @@ if __name__ == "__main__":
                 normalize_ifft=args.normalize_ifft,\
                 act=args.act,\
                 init_type=args.init_type, \
-                gamma_cma=args.gamma_cma, gamma_patchtrans=args.gamma_trans, patch_crossattn_resolution=args.patch_resolution, flatten_type='patch', patch_size=2, \
+                gamma_cma=args.gamma_cma, gamma_crossattn_patchtrans=args.gamma_crossattn_patchtrans, patch_crossattn_resolution=args.patch_resolution, \
+                gamma_self_patchtrans=args.gamma_self_patchtrans, patch_self_resolution=args.patch_self_resolution, flatten_type='patch', patch_size=2, \
                 dim=args.dim, depth_vit=args.depth, heads=args.heads, dim_head=args.dim_head, dropout=0.0, emb_dropout=0.0, mlp_dim=args.mlp_dim, dropout_in_mlp=args.dropout_in_mlp, \
                 classifier=args.classifier, in_vit_channels=args.in_vit_channels, embedding_return=args.embedding_return)
         
-        args_txt = "lr{}-{}_batch{}_es{}_loss{}_ret{}_im{}_mar{}__bb{}_pre{}_unf{}_gammacma{}_gammatrans{}_depthblock4{}_flatten{}_patch{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.embedding_return, args.weight_importance, args.margin, args.backbone, args.pretrained, args.unfreeze_blocks, args.gamma_cma, args.gamma_trans, args.depth_block4, args.flatten_type, args.patch_size)
-        args_txt += "norm{}_patchreso{}_".format(args.normalize_ifft, args.patch_resolution)
+        args_txt = "lr{}-{}_batch{}_es{}_loss{}_ret{}_im{}_mar{}__bb{}_pre{}_unf{}_gammacma{}_gammaselftrans{}_gammaattntrans{}_depthblock4{}_flatten{}_patch{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.embedding_return, args.weight_importance, args.margin, args.backbone, args.pretrained, args.unfreeze_blocks, args.gamma_cma, args.gamma_self_patchtrans, args.gamma_crossattn_patchtrans, args.depth_block4, args.flatten_type, args.patch_size)
+        args_txt += "norm{}_selfpatchreso{}_attnpatchreso{}_".format(args.normalize_ifft, args.patch_self_resolution, args.patch_crossattn_resolution)
         args_txt += "act{}_".format(args.act)
         args_txt += "init_{}_".format(args.init_type)
         args_txt += "seed{}_cls{}_".format(args.seed, args.classifier)
