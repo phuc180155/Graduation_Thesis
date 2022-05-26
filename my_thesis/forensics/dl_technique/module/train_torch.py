@@ -509,13 +509,13 @@ def eval_dual_stream(model, dataloader, device, criterion, adj_brightness=1.0, a
                 logps = logps.squeeze(dim=1)
 
             # Loss in a batch
-            sys.stdout = open('/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/dl_technique/check.txt', 'w')
-            print("inputs shape, fft images shape: ", inputs.shape, fft_imgs.shape)
-            print("logps shape: ", logps.shape)
-            print("labels shape: ", labels.shape)
-            print("logps: ", logps)
-            print("labels: ", labels)
-            sys.stdout = sys.__stdout__
+            # sys.stdout = open('/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/dl_technique/check.txt', 'w')
+            # print("inputs shape, fft images shape: ", inputs.shape, fft_imgs.shape)
+            # print("logps shape: ", logps.shape)
+            # print("labels shape: ", labels.shape)
+            # print("logps: ", logps)
+            # print("labels: ", labels)
+            # sys.stdout = sys.__stdout__
 
             batch_loss = criterion(logps, labels)
             # Cumulate into running val loss
