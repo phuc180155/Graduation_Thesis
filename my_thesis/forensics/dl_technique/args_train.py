@@ -139,6 +139,7 @@ def parse_args():
     parser_dual_cnn_vit.add_argument("--init_layernorm", type=str, default="normal", help="")
     parser_dual_cnn_vit.add_argument("--init_conv", type=str, default="kaiming", help="")
     parser_dual_cnn_vit.add_argument("--division_lr", type=int, default=0, help="")
+    parser_dual_cnn_vit.add_argument("--classifier", type=str, default="mlp", help="")
     ########### TEST ###########
     parser_dual_cnn_vit_test = sub_parser.add_parser('dual_cnn_vit_test', help='My model')
     parser_dual_cnn_vit_test.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
@@ -482,19 +483,19 @@ if __name__ == "__main__":
         
         dropout = 0.0
         emb_dropout = 0.0
-        model = DualCNNViT(gpu_id=args.gpu_id, image_size=args.image_size, num_classes=1, dim=args.dim,\
+        model = DualCNNViT(image_size=args.image_size, num_classes=1, dim=args.dim,\
                                 depth=args.depth, heads=args.heads, mlp_dim=args.mlp_dim,\
-                                dim_head=args.dim_head, dropout=0.15, emb_dropout=0.15,\
+                                dim_head=args.dim_head, dropout=0.15, \
                                 backbone=args.backbone, pretrained=bool(args.pretrained),\
                                 normalize_ifft=args.normalize_ifft,\
                                 flatten_type=args.flatten_type,\
                                 conv_attn=bool(args.conv_attn), ratio=args.ratio, qkv_embed=bool(args.qkv_embed), inner_ca_dim=args.inner_ca_dim, init_ca_weight=bool(args.init_ca_weight), prj_out=bool(args.prj_out), act=args.act,\
-                                patch_size=args.patch_size, position_embed=bool(args.position_embed), pool=args.pool,\
+                                patch_size=args.patch_size, \
                                 version=args.version, unfreeze_blocks=args.unfreeze_blocks, \
                                 init_weight=args.init_weight, init_linear=args.init_linear, init_layernorm=args.init_layernorm, init_conv=args.init_conv, \
-                                dropout_in_mlp=args.dropout_in_mlp)
+                                dropout_in_mlp=args.dropout_in_mlp, classifier=args.classifier)
         
-        args_txt = "lr{}-{}_batch{}_es_{}_loss_{}_v_{}_dim{}_mlpdim{}_h{}_d{}_pool_{}_bb_{}_pre{}_unf{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.version, args.dim, args.mlp_dim, args.heads, args.depth, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
+        args_txt = "lr{}-{}_batch{}_es_{}_loss_{}_cls{}_v_{}_dim{}_mlpdim{}_h{}_d{}_pool_{}_bb_{}_pre{}_unf{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.classifier, args.version, args.dim, args.mlp_dim, args.heads, args.depth, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
         args_txt += "norm{}_".format(args.normalize_ifft)
         args_txt += "flat_{}_patch{}_".format(args.flatten_type, args.patch_size)
         args_txt += "convattn{}_r{}_qkvemb{}_incadim{}_prj{}_act{}_".format(args.conv_attn, args.ratio, args.qkv_embed, args.inner_ca_dim, args.prj_out, args.act)
