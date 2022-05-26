@@ -76,18 +76,17 @@ class CrossAttention(nn.Module):
         return output, attn
 
 class DualCNNViT(nn.Module):
-    def __init__(self, gpu_id=-1, \
-                image_size=224, num_classes=1, dim=1024,\
+    def __init__(self, image_size=224, num_classes=1, dim=1024,\
                 depth=6, heads=8, mlp_dim=2048,\
-                dim_head=64, dropout=0.15, emb_dropout=0.15,\
+                dim_head=64, dropout=0.15,\
                 backbone='xception_net', pretrained=True,\
                 normalize_ifft='batchnorm',\
                 flatten_type='patch',\
                 conv_attn=False, ratio=5, qkv_embed=True, init_ca_weight=True, prj_out=False, inner_ca_dim=512, act='none',\
-                patch_size=7, position_embed=False, pool='cls',\
+                patch_size=7, \
                 version='ca-fcat-0.5', unfreeze_blocks=-1, \
                 init_weight=False, init_linear="xavier", init_layernorm="normal", init_conv="kaiming", \
-                dropout_in_mlp=0.0):  
+                dropout_in_mlp=0.0, classifier='mlp'):  
         super(DualCNNViT, self).__init__()
 
         self.image_size = image_size
@@ -99,7 +98,6 @@ class DualCNNViT(nn.Module):
         self.mlp_dim = mlp_dim
         self.dim_head = dim_head
         self.dropout_value = dropout
-        self.emb_dropout = emb_dropout
         
         self.backbone = backbone
         self.features_size = {
@@ -110,8 +108,6 @@ class DualCNNViT(nn.Module):
         
         self.flatten_type = flatten_type # in ['patch', 'channel']
         self.version = version  # in ['ca-rgb_cat-0.5', 'ca-freq_cat-0.5']
-        self.position_embed = position_embed
-        self.pool = pool
         self.conv_attn = conv_attn
         self.activation = self.get_activation(act)
 
@@ -146,10 +142,6 @@ class DualCNNViT(nn.Module):
         self.CA = CrossAttention(in_dim=self.in_dim, inner_dim=inner_ca_dim, prj_out=prj_out, qkv_embed=qkv_embed, init_weight=init_ca_weight)
 
         ############################# VIT #########################################
-        # Number of vectors:
-        self.num_vecs = self.num_patches if self.flatten_type == 'patch' else self.out_ext_channels//ratio
-        # Embed vị trí cho từng vectors (nếu chia theo patch):
-        self.pos_embedding = nn.Parameter(torch.randn(1, self.num_vecs+1, self.dim))
         # Giảm chiều vector sau concat 2*patch_dim về D:
         if 'cat' in self.version:
             self.embedding = nn.Linear(2 * self.in_dim, self.dim)
@@ -157,24 +149,22 @@ class DualCNNViT(nn.Module):
             self.embedding = nn.Linear(self.in_dim, self.dim)
 
         # Thêm 1 embedding vector cho classify token:
-        self.cls_token = nn.Parameter(torch.randn(1, 1, self.dim))
-        self.dropout = nn.Dropout(self.emb_dropout)
-        # vit = ViT(image_size, 16, 1, dim, depth, heads, mlp_dim, 'cls')
-        # ckcpoint = "/home/phucnp/Graduation_Thesis/my_thesis/forensics/dl_technique/checkpoint/datasetv5/dfdcv5/vit/batch_32_pool_cls_lr_0.0003-0_patch_16_h_8_d_6_dim_1024_mlpdim_2048_es_none_loss_bce_seed_0_drmlp_0.2_aug_0/step/best_val_loss_3000_0.680992.pt"
-        # vit.load_state_dict(torch.load(ckcpoint, map_location=torch.device('cuda')))
-        # effvit = EfficientViT(image_size=128, patch_size=2, dropout_in_mlp=0.2)
-        # ckcpoint = "/home/phucnp/Graduation_Thesis/my_thesis/forensics/dl_technique/checkpoint/datasetv5/dfdcv5/efficient_vit/batch_32_pool_cls_lr_0.0003-1_patch_2_h_8_d_6_dim_1024_mlpdim_2048_es_none_loss_bce_pre_1_freeze_0_seed_0_drmlp_0.2_aug_0/step/best_val_loss_5000_0.382877.pt"
-        # effvit.load_state_dict(torch.load(ckcpoint, map_location=torch.device('cuda')))
-        # self.transformer = effvit.transformer
-        self.transformer = Transformer(self.dim, self.depth, self.heads, self.dim_head, self.mlp_dim, self.dropout_value)
-        self.to_cls_token = nn.Identity()
-        self.mlp_head = nn.Sequential(
-            nn.Dropout(dropout_in_mlp),
-            nn.Linear(self.dim, self.mlp_dim),
-            nn.ReLU(),
-            nn.Dropout(dropout_in_mlp),
-            nn.Linear(self.mlp_dim, self.num_classes)
-        )
+        self.classifier = classifier
+        self.num_vecs = self.num_patches if self.flatten_type == 'patch' else self.out_ext_channels//ratio
+        if 'vit' in self.classifier:
+            self.transformer = Transformer(self.dim, self.depth, self.heads, self.dim_head, self.mlp_dim, self.dropout_value)
+            self.batchnorm = nn.BatchNorm1d(self.num_vecs)
+        if 'vit_aggregate' in self.classifier:
+            gamma = float(self.classifier.split('_')[-1])
+            if gamma == -1:
+                self.gamma = nn.Parameter(torch.ones(1))
+            else:
+                self.gamma = gamma
+
+        self.mlp_relu = nn.ReLU(inplace=True)
+        self.mlp_head_hidden = nn.Linear(self.dim, self.mlp_dim)
+        self.mlp_dropout = nn.Dropout(dropout_in_mlp)
+        self.mlp_head_out = nn.Linear(self.mlp_dim, self.num_classes)
         self.sigmoid = nn.Sigmoid()
         self.init_linear, self.init_layernorm, self.init_conv = init_linear, init_layernorm, init_conv
         if init_weight:
@@ -353,15 +343,36 @@ class DualCNNViT(nn.Module):
         # print("Inner ViT shape: ", embed.shape)
 
         ##### Forward to ViT
-        # Expand classify token to batchsize and add to patch embeddings:
-        cls_tokens = self.cls_token.expand(embed.shape[0], -1, -1)
-        x = torch.cat((cls_tokens, embed), dim=1)   # (batchsize, in_dim+1, dim)
-        if self.position_embed:
-            x += self.pos_embedding
-        x = self.dropout(x)
-        x = self.transformer(x)
-        x = self.to_cls_token(x.mean(dim = 1) if self.pool == 'mean' else x[:, 0])
-        x = self.mlp_head(x)
+        if self.classifier == 'mlp':
+            x = embed.mean(dim = 1).squeeze(dim=1)     # B, N, D => B, 1, D
+            x = self.mlp_dropout(x)         
+            x = self.mlp_head_hidden(x) # B, 1, D => 
+            x = self.mlp_relu(x)
+            x = self.mlp_dropout(x)
+            x = self.mlp_head_out(x)
+
+        if self.classifier == 'vit':
+            x = self.transformer(embed)
+            # sys.stdout = open('/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/dl_technique/check.txt', 'w')
+            # print(x[0])
+            # sys.stdout = sys.__stdout__
+            x = x.mean(dim = 1).squeeze(dim=1)
+            x = self.mlp_dropout(x)         
+            x = self.mlp_head_hidden(x) # B, 1, D => 
+            x = self.mlp_relu(x)
+            x = self.mlp_dropout(x)
+            x = self.mlp_head_out(x)
+
+        if 'vit_aggregate' in self.classifier:
+            x = self.transformer(embed)
+            # x = self.batchnorm(x)    
+            x = embed + self.gamma * x
+            x = x.mean(dim = 1).squeeze(dim=1)
+            x = self.mlp_dropout(x)         
+            x = self.mlp_head_hidden(x) # B, 1, D => 
+            x = self.mlp_relu(x)
+            x = self.mlp_dropout(x)
+            x = self.mlp_head_out(x)
         x = self.sigmoid(x)
         return x
 
@@ -371,12 +382,12 @@ if __name__ == '__main__':
     y = torch.ones(32, 1, 128, 128)
     model_ = DualCNNViT(  image_size=128, num_classes=1, dim=1024,\
                                 depth=6, heads=8, mlp_dim=2048,\
-                                dim_head=64, dropout=0.15, emb_dropout=0.15,\
+                                dim_head=64, dropout=0.15, \
                                 backbone='xception_net', pretrained=False,\
                                 normalize_ifft=True,\
                                 flatten_type='patch',\
                                 conv_attn=True, ratio=8, qkv_embed=True, inner_ca_dim=0, init_ca_weight=True, prj_out=False, act='none',\
-                                patch_size=1, position_embed=False, pool='cls',\
-                                version='ca-fcat-0.5', unfreeze_blocks=-1)
+                                patch_size=1, \
+                                version='ca-fcat-0.5', unfreeze_blocks=-1, classifier='vit_aggregate_0.3')
     out = model_(x, y)
     print(out.shape)

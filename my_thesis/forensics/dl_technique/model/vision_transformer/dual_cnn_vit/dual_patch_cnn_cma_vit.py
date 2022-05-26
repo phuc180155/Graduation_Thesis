@@ -364,12 +364,7 @@ class DualPatchCNNCMAViT(nn.Module):
             'xception_net': (2048, 8, 8),
         }
         self.out_ext_channels = self.features_size[backbone][0]
-        
-        # self.flatten_type = flatten_type # in ['patch', 'channel']
-        # self.version = version  # in ['ca-rgb_cat-0.5', 'ca-freq_cat-0.5']
-        # self.position_embed = position_embed
-        # self.pool = pool
-        # self.conv_attn = conv_attn
+        self.before_vit_channels = self.out_ext_channels if classifier == 'mlp' else 320
         self.activation = self.get_activation(act)
 
         self.pretrained = pretrained
@@ -377,50 +372,50 @@ class DualPatchCNNCMAViT(nn.Module):
         self.freq_extractor = self.get_feature_extractor(architecture=backbone, pretrained=pretrained, unfreeze_blocks=unfreeze_blocks, num_classes=num_classes, in_channels=1)     
         self.normalize_ifft = normalize_ifft
         if self.normalize_ifft == 'batchnorm':
-            self.batchnorm_ifft = nn.BatchNorm2d(num_features=self.out_ext_channels if classifier == 'mlp' else 320)
+            self.batchnorm_ifft = nn.BatchNorm2d(num_features=self.before_vit_channels)
         if self.normalize_ifft == 'layernorm':
             self.layernorm_ifft = nn.LayerNorm(normalized_shape=self.features_size[self.backbone])
         ############################# PATCH CONFIG ################################
 
         # self.CA = CrossAttention(in_dim=self.in_dim, inner_dim=inner_ca_dim, prj_out=prj_out, qkv_embed=qkv_embed, init_weight=init_ca_weight)
-        device = torch.device('cpu')
-        self.cma = CrossModalAttention(in_dim=self.out_ext_channels if classifier=='mlp' else 320, activation=self.activation, ratio=4, cross_value=True, gamma_cma=gamma_cma).to(device)
+        self.cma = CrossModalAttention(in_dim=self.before_vit_channels, activation=self.activation, ratio=4, cross_value=True, gamma_cma=gamma_cma)
 
         # Thêm 1 embedding vector cho classify token:
         # self.cls_token = nn.Parameter(torch.randn(1, 1, self.dim))
         # self.dropout = nn.Dropout(self.emb_dropout)
         self.transformer_block_4 = nn.ModuleList([])
         for _ in range(depth_block4):
-            self.transformer_block_4.append(PatchTrans(in_channel=40, in_size=16, patch_resolution='1-2-4-8').to(device))
-        self.transformer_block_10_rgb = PatchTransv2(in_channel=112, in_size=8, patch_crossattn_resolution=patch_crossattn_resolution, gamma_patchtrans=gamma_patchtrans).to(device)
-        self.transformer_block_10_freq = PatchTransv2(in_channel=112, in_size=8, patch_crossattn_resolution=patch_crossattn_resolution, gamma_patchtrans=gamma_patchtrans).to(device)
+            self.transformer_block_4.append(PatchTrans(in_channel=40, in_size=16, patch_resolution='1-2-4-8'))
+        self.transformer_block_10_rgb = PatchTransv2(in_channel=112, in_size=8, patch_crossattn_resolution=patch_crossattn_resolution, gamma_patchtrans=gamma_patchtrans)
+        self.transformer_block_10_freq = PatchTransv2(in_channel=112, in_size=8, patch_crossattn_resolution=patch_crossattn_resolution, gamma_patchtrans=gamma_patchtrans)
 
         # Classifier:
         self.classifier = classifier
-        if self.classifier == 'mlp':
-            self.mlp_head = nn.Sequential(
-                nn.Dropout(dropout_in_mlp),
-                nn.Linear(1280, self.mlp_dim),
-                nn.ReLU(),
-                nn.Dropout(dropout_in_mlp),
-                nn.Linear(self.mlp_dim, self.num_classes)
-            )
-        if self.classifier == 'vit':
-            self.convr = nn.Conv2d(in_channels=320, out_channels=in_vit_channels, kernel_size=1)
-            self.embedding = nn.Linear(self.patch_size*self.patch_size *in_vit_channels if flatten_type=='patch' else 16, self.dim)
-            self.dropout = nn.Dropout(self.emb_dropout)
-            self.transformer = Transformer(self.dim, self.depth_vit, self.heads, self.dim_head, self.mlp_dim, self.dropout_value)
+        if 'mlp' in self.classifier:
+            self.mlp_relu = nn.ReLU(inplace=True)
+            self.mlp_head_hidden = nn.Linear(1280, self.mlp_dim)
             self.mlp_dropout = nn.Dropout(dropout_in_mlp)
-            self.mlp_hidden = nn.Linear(self.dim, self.mlp_dim)
-            self.mlp_relu = nn.ReLU()
-            self.mlp_out = nn.Linear(self.mlp_dim, self.num_classes)
-            self.mlp_head = nn.Sequential(
-                nn.Dropout(dropout_in_mlp),
-                nn.Linear(self.dim, self.mlp_dim),
-                nn.ReLU(),
-                nn.Dropout(dropout_in_mlp),
-                nn.Linear(self.mlp_dim, self.num_classes)
-            )
+            self.mlp_head_out = nn.Linear(self.mlp_dim, self.num_classes)
+
+        if 'vit' in self.classifier:
+            self.convr = nn.Conv2d(in_channels=320, out_channels=in_vit_channels, kernel_size=1)
+            self.in_dim = self.patch_size*self.patch_size *in_vit_channels if flatten_type=='patch' else 16
+            if self.flatten_type == 'channel':
+                self.dim = 32
+                self.mlp_dim = 64
+            self.embedding = nn.Linear(self.in_dim, self.dim)
+            self.transformer = Transformer(self.dim, self.depth_vit, self.heads, self.dim_head, self.mlp_dim, self.dropout_value)
+            self.mlp_relu = nn.ReLU(inplace=True)
+            self.mlp_head_hidden = nn.Linear(self.dim, self.mlp_dim)
+            self.mlp_dropout = nn.Dropout(dropout_in_mlp)
+            self.mlp_head_out = nn.Linear(self.mlp_dim, self.num_classes)
+
+        if 'vit_aggregate' in self.classifier:
+            gamma = float(self.classifier.split('_')[-1])
+            if gamma == -1:
+                self.gamma = nn.Parameter(torch.ones(1))
+            else:
+                self.gamma = gamma
 
         self.sigmoid = nn.Sigmoid()
         # self.init_weights(init_type=init_type)
@@ -566,27 +561,43 @@ class DualPatchCNNCMAViT(nn.Module):
         rgb_features, freq_features = self.extract_feature(rgb_imgs, freq_imgs)
         ifreq_features = self.ifft(freq_features, norm_type=self.normalize_ifft)
         # print("Features shape: ", rgb_features.shape, freq_features.shape, ifreq_features.shape)
-        out = self.cma(rgb_features, ifreq_features, freq_features)
+        out = self.cma(rgb_features, ifreq_features, freq_features)     # B, 1280, 4, 4
 
         if self.classifier == 'mlp':
             x = F.adaptive_avg_pool2d(out, (1, 1))
             x = x.squeeze().squeeze()
-            x = self.mlp_head(x)
+            x = self.mlp_dropout(x)         
+            x = self.mlp_head_hidden(x)
+            x = self.mlp_relu(x)
+            x = self.mlp_dropout(x)
+            x = self.mlp_head_out(x)
 
         if self.classifier == 'vit':
             x = self.convr(out)
-            # print(x.shape)
             x = self.flatten_to_vectors(x)
             x = self.embedding(x)
-            # print(x.shape)
-            x = self.dropout(x)
             x = self.transformer(x)
-            x = x.mean(dim = 1)
-            x = self.mlp_dropout(x)
-            x = self.mlp_hidden(x)
+
+            x = x.mean(dim = 1).squeeze(dim=1)
+            x = self.mlp_dropout(x)         
+            x = self.mlp_head_hidden(x)
             x = self.mlp_relu(x)
             x = self.mlp_dropout(x)
-            x = self.mlp_out(x)
+            x = self.mlp_head_out(x)
+
+        if 'vit_aggregate' in self.classifier:
+            x = self.convr(out)
+            x = self.flatten_to_vectors(x)
+            embed = self.embedding(x)
+            x = self.transformer(embed)
+            x = embed + self.gamma * x
+            x = x.mean(dim = 1).squeeze(dim=1)
+            x = self.mlp_dropout(x)         
+            x = self.mlp_head_hidden(x) # B, 1, D => 
+            x = self.mlp_relu(x)
+            x = self.mlp_dropout(x)
+            x = self.mlp_head_out(x)   
+
         return self.sigmoid(x)
 
 from torchsummary import summary
@@ -599,9 +610,8 @@ if __name__ == '__main__':
                 act='selu',\
                 init_type="xavier_uniform",\
                 gamma_cma=-1, gamma_patchtrans=-1, patch_crossattn_resolution='1-2',\
-                flatten_type='patch', patch_size=2, \
+                flatten_type='channel', patch_size=2, \
                 dim=1024, depth_vit=2, heads=3, dim_head=64, dropout=0.15, emb_dropout=0.15, mlp_dim=2048, dropout_in_mlp=0.0, \
-                classifier='vit', in_vit_channels=64)
+                classifier='vit_aggregate_0.3', in_vit_channels=64)
     out = model_(x, y)
     print(out.shape)
-    # summary(model_, [(3, 128, 128), (1, 128, 128)], batch_size=32, device='cpu')

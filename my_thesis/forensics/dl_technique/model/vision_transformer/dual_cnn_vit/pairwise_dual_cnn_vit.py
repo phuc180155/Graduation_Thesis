@@ -1,3 +1,4 @@
+from telnetlib import OUTMRK
 import torch.nn as nn
 from torch import einsum
 import torch
@@ -83,10 +84,9 @@ class PairwiseDualCNNViT(nn.Module):
                 normalize_ifft=True,\
                 flatten_type='patch',\
                 conv_attn=False, ratio=5, qkv_embed=True, init_ca_weight=True, prj_out=False, inner_ca_dim=512, act='none',\
-                patch_size=7, position_embed=False, pool='cls',\
-                version='ca-rmifft-fcat-0.5', unfreeze_blocks=-1, \
+                patch_size=7, version='ca-rmifft-fcat-0.5', unfreeze_blocks=-1, \
                 init_weight=False, init_linear="xavier", init_layernorm="normal", init_conv="kaiming", \
-                dropout_in_mlp=0.0, embedding_return='mlp_out'):  
+                dropout_in_mlp=0.0, classifier='vit_aggregate_-1', embedding_return='mlp_out'):  
         super(PairwiseDualCNNViT, self).__init__()
 
         self.image_size = image_size
@@ -98,7 +98,6 @@ class PairwiseDualCNNViT(nn.Module):
         self.mlp_dim = mlp_dim
         self.dim_head = dim_head
         self.dropout_value = dropout
-        self.emb_dropout = emb_dropout
         
         self.backbone = backbone
         self.features_size = {
@@ -109,8 +108,6 @@ class PairwiseDualCNNViT(nn.Module):
         
         self.flatten_type = flatten_type # in ['patch', 'channel']
         self.version = version  # in ['ca-rgb_cat-0.5', 'ca-freq_cat-0.5']
-        self.position_embed = position_embed
-        self.pool = pool
         self.conv_attn = conv_attn
         self.activation = self.get_activation(act)
 
@@ -145,10 +142,6 @@ class PairwiseDualCNNViT(nn.Module):
         self.CA = CrossAttention(in_dim=self.in_dim, inner_dim=inner_ca_dim, prj_out=prj_out, qkv_embed=qkv_embed, init_weight=init_ca_weight)
 
         ############################# VIT #########################################
-        # Number of vectors:
-        self.num_vecs = self.num_patches if self.flatten_type == 'patch' else self.out_ext_channels//ratio
-        # Embed vị trí cho từng vectors (nếu chia theo patch):
-        self.pos_embedding = nn.Parameter(torch.randn(1, self.num_vecs+1, self.dim))
         # Giảm chiều vector sau concat 2*patch_dim về D:
         if 'cat' in self.version:
             self.embedding = nn.Linear(2 * self.in_dim, self.dim)
@@ -156,16 +149,23 @@ class PairwiseDualCNNViT(nn.Module):
             self.embedding = nn.Linear(self.in_dim, self.dim)
 
         # Thêm 1 embedding vector cho classify token:
-        self.embedding_return = embedding_return
-        self.cls_token = nn.Parameter(torch.randn(1, 1, self.dim))
-        self.dropout = nn.Dropout(self.emb_dropout)
-        self.transformer = Transformer(self.dim, self.depth, self.heads, self.dim_head, self.mlp_dim, self.dropout_value)
-        self.to_cls_token = nn.Identity()
-        self.mlp_head_hidden = nn.Linear(self.dim, self.mlp_dim)
+        self.classifier = classifier
+        self.embedding_return= embedding_return
+        self.num_vecs = self.num_patches if self.flatten_type == 'patch' else self.out_ext_channels//ratio
+        if 'vit' in self.classifier:
+            self.transformer = Transformer(self.dim, self.depth, self.heads, self.dim_head, self.mlp_dim, self.dropout_value)
+            self.batchnorm = nn.BatchNorm1d(self.num_vecs)
+        if 'vit_aggregate' in self.classifier:
+            gamma = float(self.classifier.split('_')[-1])
+            if gamma == -1:
+                self.gamma = nn.Parameter(torch.ones(1))
+            else:
+                self.gamma = gamma
+
         self.mlp_relu = nn.ReLU(inplace=True)
+        self.mlp_head_hidden = nn.Linear(self.dim, self.mlp_dim)
         self.mlp_dropout = nn.Dropout(dropout_in_mlp)
         self.mlp_head_out = nn.Linear(self.mlp_dim, self.num_classes)
-
         self.sigmoid = nn.Sigmoid()
         self.init_linear, self.init_layernorm, self.init_conv = init_linear, init_layernorm, init_conv
         if init_weight:
@@ -349,21 +349,45 @@ class PairwiseDualCNNViT(nn.Module):
         # print("Inner ViT shape: ", embed.shape)
 
         ##### Forward to ViT
-        # Expand classify token to batchsize and add to patch embeddings:
-        cls_tokens = self.cls_token.expand(embed.shape[0], -1, -1)
-        x = torch.cat((cls_tokens, embed), dim=1)   # (batchsize, in_dim+1, dim)
-        if self.position_embed:
-            x += self.pos_embedding
-        x = self.dropout(x)
-        x = self.transformer(x)
-        x = self.to_cls_token(x.mean(dim = 1) if self.pool == 'mean' else x[:, 0])
-        x = self.mlp_dropout(x)
-        y = self.mlp_head_hidden(x)
-        x = F.relu(y)
-        x = self.mlp_dropout(x)
-        z = self.mlp_head_out(x)
-        out = self.sigmoid(z)
-        return y if self.embedding_return=='mlp_hidden' else z, out
+        if self.classifier == 'mlp':
+            e1 = embed.mean(dim = 1).squeeze(dim=1)     # B, N, D => B, 1, D
+            x = self.mlp_dropout(e1)         
+            e2 = self.mlp_head_hidden(x) # B, 1, D => 
+            x = self.mlp_relu(e2)
+            x = self.mlp_dropout(x)
+            e3 = self.mlp_head_out(x)
+
+        if self.classifier == 'vit':
+            x = self.transformer(embed)
+            # sys.stdout = open('/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/dl_technique/check.txt', 'w')
+            # print(x[0])
+            # sys.stdout = sys.__stdout__
+            e1 = x.mean(dim = 1).squeeze(dim=1)
+            x = self.mlp_dropout(e1)         
+            e2 = self.mlp_head_hidden(x) # B, 1, D => 
+            x = self.mlp_relu(e2)
+            x = self.mlp_dropout(x)
+            e3 = self.mlp_head_out(x)
+
+        if 'vit_aggregate' in self.classifier:
+            x = self.transformer(embed)
+            # x = self.batchnorm(x)    
+            x = embed + self.gamma * x
+            e1 = x.mean(dim = 1).squeeze(dim=1)
+            x = self.mlp_dropout(e1)         
+            e2 = self.mlp_head_hidden(x) # B, 1, D => 
+            x = self.mlp_relu(e2)
+            x = self.mlp_dropout(x)
+            e3 = self.mlp_head_out(x)
+        
+        if self.embedding_return=='mlp_before':
+            e = e1
+        if self.embedding_return=='mlp_hidden':
+            e = e2
+        if self.embedding_return=='mlp_out':
+            e = e3
+        out = self.sigmoid(e3)
+        return e, out
 
     def forward(self, rgb_imgs0, freq_imgs0, rgb_imgs1, freq_imgs1):
         embedding_0, out_0 = self.forward_once(rgb_imgs0, freq_imgs0)

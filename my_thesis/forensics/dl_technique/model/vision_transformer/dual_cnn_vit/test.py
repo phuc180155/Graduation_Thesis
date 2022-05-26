@@ -361,7 +361,7 @@ class DualCNNViTTest(nn.Module):
 
         if 'vit_aggregate' in self.classifier:
             x = self.transformer(embed)
-            x = self.batchnorm(x)
+            # x = self.batchnorm(x)
             gamma = float(self.classifier.split('_')[-1])
             x = embed + gamma * x
             x = x.mean(dim = 1).squeeze(dim=1)

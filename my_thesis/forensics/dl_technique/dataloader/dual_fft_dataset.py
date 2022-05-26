@@ -86,7 +86,7 @@ class DualFFTMagnitudeImageDataset(Dataset):
         return PIL_img, magnitude_spectrum, y
 
     def __len__(self):
-        return int(np.floor(len(self.data_path)))
+        return int(len(self.data_path))
 
 class DualFFTMagnitudeFeatureDataset(Dataset):
     def __init__(self, path,image_size, transform=None, transform_fft = None, should_invert=True,shuffle=True,adj_brightness=None, adj_contrast=None):
@@ -161,4 +161,4 @@ class DualFFTMagnitudeFeatureDataset(Dataset):
         return PIL_img, psd1D, y
 
     def __len__(self):
-        return int(np.floor(len(self.data_path)))
+        return int(len(self.data_path))

@@ -64,7 +64,7 @@ def parse_args():
     parser_dual_attn_cnn.add_argument("--init_linear", type=str, default="xavier", help="")
     parser_dual_attn_cnn.add_argument("--init_layernorm", type=str, default="normal", help="")
     parser_dual_attn_cnn.add_argument("--init_conv", type=str, default="kaiming", help="")
-    parser_dual_attn_cnn.add_argument("--division_lr", type=int, default=1, help="")
+    parser_dual_attn_cnn.add_argument("--division_lr", type=int, default=0, help="")
 
     parser_dual_cma_cnn_attn = sub_parser.add_parser('dual_cma_cnn_attn', help="Ablation Study")
     parser_dual_cma_cnn_attn.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
@@ -87,7 +87,7 @@ def parse_args():
     parser_dual_cma_cnn_attn.add_argument("--init_linear", type=str, default="xavier", help="")
     parser_dual_cma_cnn_attn.add_argument("--init_layernorm", type=str, default="normal", help="")
     parser_dual_cma_cnn_attn.add_argument("--init_conv", type=str, default="kaiming", help="")
-    parser_dual_cma_cnn_attn.add_argument("--division_lr", type=int, default=1, help="")
+    parser_dual_cma_cnn_attn.add_argument("--division_lr", type=int, default=0, help="")
     
     ######################## Vision transformer architecture ########################
     parser.add_argument('--dim',type=int, default = 1024, help='dim of embeding')
@@ -104,7 +104,7 @@ def parse_args():
     parser_efficientvit.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
     parser_efficientvit.add_argument("--pretrained",type=int, default=1, required=False, help="Load pretrained backbone")
     parser_efficientvit.add_argument("--freeze", type=int, default=0, help="Freeze backbone")
-    parser_efficientvit.add_argument("--division_lr", type=int, default=1, help="")
+    parser_efficientvit.add_argument("--division_lr", type=int, default=0, help="")
 
     parser_swin_vit = sub_parser.add_parser('swin_vit', help='Swin transformer')
     parser_swin_vit.add_argument("--window_size",type=int,default=7,help="window size in swin vit")
@@ -138,7 +138,7 @@ def parse_args():
     parser_dual_cnn_vit.add_argument("--init_linear", type=str, default="xavier", help="")
     parser_dual_cnn_vit.add_argument("--init_layernorm", type=str, default="normal", help="")
     parser_dual_cnn_vit.add_argument("--init_conv", type=str, default="kaiming", help="")
-    parser_dual_cnn_vit.add_argument("--division_lr", type=int, default=1, help="")
+    parser_dual_cnn_vit.add_argument("--division_lr", type=int, default=0, help="")
     ########### TEST ###########
     parser_dual_cnn_vit_test = sub_parser.add_parser('dual_cnn_vit_test', help='My model')
     parser_dual_cnn_vit_test.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
@@ -160,7 +160,7 @@ def parse_args():
     parser_dual_cnn_vit_test.add_argument("--init_linear", type=str, default="xavier", help="")
     parser_dual_cnn_vit_test.add_argument("--init_layernorm", type=str, default="normal", help="")
     parser_dual_cnn_vit_test.add_argument("--init_conv", type=str, default="kaiming", help="")
-    parser_dual_cnn_vit_test.add_argument("--division_lr", type=int, default=1, help="")
+    parser_dual_cnn_vit_test.add_argument("--division_lr", type=int, default=0, help="")
     parser_dual_cnn_vit_test.add_argument("--classifier", type=str, default="", help="")
 
     parser_dual_cma_cnn_vit = sub_parser.add_parser('dual_cma_cnn_vit', help='My model')
@@ -185,7 +185,7 @@ def parse_args():
     parser_dual_cma_cnn_vit.add_argument("--init_linear", type=str, default="xavier", help="")
     parser_dual_cma_cnn_vit.add_argument("--init_layernorm", type=str, default="normal", help="")
     parser_dual_cma_cnn_vit.add_argument("--init_conv", type=str, default="kaiming", help="")
-    parser_dual_cma_cnn_vit.add_argument("--division_lr", type=int, default=1, help="")
+    parser_dual_cma_cnn_vit.add_argument("--division_lr", type=int, default=0, help="")
 
     parser_dual_cnn_cma_transformer = sub_parser.add_parser('dual_cnn_cma_transformer', help='My model')
     parser_dual_cnn_cma_transformer.add_argument("--backbone",type=str, default="efficient_net", required=False, help="Type of backbone")
@@ -195,7 +195,7 @@ def parse_args():
     parser_dual_cnn_cma_transformer.add_argument("--act", type=str, default='relu', help="")
     parser_dual_cnn_cma_transformer.add_argument("--position_embed", type=int, default=1, help="")
     parser_dual_cnn_cma_transformer.add_argument("--init_type", type=str, default="normal", help="")
-    parser_dual_cnn_cma_transformer.add_argument("--division_lr", type=int, default=1, help="")
+    parser_dual_cnn_cma_transformer.add_argument("--division_lr", type=int, default=0, help="")
     parser_dual_cnn_cma_transformer.add_argument("--depth", type=int, default=4, help="")
     parser_dual_cnn_cma_transformer.add_argument("--patch_resolution", type=str, default="1-2-4-8", help="")
 
@@ -236,7 +236,6 @@ def parse_args():
     parser_pairwise_dual_patch_cnn_cma_vit.add_argument("--patch_resolution", type=str, default='1-2', help="in_size=8, in_channels=112")
     parser_pairwise_dual_patch_cnn_cma_vit.add_argument("--embedding_return", type=str, default='mlp_hidden')
 
-
     parser_pairwise_dual_cnn_vit = sub_parser.add_parser('pairwise_dual_cnn_vit', help='My model')
     parser_pairwise_dual_cnn_vit.add_argument("--weight_importance", type=float, default=2.0)
     parser_pairwise_dual_cnn_vit.add_argument("--margin", type=float, default=2.0)
@@ -259,7 +258,8 @@ def parse_args():
     parser_pairwise_dual_cnn_vit.add_argument("--init_linear", type=str, default="xavier", help="")
     parser_pairwise_dual_cnn_vit.add_argument("--init_layernorm", type=str, default="normal", help="")
     parser_pairwise_dual_cnn_vit.add_argument("--init_conv", type=str, default="kaiming", help="")
-    parser_pairwise_dual_cnn_vit.add_argument("--division_lr", type=int, default=1, help="")
+    parser_pairwise_dual_cnn_vit.add_argument("--division_lr", type=int, default=0, help="")
+    parser_pairwise_dual_cnn_vit.add_argument("--classifier", type=str, default='vit_aggregate_-1', help="")
     parser_pairwise_dual_cnn_vit.add_argument("--embedding_return", type=str, default='mlp_hidden', help="")
 
     parser_ori_dual_eff_vit = sub_parser.add_parser('origin_dual_efficient_vit', help='My model')
@@ -268,7 +268,7 @@ def parse_args():
     parser_ori_dual_eff_vit.add_argument("--weight", type=float, default=1, help="Weight for frequency vectors")
     parser_ori_dual_eff_vit.add_argument("--freeze", type=int, default=0,  help="Weight for frequency vectors")
     parser_ori_dual_eff_vit.add_argument("--pretrained", type=int, default=0, required=True, help="Weight for frequency vectors")
-    parser_ori_dual_eff_vit.add_argument("--division_lr", type=int, default=1, help="")
+    parser_ori_dual_eff_vit.add_argument("--division_lr", type=int, default=0, help="")
 
     parser_ori_dual_eff_vit_rm_ifft = sub_parser.add_parser('origin_dual_efficient_vit_remove_ifft', help='My model')
     parser_ori_dual_eff_vit_rm_ifft.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
@@ -276,7 +276,7 @@ def parse_args():
     parser_ori_dual_eff_vit_rm_ifft.add_argument("--weight", type=float, default=1, help="Weight for frequency vectors")
     parser_ori_dual_eff_vit_rm_ifft.add_argument("--freeze", type=int, default=0,  help="Weight for frequency vectors")
     parser_ori_dual_eff_vit_rm_ifft.add_argument("--pretrained", type=int, default=0, required=True, help="Weight for frequency vectors")
-    parser_ori_dual_eff_vit_rm_ifft.add_argument("--division_lr", type=int, default=1, help="")
+    parser_ori_dual_eff_vit_rm_ifft.add_argument("--division_lr", type=int, default=0, help="")
 
     parser_dual_cnn_feedforward_vit = sub_parser.add_parser('dual_cnn_feedforward_vit', help='My model')
     parser_dual_cnn_feedforward_vit.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
@@ -294,7 +294,7 @@ def parse_args():
     parser_dual_cnn_feedforward_vit.add_argument("--init_linear", type=str, default="xavier", help="")
     parser_dual_cnn_feedforward_vit.add_argument("--init_layernorm", type=str, default="normal", help="")
     parser_dual_cnn_feedforward_vit.add_argument("--init_conv", type=str, default="kaiming", help="")
-    parser_dual_cnn_feedforward_vit.add_argument("--division_lr", type=int, default=1, help="")
+    parser_dual_cnn_feedforward_vit.add_argument("--division_lr", type=int, default=0, help="")
 
     parser_dual_pairwise_cnn_feedforward_vit = sub_parser.add_parser('pairwise_dual_cnn_feedforward_vit', help='My model')
     parser_dual_pairwise_cnn_feedforward_vit.add_argument("--weight_importance", type=float, default=2.0)
@@ -314,7 +314,7 @@ def parse_args():
     parser_dual_pairwise_cnn_feedforward_vit.add_argument("--init_linear", type=str, default="xavier", help="")
     parser_dual_pairwise_cnn_feedforward_vit.add_argument("--init_layernorm", type=str, default="normal", help="")
     parser_dual_pairwise_cnn_feedforward_vit.add_argument("--init_conv", type=str, default="kaiming", help="")
-    parser_dual_pairwise_cnn_feedforward_vit.add_argument("--division_lr", type=int, default=1, help="")
+    parser_dual_pairwise_cnn_feedforward_vit.add_argument("--division_lr", type=int, default=0, help="")
     
     ############# adjust image
     parser.add_argument('--adj_brightness',type=float, default = 1, help='adj_brightness')
@@ -408,7 +408,7 @@ if __name__ == "__main__":
         use_pretrained = True if args.pretrained or args.resume != '' else False
         train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir, image_size=args.image_size, lr=args.lr, division_lr=False, use_pretrained=False,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
-                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual-efficient", args_txt=args_txt, augmentation=args.augmentation)
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual_efficient", args_txt=args_txt, augmentation=args.augmentation)
 
     elif model == "dual_attn_cnn":
         from module.train_torch import train_dual_stream
@@ -440,7 +440,7 @@ if __name__ == "__main__":
         use_pretrained = True if args.pretrained or args.resume != '' else False
         train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=False,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
-                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual-attn-cnn", args_txt=args_txt, augmentation=args.augmentation)
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual_attn_cnn", args_txt=args_txt, augmentation=args.augmentation)
         
     elif model == "efficient_vit":
         from module.train_torch import train_image_stream
@@ -474,7 +474,7 @@ if __name__ == "__main__":
         use_pretrained = True if args.pretrained or args.resume != '' else False
         train_image_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=False,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed, \
-                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="efficient-vit", args_txt=args_txt, augmentation=args.augmentation)
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="efficient_vit", args_txt=args_txt, augmentation=args.augmentation)
         
     elif model == "dual_cnn_vit":
         from module.train_torch import train_dual_stream
@@ -510,7 +510,7 @@ if __name__ == "__main__":
         use_pretrained = True if args.pretrained or args.resume != '' else False
         train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
-                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual-cnn-vit", args_txt=args_txt, augmentation=args.augmentation)
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual_cnn_vit", args_txt=args_txt, augmentation=args.augmentation)
         
     elif model == "origin_dual_efficient_vit":
         from module.train_torch import train_dual_stream
@@ -545,7 +545,7 @@ if __name__ == "__main__":
         use_pretrained = True if args.pretrained or args.resume != '' else False
         train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
-                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="origin-dual-efficient-vit", args_txt=args_txt, augmentation=args.augmentation)
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="origin_dual_efficient_vit", args_txt=args_txt, augmentation=args.augmentation)
 
     elif model == "origin_dual_efficient_vit_remove_ifft":
         from module.train_torch import train_dual_stream
@@ -580,7 +580,7 @@ if __name__ == "__main__":
         use_pretrained = True if args.pretrained or args.resume != '' else False
         train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
-                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="origin-dual-efficient-vit-without-ifft", args_txt=args_txt, augmentation=args.augmentation)
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="origin_dual_efficient_vit_remove_ifft", args_txt=args_txt, augmentation=args.augmentation)
 
     elif model == "pairwise_dual_cnn_vit":
         from module.train_pairwise import train_pairwise_dual_stream
@@ -598,9 +598,9 @@ if __name__ == "__main__":
                                 patch_size=args.patch_size, position_embed=bool(args.position_embed), pool=args.pool,\
                                 version=args.version, unfreeze_blocks=args.unfreeze_blocks, \
                                 init_weight=args.init_weight, init_linear=args.init_linear, init_layernorm=args.init_layernorm, init_conv=args.init_conv, \
-                                dropout_in_mlp=args.dropout_in_mlp, embedding_return=args.embedding_return)
+                                dropout_in_mlp=args.dropout_in_mlp, embedding_return=args.embedding_return, classifier=args.classifier)
         
-        args_txt = "lr{}-{}_batch{}_es{}_loss{}_ret{}_im{}_mar{}_v{}_mlpdim{}_dim{}_h{}_d{}_pool{}_bb{}_pre{}_unf{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.embedding_return, args.weight_importance, args.margin, args.version, args.mlp_dim, args.dim, args.heads, args.depth, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
+        args_txt = "lr{}-{}_batch{}_es{}_loss{}_cls{}_ret{}_im{}_mar{}_v{}_mlpdim{}_dim{}_h{}_d{}_pool{}_bb{}_pre{}_unf{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.classifier, args.embedding_return, args.weight_importance, args.margin, args.version, args.mlp_dim, args.dim, args.heads, args.depth, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
         args_txt += "norm{}_".format(args.normalize_ifft)
         args_txt += "flat{}_patch{}_".format(args.flatten_type, args.patch_size)
         args_txt += "convattn{}_r{}_qkvemb{}_incadim{}_prj{}_act{}_".format(args.conv_attn, args.ratio, args.qkv_embed, args.inner_ca_dim, args.prj_out, args.act)
@@ -720,7 +720,7 @@ if __name__ == "__main__":
         
         train_image_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=0, use_pretrained=False,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed, \
-                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="swn_vit", args_txt=args_txt, augmentation=args.augmentation)
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="swin_vit", args_txt=args_txt, augmentation=args.augmentation)
 
     elif model == 'm2tr':
         from module.train_torch import train_image_stream

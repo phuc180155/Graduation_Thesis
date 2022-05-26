@@ -22,6 +22,7 @@ from metrics.metric import calculate_cls_metrics
 from utils.Log import Logger
 from utils.EarlyStopping import EarlyStopping
 from utils.ModelSaver import ModelSaver
+from utils.util import is_refined_model
 
 from dataloader.gen_dataloader import *
 
@@ -211,8 +212,8 @@ def define_device(seed: int, model_name: str):
     if device == "cuda":
         torch.cuda.manual_seed_all(seed)
         cudnn.benchmark = True
-        if 'dual' in model_name and 'vit' in model_name:
-            return device
+        # if 'dual' in model_name and 'vit' in model_name:
+        #     return device
         cudnn.deterministic = True
     return device
 
@@ -288,7 +289,8 @@ def eval_image_stream(model ,dataloader, device, criterion, adj_brightness=1.0, 
 
             # Forward network
             logps = model.forward(inputs)
-            logps = logps.squeeze()
+            if len(logps.shape) == 2:
+                logps = logps.squeeze(dim=1)
 
             # Loss in a batch
             batch_loss = criterion(logps, labels)
@@ -423,6 +425,7 @@ def train_image_stream(model, criterion_name=None, train_dir = '', val_dir ='', 
                     # Eval validation set
                     val_loss, val_mac_acc, val_mic_acc, val_reals, val_fakes, val_micros, val_macros = eval_image_stream(model, dataloader_val, device, criterion, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
                     save_result(step_val_writer, log, global_step, global_loss/global_step, global_acc/global_step, val_loss, val_mac_acc, val_mic_acc, val_reals, val_fakes, val_micros, val_macros, is_epoch=False, phase="val")
+                    
                     # Eval test set
                     test_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros = eval_image_stream(model, dataloader_test, device, criterion, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
                     save_result(step_test_writer, log, global_step, global_loss/global_step, global_acc/global_step, test_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros, is_epoch=False, phase="test")
@@ -502,9 +505,18 @@ def eval_dual_stream(model, dataloader, device, criterion, adj_brightness=1.0, a
 
             # Forward network
             logps = model.forward(inputs, fft_imgs)
-            logps = logps.squeeze()
+            if len(logps.shape) == 2:
+                logps = logps.squeeze(dim=1)
 
             # Loss in a batch
+            sys.stdout = open('/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/dl_technique/check.txt', 'w')
+            print("inputs shape, fft images shape: ", inputs.shape, fft_imgs.shape)
+            print("logps shape: ", logps.shape)
+            print("labels shape: ", labels.shape)
+            print("logps: ", logps)
+            print("labels: ", labels)
+            sys.stdout = sys.__stdout__
+
             batch_loss = criterion(logps, labels)
             # Cumulate into running val loss
             loss += batch_loss.item()
