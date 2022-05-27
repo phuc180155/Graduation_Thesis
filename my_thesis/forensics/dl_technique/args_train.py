@@ -596,12 +596,12 @@ if __name__ == "__main__":
         emb_dropout = 0.15
         model = PairwiseDualCNNViT(image_size=args.image_size, num_classes=1, dim=args.dim,\
                                 depth=args.depth, heads=args.heads, mlp_dim=args.mlp_dim,\
-                                dim_head=args.dim_head, dropout=0.15, emb_dropout=0.15,\
+                                dim_head=args.dim_head, dropout=0.15,\
                                 backbone=args.backbone, pretrained=bool(args.pretrained),\
                                 normalize_ifft=args.normalize_ifft,\
                                 flatten_type=args.flatten_type,\
                                 conv_attn=bool(args.conv_attn), ratio=args.ratio, qkv_embed=bool(args.qkv_embed), inner_ca_dim=args.inner_ca_dim, init_ca_weight=bool(args.init_ca_weight), prj_out=bool(args.prj_out), act=args.act,\
-                                patch_size=args.patch_size, position_embed=bool(args.position_embed), pool=args.pool,\
+                                patch_size=args.patch_size, \
                                 version=args.version, unfreeze_blocks=args.unfreeze_blocks, \
                                 init_weight=args.init_weight, init_linear=args.init_linear, init_layernorm=args.init_layernorm, init_conv=args.init_conv, \
                                 dropout_in_mlp=args.dropout_in_mlp, embedding_return=args.embedding_return, classifier=args.classifier)

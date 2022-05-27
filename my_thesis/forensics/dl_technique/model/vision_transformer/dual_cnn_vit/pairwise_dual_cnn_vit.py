@@ -79,7 +79,7 @@ class PairwiseDualCNNViT(nn.Module):
     def __init__(self, \
                 image_size=224, num_classes=1, dim=1024,\
                 depth=6, heads=8, mlp_dim=2048,\
-                dim_head=64, dropout=0.15, emb_dropout=0.15,\
+                dim_head=64, dropout=0.15,\
                 backbone='xception_net', pretrained=True,\
                 normalize_ifft=True,\
                 flatten_type='patch',\
