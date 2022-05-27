@@ -500,10 +500,10 @@ if __name__ == "__main__":
                                 init_weight=args.init_weight, init_linear=args.init_linear, init_layernorm=args.init_layernorm, init_conv=args.init_conv, \
                                 dropout_in_mlp=args.dropout_in_mlp, classifier=args.classifier)
         
-        args_txt = "lr{}-{}_batch{}_es_{}_loss_{}_cls{}_v_{}_dim{}_mlpdim{}_h{}_d{}_pool_{}_bb_{}_pre{}_unf{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.classifier, args.version, args.dim, args.mlp_dim, args.heads, args.depth, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
+        args_txt = "lr{}-{}_b{}_es{}_l{}_cls{}_v_{}_d{}_md{}_h{}_d{}_p{}_bb{}_pre{}_unf{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.classifier, args.version, args.dim, args.mlp_dim, args.heads, args.depth, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
         args_txt += "norm{}_".format(args.normalize_ifft)
-        args_txt += "flat_{}_patch{}_".format(args.flatten_type, args.patch_size)
-        args_txt += "convattn{}_r{}_qkvemb{}_incadim{}_prj{}_act{}_".format(args.conv_attn, args.ratio, args.qkv_embed, args.inner_ca_dim, args.prj_out, args.act)
+        args_txt += "f{}_pat{}_".format(args.flatten_type, args.patch_size)
+        args_txt += "conv{}_r{}_qkv{}_cad{}_prj{}_act{}_".format(args.conv_attn, args.ratio, args.qkv_embed, args.inner_ca_dim, args.prj_out, args.act)
         if args.init_weight == 1:
             args_txt += "init_{}-{}-{}_".format(args.init_linear, args.init_layernorm, args.init_conv)
         args_txt += "seed{}".format(args.seed)
@@ -606,12 +606,12 @@ if __name__ == "__main__":
                                 init_weight=args.init_weight, init_linear=args.init_linear, init_layernorm=args.init_layernorm, init_conv=args.init_conv, \
                                 dropout_in_mlp=args.dropout_in_mlp, embedding_return=args.embedding_return, classifier=args.classifier)
         
-        args_txt = "lr{}-{}_batch{}_es{}_loss{}_cls{}_ret{}_im{}_mar{}_v{}_mlpdim{}_dim{}_h{}_d{}_pool{}_bb{}_pre{}_unf{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.classifier, args.embedding_return, args.weight_importance, args.margin, args.version, args.mlp_dim, args.dim, args.heads, args.depth, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
+        args_txt = "lr{}-{}_b{}_es{}_l{}_cls{}_ret{}_im{}_mar{}_v{}_md{}_d{}_h{}_d{}_p{}_bb{}_pre{}_unf{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.classifier, args.embedding_return, args.weight_importance, args.margin, args.version, args.mlp_dim, args.dim, args.heads, args.depth, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
         args_txt += "norm{}_".format(args.normalize_ifft)
-        args_txt += "flat{}_patch{}_".format(args.flatten_type, args.patch_size)
-        args_txt += "convattn{}_r{}_qkvemb{}_incadim{}_prj{}_act{}_".format(args.conv_attn, args.ratio, args.qkv_embed, args.inner_ca_dim, args.prj_out, args.act)
+        args_txt += "f{}_patch{}_".format(args.flatten_type, args.patch_size)
+        args_txt += "conv{}_r{}_qkv{}_cad{}_prj{}_act{}_".format(args.conv_attn, args.ratio, args.qkv_embed, args.inner_ca_dim, args.prj_out, args.act)
         if args.init_weight == 1:
-            args_txt += "init_{}-{}-{}_".format(args.init_linear, args.init_layernorm, args.init_conv)
+            args_txt += "init{}-{}-{}_".format(args.init_linear, args.init_layernorm, args.init_conv)
         args_txt += "seed{}".format(args.seed)
         args_txt += "_drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
         print(len(args_txt))
@@ -865,13 +865,13 @@ if __name__ == "__main__":
                 dim=args.dim, depth_vit=args.depth, heads=args.heads, dim_head=args.dim_head, dropout=0.0, emb_dropout=0.0, mlp_dim=args.mlp_dim, dropout_in_mlp=args.dropout_in_mlp, \
                 classifier=args.classifier, in_vit_channels=args.in_vit_channels, rm_ff=args.rm_ff)
         
-        args_txt = "lr{}-{}_batch{}_es{}_loss{}_bb{}_pre{}_unf{}_rmff{}_gamma{}-{}-{}_depthb4{}_flatten{}_patch{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.backbone, args.pretrained, args.unfreeze_blocks, args.rm_ff, args.gamma_cma,args.gamma_self_patchtrans, args.gamma_crossattn_patchtrans, args.depth_block4, args.flatten_type, args.patch_size)
+        args_txt = "lr{}-{}_b{}_es{}_l{}_bb{}_pre{}_unf{}_rmff{}_gamma{}-{}-{}_depb4{}_flat{}_pa{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.backbone, args.pretrained, args.unfreeze_blocks, args.rm_ff, args.gamma_cma,args.gamma_self_patchtrans, args.gamma_crossattn_patchtrans, args.depth_block4, args.flatten_type, args.patch_size)
         args_txt += "norm{}_selfreso{}_attnreso{}_".format(args.normalize_ifft, args.patch_self_resolution, args.patch_crossattn_resolution)
         args_txt += "act{}_".format(args.act)
-        args_txt += "init_{}_".format(args.init_type)
+        args_txt += "init{}_".format(args.init_type)
         args_txt += "seed{}_cls{}_".format(args.seed, args.classifier)
-        if args.classifier == 'vit':
-            args_txt += 'dim{}_mlpdim{}_d{}_h{}_'.format(args.dim, args.mlp_dim, args.depth, args.heads)
+        if 'vit' in args.classifier:
+            args_txt += 'd{}_md{}_d{}_h{}_'.format(args.dim, args.mlp_dim, args.depth, args.heads)
         args_txt += "drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
         print(len(args_txt))
         criterion = [args.loss]
@@ -897,13 +897,13 @@ if __name__ == "__main__":
                 dim=args.dim, depth_vit=args.depth, heads=args.heads, dim_head=args.dim_head, dropout=0.0, emb_dropout=0.0, mlp_dim=args.mlp_dim, dropout_in_mlp=args.dropout_in_mlp, \
                 classifier=args.classifier, in_vit_channels=args.in_vit_channels, embedding_return=args.embedding_return)
         
-        args_txt = "lr{}-{}_batch{}_es{}_loss{}_ret{}_im{}_mar{}__bb{}_pre{}_unf{}_gamma{}-{}-{}_depthb4{}_flatten{}_patch{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.embedding_return, args.weight_importance, args.margin, args.backbone, args.pretrained, args.unfreeze_blocks, args.gamma_cma, args.gamma_self_patchtrans, args.gamma_crossattn_patchtrans, args.depth_block4, args.flatten_type, args.patch_size)
+        args_txt = "lr{}-{}_b{}_es{}_l{}_ret{}_im{}_mar{}__bb{}_pre{}_unf{}_gamma{}-{}-{}_depb4{}_flat{}_patch{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.embedding_return, args.weight_importance, args.margin, args.backbone, args.pretrained, args.unfreeze_blocks, args.gamma_cma, args.gamma_self_patchtrans, args.gamma_crossattn_patchtrans, args.depth_block4, args.flatten_type, args.patch_size)
         args_txt += "norm{}_selfreso{}_attnreso{}_".format(args.normalize_ifft, args.patch_self_resolution, args.patch_crossattn_resolution)
         args_txt += "act{}_".format(args.act)
-        args_txt += "init_{}_".format(args.init_type)
+        args_txt += "init{}_".format(args.init_type)
         args_txt += "seed{}_cls{}_".format(args.seed, args.classifier)
-        if args.classifier == 'vit':
-            args_txt += 'dim{}_mlpdim{}_d{}_h{}_'.format(args.dim, args.mlp_dim, args.depth, args.heads)
+        if 'vit' in args.classifier:
+            args_txt += 'd{}_md{}_d{}_h{}_'.format(args.dim, args.mlp_dim, args.depth, args.heads)
         args_txt += "drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
         print(len(args_txt))
         criterion = [args.loss]
@@ -933,12 +933,12 @@ if __name__ == "__main__":
                                 init_weight=args.init_weight, init_linear=args.init_linear, init_layernorm=args.init_layernorm, init_conv=args.init_conv, \
                                 dropout_in_mlp=args.dropout_in_mlp, classifier=args.classifier)
         
-        args_txt = "lr{}-{}_batch{}_es_{}_loss_{}_cls{}_v_{}_dim{}_mlpdim{}_h{}_d{}_pool_{}_bb_{}_pre{}_unf{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.classifier, args.version, args.dim, args.mlp_dim, args.heads, args.depth, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
+        args_txt = "lr{}-{}_b{}_es{}_l{}_cls{}_v_{}_d{}_md{}_h{}_d{}_p{}_bb{}_pre{}_unf{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.classifier, args.version, args.dim, args.mlp_dim, args.heads, args.depth, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
         args_txt += "norm{}_".format(args.normalize_ifft)
-        args_txt += "flat_{}_patch{}_".format(args.flatten_type, args.patch_size)
-        args_txt += "convattn{}_r{}_qkvemb{}_incadim{}_prj{}_act{}_".format(args.conv_attn, args.ratio, args.qkv_embed, args.inner_ca_dim, args.prj_out, args.act)
+        args_txt += "f{}_patch{}_".format(args.flatten_type, args.patch_size)
+        args_txt += "conv{}_r{}_qkv{}_cd{}_prj{}_act{}_".format(args.conv_attn, args.ratio, args.qkv_embed, args.inner_ca_dim, args.prj_out, args.act)
         if args.init_weight == 1:
-            args_txt += "init_{}-{}-{}_".format(args.init_linear, args.init_layernorm, args.init_conv)
+            args_txt += "init{}-{}-{}_".format(args.init_linear, args.init_layernorm, args.init_conv)
         args_txt += "seed{}".format(args.seed)
         args_txt += "_drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
         print(len(args_txt))
