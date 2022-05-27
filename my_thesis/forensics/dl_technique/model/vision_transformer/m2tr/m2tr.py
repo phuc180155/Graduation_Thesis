@@ -95,8 +95,8 @@ class MultiHeadedAttention(nn.Module):
         _key = self.key_embedding(x)
         _value = self.value_embedding(x)
         attentions = []
-        print("In MultiHeadedAttention - x: ", x.shape, "_query: ", _query.shape, "_key: ", _key.shape, "_value: ", _value.shape)
-        print("What is chunk? chunk of query: ", torch.chunk(_query, len(self.patchsize), dim=1).shape)
+        # print("In MultiHeadedAttention - x: ", x.shape, "_query: ", _query.shape, "_key: ", _key.shape, "_value: ", _value.shape)
+        # print("What is chunk? chunk of query: ", torch.chunk(_query, len(self.patchsize), dim=1).shape)
         for (width, height), query, key, value in zip(
             self.patchsize,
             torch.chunk(_query, len(self.patchsize), dim=1),

@@ -218,6 +218,7 @@ def parse_args():
     parser_dual_patch_cnn_cma_vit.add_argument("--patch_crossattn_resolution", type=str, default='1-2', help="in_size=8, in_channels=112")
     parser_dual_patch_cnn_cma_vit.add_argument("--gamma_self_patchtrans", type=float, default=-1, help="")
     parser_dual_patch_cnn_cma_vit.add_argument("--patch_self_resolution", type=str, default='1-2', help="in_size=16, in_channels=80")
+    parser_dual_patch_cnn_cma_vit.add_argument("--rm_ff", type=int, default=1, help="")
 
     parser_pairwise_dual_patch_cnn_cma_vit = sub_parser.add_parser('pairwise_dual_patch_cnn_cma_vit', help='My model')
     parser_pairwise_dual_patch_cnn_cma_vit.add_argument("--weight_importance", type=float, default=2.0)
@@ -862,9 +863,9 @@ if __name__ == "__main__":
                 gamma_cma=args.gamma_cma, gamma_crossattn_patchtrans=args.gamma_crossattn_patchtrans, patch_crossattn_resolution=args.patch_crossattn_resolution, \
                 gamma_self_patchtrans=args.gamma_self_patchtrans, patch_self_resolution=args.patch_self_resolution, flatten_type='patch', patch_size=2, \
                 dim=args.dim, depth_vit=args.depth, heads=args.heads, dim_head=args.dim_head, dropout=0.0, emb_dropout=0.0, mlp_dim=args.mlp_dim, dropout_in_mlp=args.dropout_in_mlp, \
-                classifier=args.classifier, in_vit_channels=args.in_vit_channels)
+                classifier=args.classifier, in_vit_channels=args.in_vit_channels, rm_ff=args.rm_ff)
         
-        args_txt = "lr{}-{}_batch{}_es{}_loss{}_bb{}_pre{}_unf{}_gamma{}-{}-{}_depthb4{}_flatten{}_patch{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.backbone, args.pretrained, args.unfreeze_blocks, args.gamma_cma,args.gamma_self_patchtrans, args.gamma_crossattn_patchtrans, args.depth_block4, args.flatten_type, args.patch_size)
+        args_txt = "lr{}-{}_batch{}_es{}_loss{}_bb{}_pre{}_unf{}_rmff{}_gamma{}-{}-{}_depthb4{}_flatten{}_patch{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.backbone, args.pretrained, args.unfreeze_blocks, args.rm_ff, args.gamma_cma,args.gamma_self_patchtrans, args.gamma_crossattn_patchtrans, args.depth_block4, args.flatten_type, args.patch_size)
         args_txt += "norm{}_selfreso{}_attnreso{}_".format(args.normalize_ifft, args.patch_self_resolution, args.patch_crossattn_resolution)
         args_txt += "act{}_".format(args.act)
         args_txt += "init_{}_".format(args.init_type)
