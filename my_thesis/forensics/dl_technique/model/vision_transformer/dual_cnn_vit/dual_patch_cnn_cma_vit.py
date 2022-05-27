@@ -259,7 +259,7 @@ class FeedForward2D(nn.Module):
         return x
 
 class PatchTrans(nn.Module):
-    def __init__(self, in_channel, in_size, patch_self_resolution="1-2-4-8", gamma_self_patchtrans=-1, , rm_ff=False):
+    def __init__(self, in_channel, in_size, patch_self_resolution="1-2-4-8", gamma_self_patchtrans=-1, rm_ff=False):
         super().__init__()
         self.in_size = in_size
 
