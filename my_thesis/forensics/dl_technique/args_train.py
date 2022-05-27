@@ -700,7 +700,7 @@ if __name__ == "__main__":
         from module.train_torch import train_image_stream
         from model.vision_transformer.vit.vit import ViT
 
-        model = ViT(args.image_size, args.patch_size, 1, args.dim, args.depth, args.heads, args.mlp_dim, pool = args.pool, channels = 3, dim_head = args.dim_head, dropout = 0., emb_dropout = 0.)
+        model = ViT(image_size=args.image_size, patch_size=args.patch_size, num_classes=1, dim=args.dim, depth=args.depth, heads=args.heads, mlp_dim=args.mlp_dim, pool = args.pool, channels = 3, dim_head = args.dim_head, dropout = 0., emb_dropout = 0.)
         args_txt = "batch{}_pool{}_lr{}-{}_patch{}_h{}_d{}_dim{}_mlpdim{}_es{}_loss{}_seed{}".format(args.batch_size, args.pool, args.lr, 0, args.patch_size, args.heads, args.depth, args.dim, args.mlp_dim, args.es_metric, args.loss, args.seed)
         args_txt += "_drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
         criterion = [args.loss]
