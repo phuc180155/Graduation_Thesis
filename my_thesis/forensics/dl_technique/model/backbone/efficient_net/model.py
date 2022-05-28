@@ -198,6 +198,16 @@ class EfficientNet(nn.Module):
             x = self._swish(self._bn1(self._conv_head(x)))
         return x    # (B, )
 
+    def extract_features_last_block_2(self, inputs):
+        x = inputs
+        for idx, block in enumerate(self._blocks[11:]):
+            drop_connect_rate = self._global_params.drop_connect_rate
+            if drop_connect_rate:
+                drop_connect_rate *= float(idx) / len(self._blocks)
+            x = block(x, drop_connect_rate=drop_connect_rate)
+        x = self._swish(self._bn1(self._conv_head(x)))
+        return x    # (B, )
+
 
     def extract_features(self, inputs):
         """ Returns output of the final convolution layer """

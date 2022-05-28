@@ -286,11 +286,11 @@ class M2TR(BaseNetwork):
 
         layers = {}
         rgb = self.model.extract_textures(rgb, layers)
-        print("Shape before attn: ", rgb.shape)
+        # print("Shape before attn: ", rgb.shape)
         cnt = 0
         for attn, filter, cma in self.layers:
             cnt += 1
-            print("\nLayer ", cnt, " ", rgb.shape)
+            # print("\nLayer ", cnt, " ", rgb.shape)
             rgb = attn(rgb)
             # print("rgb after attn: ", rgb.shape)
             freq = filter(rgb)
