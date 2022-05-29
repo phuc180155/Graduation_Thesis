@@ -488,8 +488,11 @@ class DualPatchCNNCAViT(nn.Module):
         self.transformer_block_4 = nn.ModuleList([])
         for _ in range(depth_block4):
             self.transformer_block_4.append(PatchTrans(in_channel=40, in_size=16, patch_self_resolution=patch_self_resolution, gamma_self_patchtrans=gamma_self_patchtrans, rm_ff=rm_ff))
-        self.transformer_block_10_rgb = PatchTransv2(in_channel=112, in_size=8, patch_crossattn_resolution=patch_crossattn_resolution, gamma_patchtrans=gamma_crossattn_patchtrans, rm_ff=rm_ff)
-        self.transformer_block_10_freq = PatchTransv2(in_channel=112, in_size=8, patch_crossattn_resolution=patch_crossattn_resolution, gamma_patchtrans=gamma_crossattn_patchtrans, rm_ff=rm_ff)
+    
+        self.gamma_crossattn_patchtrans = gamma_crossattn_patchtrans
+        if self.gamma_crossattn_patchtrans:
+            self.transformer_block_10_rgb = PatchTransv2(in_channel=112, in_size=8, patch_crossattn_resolution=patch_crossattn_resolution, gamma_patchtrans=gamma_crossattn_patchtrans, rm_ff=rm_ff)
+            self.transformer_block_10_freq = PatchTransv2(in_channel=112, in_size=8, patch_crossattn_resolution=patch_crossattn_resolution, gamma_patchtrans=gamma_crossattn_patchtrans, rm_ff=rm_ff)
 
         # Classifier:
         if 'cat' in self.version:
@@ -666,8 +669,13 @@ class DualPatchCNNCAViT(nn.Module):
             #
             rgb_features = self.rgb_extractor.extract_features_block_11(rgb_features)
             freq_features = self.freq_extractor.extract_features_block_11(freq_features)
-            rgb_features_1 = self.transformer_block_10_rgb(rgb_features, freq_features)
-            freq_features_1 = self.transformer_block_10_freq(freq_features, rgb_features)
+            if self.gamma_crossattn_patchtrans:
+                rgb_features_1 = self.transformer_block_10_rgb(rgb_features, freq_features)
+                freq_features_1 = self.transformer_block_10_freq(freq_features, rgb_features)
+            else:
+                rgb_features_1 = rgb_features
+                freq_features_1 = freq_features
+            #
             rgb_features = self.rgb_extractor.extract_features_last_block_2(rgb_features_1)
             freq_features = self.freq_extractor.extract_features_last_block_2(freq_features_1)
         else:
