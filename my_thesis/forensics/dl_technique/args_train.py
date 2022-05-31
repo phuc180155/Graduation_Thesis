@@ -358,6 +358,9 @@ def parse_args():
 
 import torch
 import os
+import random
+import torch.backends.cudnn as cudnn
+import numpy as np
 os.environ["MKL_NUM_THREADS"] = "2" 
 os.environ["NUMEXPR_NUM_THREADS"] = "2" 
 os.environ["OMP_NUM_THREADS"] = "2" 
@@ -368,6 +371,15 @@ torch.set_num_threads(2)
 # except:
 #     pass
 
+def config_seed(seed: int):
+    # os.environ['PYTHONHASHSEED'] = str(seed)
+    torch.manual_seed(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+    # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # if device == 'cuda':
+    #     torch.cuda.manual_seed_all(seed)
+    
 if __name__ == "__main__":
     args = parse_args()
     print(args)
@@ -385,12 +397,13 @@ if __name__ == "__main__":
     if not os.path.exists(args.checkpoint):
         os.makedirs(args.checkpoint)
 
+    config_seed(seed=args.seed)
         
-    ################# TRAIN #######################
+    ################# TRAIN #######################n
     if model == "xception":
         from module.train_torch import train_image_stream
         from model.cnn.xception_net.model import xception
-        model = xception(pretrained=args.pretrained)
+        model_ = xception(pretrained=args.pretrained)
         args_txt = "lr{}_batch{}_es{}_loss{}_pre{}_seed{}".format(args.lr, args.batch_size, args.es_metric, args.loss, args.pretrained, args.seed)
         args_txt += "_drmlp{}_aug{}".format(0.0, args.augmentation)
         criterion = [args.loss]
@@ -398,18 +411,18 @@ if __name__ == "__main__":
             args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
             
-        train_image_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir, image_size=args.image_size, lr=args.lr,\
+        train_image_stream(model_, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir, image_size=args.image_size, lr=args.lr,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="xception", args_txt=args_txt, augmentation=args.augmentation)
 
     elif model == "xception_rfm":
         from module.train_rfm import train_rfm
         from model.cnn.xception_net.model_two_out import xception
-        model = xception(pretrained=args.pretrained)
+        model_ = xception(pretrained=args.pretrained)
         args_txt = "lr{}_batch{}_es{}_lossce_pre{}_seed{}".format(args.lr, args.batch_size, args.es_metric,args.pretrained, args.seed)
         args_txt += "_drmlp{}_aug{}".format(0.0, args.augmentation)
             
-        train_rfm(model, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir, image_size=args.image_size, lr=args.lr,\
+        train_rfm(model_, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir, image_size=args.image_size, lr=args.lr,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="xception", args_txt=args_txt, augmentation=args.augmentation)
     
@@ -424,7 +437,7 @@ if __name__ == "__main__":
         from module.train_torch import train_image_stream
         from model.cnn.srm_two_stream.twostream import Two_Stream_Net
         
-        model = Two_Stream_Net()
+        model_ = Two_Stream_Net()
         args_txt = "lr{}_batch{}_es{}_loss{}_seed{}".format(args.lr, args.batch_size, args.es_metric, args.loss, args.seed)
         args_txt += "_drmlp{}_aug{}".format(0.0, args.augmentation)
         criterion = [args.loss]
@@ -432,14 +445,14 @@ if __name__ == "__main__":
             args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
             
-        train_image_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir, image_size=args.image_size, lr=args.lr,\
+        train_image_stream(model_, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir, image_size=args.image_size, lr=args.lr,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="srm_2_stream", args_txt=args_txt, augmentation=args.augmentation)
         
     elif model == "meso4":
         from model.cnn.mesonet4.model import mesonet
         from module.train_torch import train_image_stream
-        model = mesonet(image_size=args.image_size)
+        model_ = mesonet(image_size=args.image_size)
         args_txt = "lr{}_batch{}_es{}_loss{}_seed{}".format(args.lr, args.batch_size, args.es_metric, args.loss, args.seed)
         args_txt += "_drmlp{}_aug{}".format(0.0, args.augmentation)
         criterion = [args.loss]
@@ -447,7 +460,7 @@ if __name__ == "__main__":
             args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
             
-        train_image_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir, image_size=args.image_size, lr=args.lr,\
+        train_image_stream(model_, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir, image_size=args.image_size, lr=args.lr,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="meso4", args_txt=args_txt, augmentation=args.augmentation)
         
@@ -455,7 +468,7 @@ if __name__ == "__main__":
         from module.train_torch import train_dual_stream
         from model.cnn.dual_cnn.dual_efficient import DualEfficient
         
-        model = DualEfficient(pretrained=args.pretrained)
+        model_ = DualEfficient(pretrained=args.pretrained)
         args_txt = "lr{}_batch{}_es{}_loss{}_pre{}_seed{}".format(args.lr, args.batch_size, args.es_metric,args.loss, args.pretrained, args.seed)
         args_txt += "_drmlp{}_aug{}".format(0.0, args.augmentation)
         criterion = [args.loss]
@@ -464,7 +477,7 @@ if __name__ == "__main__":
             criterion.append(args.gamma)
         
         use_pretrained = True if args.pretrained or args.resume != '' else False
-        train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir, image_size=args.image_size, lr=args.lr, division_lr=False, use_pretrained=False,\
+        train_dual_stream(model_, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir, image_size=args.image_size, lr=args.lr, division_lr=False, use_pretrained=False,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual_efficient", args_txt=args_txt, augmentation=args.augmentation)
 
@@ -472,7 +485,7 @@ if __name__ == "__main__":
         from module.train_torch import train_dual_stream
         from model.cnn.dual_attn_cnn.model import DualCrossAttnCNN
     
-        model = DualCrossAttnCNN(image_size=args.image_size, num_classes=1, dim=args.dim, mlp_dim=args.mlp_dim,\
+        model_ = DualCrossAttnCNN(image_size=args.image_size, num_classes=1, dim=args.dim, mlp_dim=args.mlp_dim,\
                                 backbone=args.backbone, pretrained=bool(args.pretrained), unfreeze_blocks=args.unfreeze_blocks,\
                                 normalize_ifft=args.normalize_ifft,\
                                 flatten_type=args.flatten_type, patch_size=args.patch_size,\
@@ -496,7 +509,7 @@ if __name__ == "__main__":
             args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
         use_pretrained = True if args.pretrained or args.resume != '' else False
-        train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=False,\
+        train_dual_stream(model_, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=False,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual_attn_cnn", args_txt=args_txt, augmentation=args.augmentation)
         
@@ -506,7 +519,7 @@ if __name__ == "__main__":
 
         dropout = 0.15
         emb_dropout = 0.15
-        model = EfficientViT(
+        model_ = EfficientViT(
             selected_efficient_net=0,
             image_size=args.image_size,
             patch_size=args.patch_size,
@@ -530,7 +543,7 @@ if __name__ == "__main__":
             criterion.append(args.gamma)
         
         use_pretrained = True if args.pretrained or args.resume != '' else False
-        train_image_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=False,\
+        train_image_stream(model_, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=False,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed, \
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="efficient_vit", args_txt=args_txt, augmentation=args.augmentation)
         
@@ -540,7 +553,7 @@ if __name__ == "__main__":
         
         dropout = 0.0
         emb_dropout = 0.0
-        model = DualCNNViT(image_size=args.image_size, num_classes=1, dim=args.dim,\
+        model_ = DualCNNViT(image_size=args.image_size, num_classes=1, dim=args.dim,\
                                 depth=args.depth, heads=args.heads, mlp_dim=args.mlp_dim,\
                                 dim_head=args.dim_head, dropout=0.15, \
                                 backbone=args.backbone, pretrained=bool(args.pretrained),\
@@ -566,7 +579,7 @@ if __name__ == "__main__":
             args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
         use_pretrained = True if args.pretrained or args.resume != '' else False
-        train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
+        train_dual_stream(model_, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual_cnn_vit", args_txt=args_txt, augmentation=args.augmentation)
         
@@ -576,7 +589,7 @@ if __name__ == "__main__":
         
         dropout = 0.15
         emb_dropout = 0.15
-        model = OriginDualEfficientViT(
+        model_ = OriginDualEfficientViT(
             image_size=args.image_size,
             patch_size=args.patch_size,
             num_classes=1,
@@ -601,7 +614,7 @@ if __name__ == "__main__":
             criterion.append(args.gamma)
         
         use_pretrained = True if args.pretrained or args.resume != '' else False
-        train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
+        train_dual_stream(model_, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="origin_dual_efficient_vit", args_txt=args_txt, augmentation=args.augmentation)
 
@@ -611,7 +624,7 @@ if __name__ == "__main__":
         
         dropout = 0.15
         emb_dropout = 0.15
-        model = OriginDualEfficientViTWithoutIFFT(
+        model_ = OriginDualEfficientViTWithoutIFFT(
             image_size=args.image_size,
             patch_size=args.patch_size,
             num_classes=1,
@@ -636,7 +649,7 @@ if __name__ == "__main__":
             criterion.append(args.gamma)
         
         use_pretrained = True if args.pretrained or args.resume != '' else False
-        train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
+        train_dual_stream(model_, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="origin_dual_efficient_vit_remove_ifft", args_txt=args_txt, augmentation=args.augmentation)
 
@@ -646,7 +659,7 @@ if __name__ == "__main__":
 
         dropout = 0.15
         emb_dropout = 0.15
-        model = PairwiseDualCNNViT(image_size=args.image_size, num_classes=1, dim=args.dim,\
+        model_ = PairwiseDualCNNViT(image_size=args.image_size, num_classes=1, dim=args.dim,\
                                 depth=args.depth, heads=args.heads, mlp_dim=args.mlp_dim,\
                                 dim_head=args.dim_head, dropout=0.15,\
                                 backbone=args.backbone, pretrained=bool(args.pretrained),\
@@ -672,7 +685,7 @@ if __name__ == "__main__":
             args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
         use_pretrained = True if args.pretrained or args.resume != '' else False
-        train_pairwise_dual_stream(model, args.weight_importance, args.margin, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
+        train_pairwise_dual_stream(model_, args.weight_importance, args.margin, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="pairwise_dual_cnn_vit", args_txt=args_txt, augmentation=args.augmentation)
 
@@ -682,7 +695,7 @@ if __name__ == "__main__":
         
         dropout = 0.15
         emb_dropout = 0.15
-        model = DualCNNFeedForwardViT(image_size=args.image_size, num_classes=1, dim=args.dim,\
+        model_ = DualCNNFeedForwardViT(image_size=args.image_size, num_classes=1, dim=args.dim,\
                                     depth=args.depth, heads=args.heads, mlp_dim=args.mlp_dim,\
                                     dim_head=args.dim_head, dropout=0.15, emb_dropout=0.15,\
                                     backbone=args.backbone, pretrained=bool(args.pretrained), unfreeze_blocks=args.unfreeze_blocks,\
@@ -708,7 +721,7 @@ if __name__ == "__main__":
             args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
         use_pretrained = True if args.pretrained or args.resume != '' else False
-        train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
+        train_dual_stream(model_, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual_cnn_feedforward_vit", args_txt=args_txt, augmentation=args.augmentation)
 
@@ -718,7 +731,7 @@ if __name__ == "__main__":
         
         dropout = 0.15
         emb_dropout = 0.15
-        model = PairwiseDualCNNFeedForwardViT(image_size=args.image_size, num_classes=1, dim=args.dim,\
+        model_ = PairwiseDualCNNFeedForwardViT(image_size=args.image_size, num_classes=1, dim=args.dim,\
                                     depth=args.depth, heads=args.heads, mlp_dim=args.mlp_dim,\
                                     dim_head=args.dim_head, dropout=0.15, emb_dropout=0.15,\
                                     backbone=args.backbone, pretrained=bool(args.pretrained), unfreeze_blocks=args.unfreeze_blocks,\
@@ -744,7 +757,7 @@ if __name__ == "__main__":
             args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
         use_pretrained = True if args.pretrained or args.resume != '' else False
-        train_pairwise_dual_stream(model, args.weight_importance, args.margin, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
+        train_pairwise_dual_stream(model_, args.weight_importance, args.margin, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="pairwise_dual_cnn_feedforward_vit", args_txt=args_txt, augmentation=args.augmentation)
     
@@ -752,7 +765,7 @@ if __name__ == "__main__":
         from module.train_torch import train_image_stream
         from model.vision_transformer.vit.vit import ViT
 
-        model = ViT(image_size=args.image_size, patch_size=args.patch_size, num_classes=1, dim=args.dim, depth=args.depth, heads=args.heads, mlp_dim=args.mlp_dim, pool = args.pool, channels = 3, dim_head = args.dim_head, dropout = 0., emb_dropout = 0.)
+        model_ = ViT(image_size=args.image_size, patch_size=args.patch_size, num_classes=1, dim=args.dim, depth=args.depth, heads=args.heads, mlp_dim=args.mlp_dim, pool = args.pool, channels = 3, dim_head = args.dim_head, dropout = 0., emb_dropout = 0.)
         args_txt = "batch{}_pool{}_lr{}-{}_patch{}_h{}_d{}_dim{}_mlpdim{}_es{}_loss{}_seed{}".format(args.batch_size, args.pool, args.lr, 0, args.patch_size, args.heads, args.depth, args.dim, args.mlp_dim, args.es_metric, args.loss, args.seed)
         args_txt += "_drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
         criterion = [args.loss]
@@ -760,7 +773,7 @@ if __name__ == "__main__":
             args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
         
-        train_image_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=0, use_pretrained=False,\
+        train_image_stream(model_, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=0, use_pretrained=False,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed, \
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="vit", args_txt=args_txt, augmentation=args.augmentation)
 
@@ -768,7 +781,7 @@ if __name__ == "__main__":
         from module.train_torch import train_image_stream
         from model.vision_transformer.vit.swin_vit import *
 
-        model = swin_t(window_size=args.window_size)
+        model_ = swin_t(window_size=args.window_size)
         args_txt = "batch{}_lr{}-{}_window{}_es{}_loss{}_seed{}".format(args.batch_size, args.lr, 0, args.window_size,args.es_metric, args.loss, args.seed)
         args_txt += "_drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
         criterion = [args.loss]
@@ -776,7 +789,7 @@ if __name__ == "__main__":
             args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
         
-        train_image_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=0, use_pretrained=False,\
+        train_image_stream(model_, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=0, use_pretrained=False,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed, \
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="swin_vit", args_txt=args_txt, augmentation=args.augmentation)
 
@@ -794,7 +807,7 @@ if __name__ == "__main__":
             'DROP_RATIO': args.drop_ratio,
             'HAS_DECODER': args.has_decoder
         }
-        model = M2TR(model_cfg)
+        model_ = M2TR(model_cfg)
         args_txt = "batch{}_lr{}-{}_bb{}_texture{}_feature{}_d{}_drop{}_decoder{}_es{}_loss{}_seed{}".format(args.batch_size, args.lr, 0, args.backbone, args.texture_layer, args.feature_layer, args.depth, args.drop_ratio, args.has_decoder, args.es_metric, args.loss, args.seed)
         args_txt += "_drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
         criterion = [args.loss]
@@ -802,7 +815,7 @@ if __name__ == "__main__":
             args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
         
-        train_image_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=0, use_pretrained=False,\
+        train_image_stream(model_, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=0, use_pretrained=False,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed, \
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="m2tr", args_txt=args_txt, augmentation=args.augmentation)
 
@@ -810,7 +823,7 @@ if __name__ == "__main__":
         from model.vision_transformer.dual_cnn_vit.modelv2 import DualCNNCMATransformer
         from module.train_torch import train_dual_stream
 
-        model = DualCNNCMATransformer(image_size=args.image_size, num_classes=1, depth=args.depth, \
+        model_ = DualCNNCMATransformer(image_size=args.image_size, num_classes=1, depth=args.depth, \
                             backbone=args.backbone, pretrained=args.pretrained, unfreeze_blocks=args.unfreeze_blocks, \
                             normalize_ifft=args.normalize_ifft,\
                             act=args.act,\
@@ -831,7 +844,7 @@ if __name__ == "__main__":
             args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
         use_pretrained = True if args.pretrained or args.resume != '' else False
-        train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
+        train_dual_stream(model_, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual_cnn_cma_transformer", args_txt=args_txt, augmentation=args.augmentation)
 
@@ -841,7 +854,7 @@ if __name__ == "__main__":
         
         dropout = 0.0
         emb_dropout = 0.0
-        model = DualCMACNNViT(gpu_id=args.gpu_id, image_size=args.image_size, num_classes=1, dim=args.dim,\
+        model_ = DualCMACNNViT(gpu_id=args.gpu_id, image_size=args.image_size, num_classes=1, dim=args.dim,\
                                 depth=args.depth, heads=args.heads, mlp_dim=args.mlp_dim,\
                                 dim_head=args.dim_head, dropout=0.15, emb_dropout=0.15,\
                                 backbone=args.backbone, pretrained=bool(args.pretrained), gamma_cma=args.gamma_cma,\
@@ -867,7 +880,7 @@ if __name__ == "__main__":
             args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
         use_pretrained = True if args.pretrained or args.resume != '' else False
-        train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
+        train_dual_stream(model_, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual_cma_cnn_vit", args_txt=args_txt, augmentation=args.augmentation)
 
@@ -875,7 +888,7 @@ if __name__ == "__main__":
         from module.train_torch import train_dual_stream
         from model.cnn.dual_cma_cnn_attn.model import DualCMACNNAttn
     
-        model = DualCMACNNAttn(image_size=args.image_size, num_classes=1, dim=args.dim, mlp_dim=args.mlp_dim,\
+        model_ = DualCMACNNAttn(image_size=args.image_size, num_classes=1, dim=args.dim, mlp_dim=args.mlp_dim,\
                                 backbone=args.backbone, pretrained=bool(args.pretrained), unfreeze_blocks=args.unfreeze_blocks, gamma_cma=args.gamma_cma,\
                                 normalize_ifft=args.normalize_ifft,\
                                 flatten_type=args.flatten_type, patch_size=args.patch_size,\
@@ -899,7 +912,7 @@ if __name__ == "__main__":
             args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
         use_pretrained = True if args.pretrained or args.resume != '' else False
-        train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=False,\
+        train_dual_stream(model_, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=False,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual_cma_cnn_attn", args_txt=args_txt, augmentation=args.augmentation)
 
@@ -907,7 +920,7 @@ if __name__ == "__main__":
         from model.vision_transformer.dual_cnn_vit.dual_patch_cnn_cma_vit import DualPatchCNNCMAViT
         from module.train_torch import train_dual_stream
 
-        model = DualPatchCNNCMAViT(image_size=args.image_size, num_classes=1, depth_block4=args.depth_block4, \
+        model_ = DualPatchCNNCMAViT(image_size=args.image_size, num_classes=1, depth_block4=args.depth_block4, \
                 backbone=args.backbone, pretrained=args.pretrained, unfreeze_blocks=args.unfreeze_blocks, \
                 normalize_ifft=args.normalize_ifft,\
                 act=args.act,\
@@ -931,7 +944,7 @@ if __name__ == "__main__":
             args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
         use_pretrained = True if args.pretrained or args.resume != '' else False
-        train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
+        train_dual_stream(model_, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual_patch_cnn_cma_vit", args_txt=args_txt, augmentation=args.augmentation)
 
@@ -939,7 +952,7 @@ if __name__ == "__main__":
         from model.vision_transformer.dual_cnn_vit.dual_patch_cnn_ca_vit import DualPatchCNNCAViT
         from module.train_torch import train_dual_stream
 
-        model = DualPatchCNNCAViT(image_size=args.image_size, num_classes=1, depth_block4=args.depth_block4, \
+        model_ = DualPatchCNNCAViT(image_size=args.image_size, num_classes=1, depth_block4=args.depth_block4, \
                 backbone=args.backbone, pretrained=args.pretrained, unfreeze_blocks=args.unfreeze_blocks, \
                 normalize_ifft=args.normalize_ifft,\
                 init_type=args.init_type, \
@@ -965,7 +978,7 @@ if __name__ == "__main__":
             args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
         use_pretrained = True if args.pretrained or args.resume != '' else False
-        train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
+        train_dual_stream(model_, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual_patch_cnn_ca_vit", args_txt=args_txt, augmentation=args.augmentation)
 
@@ -1007,7 +1020,7 @@ if __name__ == "__main__":
         
         dropout = 0.0
         emb_dropout = 0.0
-        model = DualCNNViTTest(gpu_id=args.gpu_id, image_size=args.image_size, num_classes=1, dim=args.dim,\
+        model_ = DualCNNViTTest(gpu_id=args.gpu_id, image_size=args.image_size, num_classes=1, dim=args.dim,\
                                 depth=args.depth, heads=args.heads, mlp_dim=args.mlp_dim,\
                                 dim_head=args.dim_head, dropout=0.15, \
                                 backbone=args.backbone, pretrained=bool(args.pretrained),\
@@ -1033,7 +1046,7 @@ if __name__ == "__main__":
             args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
         use_pretrained = True if args.pretrained or args.resume != '' else False
-        train_dual_stream(model, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
+        train_dual_stream(model_, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual_cnn_vit_test", args_txt=args_txt, augmentation=args.augmentation)
     

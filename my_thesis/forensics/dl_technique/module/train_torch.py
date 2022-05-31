@@ -206,14 +206,14 @@ def define_log_writer(checkpoint: str, resume: str, args_txt:str, model: Tuple[t
 def define_device(seed: int, model_name: str):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # os.environ['PYTHONHASHSEED'] = str(seed)
-    torch.manual_seed(seed)
-    random.seed(seed)
-    np.random.seed(seed)
+    # torch.manual_seed(seed)
+    # random.seed(seed)
+    # np.random.seed(seed)
     if device == "cuda":
         torch.cuda.manual_seed_all(seed)
-        cudnn.benchmark = True
-        # if 'dual' in model_name and 'vit' in model_name:
-        #     return device
+        cudnn.benchmark = False
+    #     # if 'dual' in model_name and 'vit' in model_name:
+    #     #     return device
         cudnn.deterministic = True
     return device
 
@@ -316,7 +316,7 @@ def eval_image_stream(model ,dataloader, device, criterion, adj_brightness=1.0, 
 
 def train_image_stream(model, criterion_name=None, train_dir = '', val_dir ='', test_dir = '', image_size=256, lr=3e-4, division_lr=True, use_pretrained=False,\
               batch_size=16, num_workers=8, checkpoint='', resume='', epochs=20, eval_per_iters=-1, seed=0, \
-              adj_brightness=1.0, adj_contrast=1.0, es_metric='val_loss', es_patience=5, model_name="xception", args_txt="", augmentation=True):
+              adj_brightness=1.0, adj_contrast=1.0, es_metric='val_loss', es_patience=5, model_name="xception", args_txt="", augmentation=True, gpu_id=2):
     # Generate dataloader train and validation 
     dataloader_train, dataloader_val, num_samples = generate_dataloader_single_cnn_stream(train_dir, val_dir, image_size, batch_size, num_workers, augmentation=augmentation)
     dataloader_test = generate_test_dataloader_single_cnn_stream(test_dir, image_size, batch_size, num_workers)
@@ -372,6 +372,9 @@ def train_image_stream(model, criterion_name=None, train_dir = '', val_dir ='', 
         model.load_state_dict(torch.load(osp.join(checkpoint, resume)))
     model.train()
 
+    # print(model.base_net[0].init_block.conv1.conv.weight.data)
+    # exit(0)
+
     running_loss = 0
     running_acc = 0
 
@@ -389,18 +392,23 @@ def train_image_stream(model, criterion_name=None, train_dir = '', val_dir ='', 
         model.train()
         print("Training...")
         for inputs, labels in tqdm(dataloader_train):
+            # print("inputs: ", inputs[0])
+            # print("labels: ", labels)
+            # if global_step == 10:
+            #     exit(0)
             global_step += 1
             # Push to device
-            inputs, labels = inputs.float().to(device), labels.float().to(device)
+            inputs, labels = inputs.to(device).float(), labels.to(device).float()
             # Clear gradient after a step
             optimizer.zero_grad()
 
             # Forward netword
-            logps = model.forward(inputs)   # Shape (32, 1)
+            logps = model(inputs)   # Shape (32, 1)
             logps = logps.squeeze()         # Shape (32, )
 
             # Find loss
             loss = criterion(logps, labels)
+            # print("logps: ", logps, "     ====     loss: ", loss)
             
             # Backpropagation and update weights
             loss.backward()
