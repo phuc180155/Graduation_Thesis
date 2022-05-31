@@ -647,6 +647,8 @@ class DualPatchCNNCAViT(nn.Module):
             ifreq_feature = self.layernorm_ifft(ifreq_feature)
         elif norm_type == 'normal':
             ifreq_feature = F.normalize(ifreq_feature)
+        elif norm_type == 'no_ifft':
+            return freq_feature
         return ifreq_feature
 
     def flatten_to_vectors(self, feature):
