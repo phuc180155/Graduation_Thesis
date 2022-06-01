@@ -211,7 +211,7 @@ def define_device(seed: int, model_name: str):
     # np.random.seed(seed)
     if device == "cuda":
         torch.cuda.manual_seed_all(seed)
-        cudnn.benchmark = False
+        cudnn.benchmark = True
     #     # if 'dual' in model_name and 'vit' in model_name:
     #     #     return device
         cudnn.deterministic = True
