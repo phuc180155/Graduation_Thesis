@@ -247,6 +247,7 @@ def parse_args():
     parser_dual_patch_cnn_ca_vit.add_argument("--init_ca_weight", type=int, default=1, help="") 
     parser_dual_patch_cnn_ca_vit.add_argument("--prj_out", type=int, default=0, help="")
     parser_dual_patch_cnn_ca_vit.add_argument("--version",type=str, default="ca-fadd-0.8", required=False, help="Some changes in model")
+    parser_dual_patch_cnn_ca_vit.add_argument("--batchnorm_patchtrans", type=int, default=1)
 
     parser_pairwise_dual_patch_cnn_cma_vit = sub_parser.add_parser('pairwise_dual_patch_cnn_cma_vit', help='My model')
     parser_pairwise_dual_patch_cnn_cma_vit.add_argument("--weight_importance", type=float, default=2.0)
@@ -961,9 +962,9 @@ if __name__ == "__main__":
                 conv_attn=args.conv_attn, ratio=args.ratio, qkv_embed=args.qkv_embed, init_ca_weight=args.init_ca_weight, prj_out=args.prj_out, inner_ca_dim=args.inner_ca_dim, act=args.act,\
                 dim=args.dim, depth_vit=args.depth, heads=args.heads, dim_head=args.dim_head, dropout=0.1, emb_dropout=0.1, mlp_dim=args.mlp_dim, dropout_in_mlp=args.dropout_in_mlp, \
                 version=args.version,\
-                classifier=args.classifier, rm_ff=args.rm_ff)
+                classifier=args.classifier, rm_ff=args.rm_ff, batchnorm_patchtrans=args.batchnorm_patchtrans)
         
-        args_txt = "lr{}-{}_b{}_es{}_l{}_bb{}_pre{}_rmff{}_g{}-{}_d4{}_f{}p{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.backbone, args.pretrained, args.rm_ff,args.gamma_self_patchtrans, args.gamma_crossattn_patchtrans, args.depth_block4, args.flatten_type, args.patch_size)
+        args_txt = "lr{}-{}_b{}_es{}_l{}_bb{}_pre{}_bnorm{}_rmff{}_g{}-{}_d4{}_f{}p{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.backbone, args.pretrained, args.batchnorm_patchtrans, args.rm_ff,args.gamma_self_patchtrans, args.gamma_crossattn_patchtrans, args.depth_block4, args.flatten_type, args.patch_size)
         args_txt += "n{}_sere{}_attnre{}_".format(args.normalize_ifft, args.patch_self_resolution, args.patch_crossattn_resolution)
         args_txt += "act{}_".format(args.act)
         args_txt += "init{}_".format(args.init_type)

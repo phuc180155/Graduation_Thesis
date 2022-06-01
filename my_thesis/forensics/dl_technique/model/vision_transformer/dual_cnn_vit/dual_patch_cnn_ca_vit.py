@@ -265,7 +265,7 @@ class FeedForward2D(nn.Module):
         return x
 
 class PatchTrans(nn.Module):
-    def __init__(self, in_channel, in_size, patch_self_resolution="1-2-4-8", gamma_self_patchtrans=-1, rm_ff=False):
+    def __init__(self, in_channel, in_size, patch_self_resolution="1-2-4-8", gamma_self_patchtrans=-1, rm_ff=False, batchnorm=True):
         super().__init__()
         self.in_size = in_size
 
@@ -275,11 +275,14 @@ class PatchTrans(nn.Module):
             patchsize.append((int(in_size//r), int(in_size//r)))
         # print(patchsize)
         self.transform_ = TransformerBlock(patchsize, in_channel=in_channel, gamma_self_patchtrans=gamma_self_patchtrans, rm_ff=rm_ff)
-        # print(torch.get_num_threads())
-        # print(in_channel)
+        self.batchnorm = batchnorm
+        if batchnorm:
+            self.batchnorm = nn.BatchNorm2d(num_features=in_channel)
 
     def forward(self, enc_feat):
         output = self.transform_(enc_feat)
+        if self.batchnorm:
+            output = self.batchnorm(output)
         return output
 
 class TransformerBlock(nn.Module):
@@ -325,6 +328,7 @@ class TransformerBlockv2(nn.Module):
             self.gamma = nn.Parameter(torch.zeros(1))
         else:
             self.gamma = gamma_patchtrans
+        
 
     def forward(self, rgb, freq):
         self_attention = self.attention(rgb, freq)
@@ -334,7 +338,7 @@ class TransformerBlockv2(nn.Module):
         return output
 
 class PatchTransv2(nn.Module):
-    def __init__(self, in_channel, in_size, patch_crossattn_resolution="1-2-4-8", gamma_patchtrans=-1, rm_ff=False):
+    def __init__(self, in_channel, in_size, patch_crossattn_resolution="1-2-4-8", gamma_patchtrans=-1, rm_ff=False, batchnorm=True):
         super().__init__()
         self.in_size = in_size
         # torch.set_num_threads(2)
@@ -345,11 +349,14 @@ class PatchTransv2(nn.Module):
             patchsize.append((int(in_size//r), int(in_size//r)))
         # print(patchsize)
         self.transform_ = TransformerBlockv2(patchsize, in_channel=in_channel, gamma_patchtrans=gamma_patchtrans, rm_ff=rm_ff)
-        # print(in_channel)
-        # print(torch.get_num_threads())
+        self.batchnorm = batchnorm
+        if batchnorm:
+            self.batchnorm = nn.BatchNorm2d(num_features=in_channel)
 
     def forward(self, rgb_fea, freq_fea):
         output = self.transform_(rgb_fea, freq_fea)
+        if self.batchnorm:
+            output = self.batchnorm(output)
         return output
 
 class CrossAttention(nn.Module):
@@ -422,7 +429,7 @@ class DualPatchCNNCAViT(nn.Module):
                 flatten_type='patch', patch_size=2, \
                 conv_attn=False, ratio=5, qkv_embed=True, init_ca_weight=True, prj_out=False, inner_ca_dim=512, act='none',\
                 dim=1024, depth_vit=2, heads=3, dim_head=64, dropout=0.15, emb_dropout=0.15, mlp_dim=2048, dropout_in_mlp=0.0, \
-                version='ca-fadd-0.8', classifier='mlp', rm_ff=True):  
+                version='ca-fadd-0.8', classifier='mlp', rm_ff=True, batchnorm_patchtrans=True):  
         super(DualPatchCNNCAViT, self).__init__()
         # torch.set_num_threads(2)
         # torch.set_num_interop_threads(8)
@@ -487,12 +494,12 @@ class DualPatchCNNCAViT(nn.Module):
         # self.dropout = nn.Dropout(self.emb_dropout)
         self.transformer_block_4 = nn.ModuleList([])
         for _ in range(depth_block4):
-            self.transformer_block_4.append(PatchTrans(in_channel=40, in_size=16, patch_self_resolution=patch_self_resolution, gamma_self_patchtrans=gamma_self_patchtrans, rm_ff=rm_ff))
+            self.transformer_block_4.append(PatchTrans(in_channel=40, in_size=16, patch_self_resolution=patch_self_resolution, gamma_self_patchtrans=gamma_self_patchtrans, rm_ff=rm_ff, batchnorm=batchnorm_patchtrans))
     
         self.gamma_crossattn_patchtrans = gamma_crossattn_patchtrans
         if self.gamma_crossattn_patchtrans:
-            self.transformer_block_10_rgb = PatchTransv2(in_channel=112, in_size=8, patch_crossattn_resolution=patch_crossattn_resolution, gamma_patchtrans=gamma_crossattn_patchtrans, rm_ff=rm_ff)
-            self.transformer_block_10_freq = PatchTransv2(in_channel=112, in_size=8, patch_crossattn_resolution=patch_crossattn_resolution, gamma_patchtrans=gamma_crossattn_patchtrans, rm_ff=rm_ff)
+            self.transformer_block_10_rgb = PatchTransv2(in_channel=112, in_size=8, patch_crossattn_resolution=patch_crossattn_resolution, gamma_patchtrans=gamma_crossattn_patchtrans, rm_ff=rm_ff, batchnorm=batchnorm_patchtrans)
+            self.transformer_block_10_freq = PatchTransv2(in_channel=112, in_size=8, patch_crossattn_resolution=patch_crossattn_resolution, gamma_patchtrans=gamma_crossattn_patchtrans, rm_ff=rm_ff, batchnorm=batchnorm_patchtrans)
 
         # Classifier:
         if 'cat' in self.version:
@@ -539,6 +546,8 @@ class DualPatchCNNCAViT(nn.Module):
             activation = nn.Sigmoid()
         elif act == 'selu':
             activation = nn.SELU()
+        elif act == 'gelu':
+            activation = nn.GELU()
         else:
             activation = None
         return activation
