@@ -650,7 +650,7 @@ if __name__ == "__main__":
         use_pretrained = True if args.pretrained or args.resume != '' else False
         train_dual_stream(model_, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
-                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual_cnn_vit", args_txt=args_txt, augmentation=args.augmentation)
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual_dab_cnn_vit", args_txt=args_txt, augmentation=args.augmentation)
         
     elif model == "origin_dual_efficient_vit":
         from module.train_torch import train_dual_stream
