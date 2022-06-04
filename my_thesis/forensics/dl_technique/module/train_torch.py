@@ -673,17 +673,6 @@ def train_dual_stream(model, criterion_name=None, train_dir = '', val_dir ='', t
                     step_model_saver.save_last_model(step_ckcpoint, model, global_step)
                     step_model_saver.save_model(step_ckcpoint, model, global_step, save_ckcpoint=False, global_acc=global_acc, global_loss=global_loss)
 
-                    cnt += 1
-                    if cnt == 5:
-                        print("Best test acc: ", step_model_saver.best_scores[3])
-                        cnt = 0
-                        stop_ += 1
-                        if stop_ == 7:
-                            if step_model_saver.best_scores[3] >= 0.86:
-                                time.sleep(5)
-                                os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, "({:.4f}_{:.4f}_{:.4f}_{:.4f})_{}".format(step_model_saver.best_scores[0], step_model_saver.best_scores[1], step_model_saver.best_scores[2], step_model_saver.best_scores[3], args_txt if resume == '' else 'resume')))
-                            exit(0)
-
                     es_cur_score = find_current_earlystopping_score(es_metric, val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2])
                     early_stopping(es_cur_score)
                     if early_stopping.early_stop:
