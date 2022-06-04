@@ -142,6 +142,34 @@ def parse_args():
     parser_dual_cnn_vit.add_argument("--init_conv", type=str, default="kaiming", help="")
     parser_dual_cnn_vit.add_argument("--division_lr", type=int, default=0, help="")
     parser_dual_cnn_vit.add_argument("--classifier", type=str, default="mlp", help="")
+
+    parser_dual_dab_cnn_vit = sub_parser.add_parser('dual_dab_cnn_vit', help='My model')
+    parser_dual_dab_cnn_vit.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
+    parser_dual_dab_cnn_vit.add_argument("--version",type=str, default="ca-fadd-0.8", required=False, help="Some changes in model")
+    parser_dual_dab_cnn_vit.add_argument("--backbone",type=str, default="efficient_net", required=False, help="Type of backbone")
+    parser_dual_dab_cnn_vit.add_argument("--pretrained",type=int, default=1, required=False, help="Load pretrained backbone")
+    parser_dual_dab_cnn_vit.add_argument("--unfreeze_blocks", type=int, default=-1, help="Unfreeze blocks in backbone")
+    parser_dual_dab_cnn_vit.add_argument("--normalize_ifft", type=str, default='batchnorm', help="Normalize after ifft")
+    parser_dual_dab_cnn_vit.add_argument("--flatten_type", type=str, default='patch', help="in ['patch', 'channel']")
+    parser_dual_dab_cnn_vit.add_argument("--conv_attn", type=int, default=0, help="")   
+    parser_dual_dab_cnn_vit.add_argument("--ratio", type=int, default=1, help="")   
+    parser_dual_dab_cnn_vit.add_argument("--qkv_embed", type=int, default=1, help="")   
+    parser_dual_dab_cnn_vit.add_argument("--inner_ca_dim", type=int, default=0, help="") 
+    parser_dual_dab_cnn_vit.add_argument("--init_ca_weight", type=int, default=1, help="") 
+    parser_dual_dab_cnn_vit.add_argument("--prj_out", type=int, default=0, help="")
+    parser_dual_dab_cnn_vit.add_argument("--act", type=str, default='relu', help="")
+    parser_dual_dab_cnn_vit.add_argument("--position_embed", type=int, default=1, help="")
+    parser_dual_dab_cnn_vit.add_argument("--init_weight", type=int, default=0, help="")
+    parser_dual_dab_cnn_vit.add_argument("--init_linear", type=str, default="xavier", help="")
+    parser_dual_dab_cnn_vit.add_argument("--init_layernorm", type=str, default="normal", help="")
+    parser_dual_dab_cnn_vit.add_argument("--init_conv", type=str, default="kaiming", help="")
+    parser_dual_dab_cnn_vit.add_argument("--division_lr", type=int, default=0, help="")
+    parser_dual_dab_cnn_vit.add_argument("--classifier", type=str, default="mlp", help="")
+    parser_dual_dab_cnn_vit.add_argument("--dab_atb4", type=int, default=1)
+    parser_dual_dab_cnn_vit.add_argument("--gamma_dab", type=float, default=1.0)
+    parser_dual_dab_cnn_vit.add_argument("--act_dab", type=str, default='none')
+    parser_dual_dab_cnn_vit.add_argument("--red4", type=int, default=1)
+    parser_dual_dab_cnn_vit.add_argument("--red10", type=int, default=1)
     ########### TEST ###########
     parser_dual_cnn_vit_test = sub_parser.add_parser('dual_cnn_vit_test', help='My model')
     parser_dual_cnn_vit_test.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
@@ -239,7 +267,7 @@ def parse_args():
     parser_dual_patch_cnn_ca_vit.add_argument("--patch_crossattn_resolution", type=str, default='1-2', help="in_size=8, in_channels=112")
     parser_dual_patch_cnn_ca_vit.add_argument("--gamma_self_patchtrans", type=float, default=-1, help="")
     parser_dual_patch_cnn_ca_vit.add_argument("--patch_self_resolution", type=str, default='1-2', help="in_size=16, in_channels=80")
-    parser_dual_patch_cnn_ca_vit.add_argument("--rm_ff", type=int, default=1, help="")
+    parser_dual_patch_cnn_ca_vit.add_argument("--rm_ff", type=int, default=0, help="")
     parser_dual_patch_cnn_ca_vit.add_argument("--conv_attn", type=int, default=0, help="")   
     parser_dual_patch_cnn_ca_vit.add_argument("--ratio", type=int, default=1, help="")   
     parser_dual_patch_cnn_ca_vit.add_argument("--qkv_embed", type=int, default=1, help="")   
@@ -247,7 +275,10 @@ def parse_args():
     parser_dual_patch_cnn_ca_vit.add_argument("--init_ca_weight", type=int, default=1, help="") 
     parser_dual_patch_cnn_ca_vit.add_argument("--prj_out", type=int, default=0, help="")
     parser_dual_patch_cnn_ca_vit.add_argument("--version",type=str, default="ca-fadd-0.8", required=False, help="Some changes in model")
-    parser_dual_patch_cnn_ca_vit.add_argument("--batchnorm_patchtrans", type=int, default=1)
+    parser_dual_patch_cnn_ca_vit.add_argument("--batchnorm_patchtrans", type=int, default=0)
+    parser_dual_patch_cnn_ca_vit.add_argument("--gamma_vit", type=float, default=1)
+    parser_dual_patch_cnn_ca_vit.add_argument("--rm_ffvit", type=int, default=0)
+    parser_dual_patch_cnn_ca_vit.add_argument("--patch_act", type=str, default='none', help="")
 
     parser_pairwise_dual_patch_cnn_cma_vit = sub_parser.add_parser('pairwise_dual_patch_cnn_cma_vit', help='My model')
     parser_pairwise_dual_patch_cnn_cma_vit.add_argument("--weight_importance", type=float, default=2.0)
@@ -570,6 +601,43 @@ if __name__ == "__main__":
         args_txt += "norm{}_".format(args.normalize_ifft)
         args_txt += "f{}_pat{}_".format(args.flatten_type, args.patch_size)
         args_txt += "conv{}_r{}_qkv{}_cad{}_prj{}_act{}_".format(args.conv_attn, args.ratio, args.qkv_embed, args.inner_ca_dim, args.prj_out, args.act)
+        if args.init_weight == 1:
+            args_txt += "init_{}-{}-{}_".format(args.init_linear, args.init_layernorm, args.init_conv)
+        args_txt += "seed{}".format(args.seed)
+        args_txt += "_drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
+        print(len(args_txt))
+        criterion = [args.loss]
+        if args.gamma:
+            args_txt += "_gamma{}".format(args.gamma)
+            criterion.append(args.gamma)
+        use_pretrained = True if args.pretrained or args.resume != '' else False
+        train_dual_stream(model_, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
+                           batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual_cnn_vit", args_txt=args_txt, augmentation=args.augmentation)
+
+    elif model == "dual_dab_cnn_vit":
+        from module.train_torch import train_dual_stream
+        from model.vision_transformer.dual_cnn_vit.dual_dab_cnn_ca_vit import DualDABCNNViT
+        
+        dropout = 0.0
+        emb_dropout = 0.0
+        model_ = DualDABCNNViT(image_size=args.image_size, num_classes=1, dim=args.dim,\
+                                depth=args.depth, heads=args.heads, mlp_dim=args.mlp_dim,\
+                                dim_head=args.dim_head, dropout=0.15, \
+                                backbone=args.backbone, pretrained=bool(args.pretrained),\
+                                normalize_ifft=args.normalize_ifft,\
+                                flatten_type=args.flatten_type,\
+                                conv_attn=bool(args.conv_attn), ratio=args.ratio, qkv_embed=bool(args.qkv_embed), inner_ca_dim=args.inner_ca_dim, init_ca_weight=bool(args.init_ca_weight), prj_out=bool(args.prj_out), act=args.act,\
+                                patch_size=args.patch_size, \
+                                version=args.version, unfreeze_blocks=args.unfreeze_blocks, \
+                                init_weight=args.init_weight, init_linear=args.init_linear, init_layernorm=args.init_layernorm, init_conv=args.init_conv, \
+                                dropout_in_mlp=args.dropout_in_mlp, classifier=args.classifier, \
+                                dab_block4=args.dab_atb4, gamma_dab=args.gamma_dab, act_dab=args.act_dab, red4=args.red4, red10=args.red10)
+        
+        args_txt = "lr{}-{}_b{}_es{}_l{}_dab4{}_cls{}_v_{}_d{}_md{}_h{}_d{}_p{}_bb{}_pre{}_unf{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.dab_atb4, args.classifier, args.version, args.dim, args.mlp_dim, args.heads, args.depth, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
+        args_txt += "norm{}_".format(args.normalize_ifft)
+        args_txt += "f{}_pat{}_".format(args.flatten_type, args.patch_size)
+        args_txt += "conv{}_r{}_qkv{}_cad{}_prj{}_act{}-{}_gma{}_red{}{}".format(args.conv_attn, args.ratio, args.qkv_embed, args.inner_ca_dim, args.prj_out, args.act, args.act_dab, args.gamma_dab, args.red4, args.red10)
         if args.init_weight == 1:
             args_txt += "init_{}-{}-{}_".format(args.init_linear, args.init_layernorm, args.init_conv)
         args_txt += "seed{}".format(args.seed)
@@ -958,15 +1026,15 @@ if __name__ == "__main__":
                 normalize_ifft=args.normalize_ifft,\
                 init_type=args.init_type, \
                 gamma_crossattn_patchtrans=args.gamma_crossattn_patchtrans, patch_crossattn_resolution=args.patch_crossattn_resolution, \
-                gamma_self_patchtrans=args.gamma_self_patchtrans, patch_self_resolution=args.patch_self_resolution, flatten_type='patch', patch_size=2, \
+                gamma_self_patchtrans=args.gamma_self_patchtrans, patch_act=args.patch_act, patch_self_resolution=args.patch_self_resolution, flatten_type='patch', patch_size=2, \
                 conv_attn=args.conv_attn, ratio=args.ratio, qkv_embed=args.qkv_embed, init_ca_weight=args.init_ca_weight, prj_out=args.prj_out, inner_ca_dim=args.inner_ca_dim, act=args.act,\
                 dim=args.dim, depth_vit=args.depth, heads=args.heads, dim_head=args.dim_head, dropout=0.1, emb_dropout=0.1, mlp_dim=args.mlp_dim, dropout_in_mlp=args.dropout_in_mlp, \
                 version=args.version,\
-                classifier=args.classifier, rm_ff=args.rm_ff, batchnorm_patchtrans=args.batchnorm_patchtrans)
+                classifier=args.classifier, rm_ff=args.rm_ff, batchnorm_patchtrans=args.batchnorm_patchtrans, gamma_vit=args.gamma_vit, rm_ffvit=args.rm_ffvit, )
         
-        args_txt = "lr{}-{}_b{}_es{}_l{}_bb{}_pre{}_bnorm{}_rmff{}_g{}-{}_d4{}_f{}p{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.backbone, args.pretrained, args.batchnorm_patchtrans, args.rm_ff,args.gamma_self_patchtrans, args.gamma_crossattn_patchtrans, args.depth_block4, args.flatten_type, args.patch_size)
+        args_txt = "lr{}-{}_b{}_es{}_l{}_bb{}_pre{}_bnorm{}_rmff{}{}_g{}-{}-{}_d4{}_f{}p{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.backbone, args.pretrained, args.batchnorm_patchtrans, args.rm_ff, args.rm_ffvit, args.gamma_self_patchtrans, args.gamma_crossattn_patchtrans, args.gamma_vit, args.depth_block4, args.flatten_type, args.patch_size)
         args_txt += "n{}_sere{}_attnre{}_".format(args.normalize_ifft, args.patch_self_resolution, args.patch_crossattn_resolution)
-        args_txt += "act{}_".format(args.act)
+        args_txt += "act{}{}_".format(args.act, args.patch_act)
         args_txt += "init{}_".format(args.init_type)
         args_txt += "seed{}_cls{}_".format(args.seed, args.classifier)
         args_txt += 'v{}conv{}r{}qkv{}'.format(args.version, args.conv_attn, args.ratio, args.qkv_embed)

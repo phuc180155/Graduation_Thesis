@@ -177,6 +177,12 @@ class DualCNNViT(nn.Module):
             activation = nn.Tanh()
         elif act == 'sigmoid':
             activation = nn.Sigmoid()
+        elif act == 'leakyrely':
+            activation = nn.LeakyReLU()
+        elif act == 'selu':
+            activation = nn.SELU()
+        elif act == 'gelu':
+            activation = nn.GELU()
         else:
             activation = None
         return activation

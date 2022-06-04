@@ -430,14 +430,16 @@ class PairwiseDualPatchCNNCMAViT(nn.Module):
     def get_activation(self, act):
         if act == 'relu':
             activation = nn.ReLU(inplace=True)
-        elif act == 'leakyrelu':
-            activation = nn.LeakyReLU(0.01, inplace=True)
         elif act == 'tanh':
             activation = nn.Tanh()
         elif act == 'sigmoid':
             activation = nn.Sigmoid()
+        elif act == 'leakyrely':
+            activation = nn.LeakyReLU()
         elif act == 'selu':
             activation = nn.SELU()
+        elif act == 'gelu':
+            activation = nn.GELU()
         else:
             activation = None
         return activation

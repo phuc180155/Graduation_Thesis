@@ -67,7 +67,7 @@ class Attention(nn.Module):
         return self.to_out(out)
 
 class Transformer(nn.Module):
-    def __init__(self, dim, depth, heads, dim_head, mlp_dim, dropout = 0.):
+    def __init__(self, dim, depth, heads, dim_head, mlp_dim, dropout = 0.0, gamma_vit=1, rm_ffvit=0):
         super().__init__()
         self.layers = nn.ModuleList([])
         for _ in range(depth):
@@ -75,10 +75,18 @@ class Transformer(nn.Module):
                 PreNorm(dim, Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
                 PreNorm(dim, FeedForward(dim, mlp_dim, dropout = dropout))
             ]))
+        self.rm_ffvit = rm_ffvit
+        if gamma_vit != -1:
+            self.gamma = gamma_vit
+        else:
+            self.gamma = nn.Parameter(torch.ones(1))
+        
+
     def forward(self, x):
         for attn, ff in self.layers:
-            x = attn(x) + x
-            x = ff(x) + x
+            x = self.gamma * attn(x) + x
+            if not self.rm_ffvit:
+                x = ff(x) + x
         return x
 
 class ViT(nn.Module):

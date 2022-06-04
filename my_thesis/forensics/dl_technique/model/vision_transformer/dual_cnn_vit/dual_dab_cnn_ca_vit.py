@@ -1,3 +1,102 @@
+import torch
+import torch.nn as nn
+
+##########################################################################
+
+def conv(in_channels, out_channels, kernel_size, bias=True, padding=1, stride=1):
+    return nn.Conv2d(
+        in_channels, out_channels, kernel_size,
+        padding=(kernel_size // 2), bias=bias, stride=stride)
+
+
+##########################################################################
+
+## Channel Attention (CA) Layer
+class CALayer(nn.Module):
+    def __init__(self, channel, reduction=16):
+        super(CALayer, self).__init__()
+        # global average pooling: feature --> point
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        # feature channel downscale and upscale --> channel weight
+        self.conv_du = nn.Sequential(
+            nn.Conv2d(channel, channel // reduction, 1, padding=0, bias=True),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(channel // reduction, channel, 1, padding=0, bias=True),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        y = self.avg_pool(x)
+        y = self.conv_du(y)
+        return x * y
+
+
+##########################################################################
+
+class BasicConv(nn.Module):
+    def __init__(self, in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1, groups=1, relu=True,
+                 bn=True, bias=False):
+        super(BasicConv, self).__init__()
+        self.out_channels = out_planes
+        self.conv = nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride, padding=padding,
+                              dilation=dilation, groups=groups, bias=bias)
+        self.bn = nn.BatchNorm2d(out_planes, eps=1e-5, momentum=0.01, affine=True) if bn else None
+        self.relu = nn.ReLU() if relu else None
+
+    def forward(self, x):
+        x = self.conv(x)
+        if self.bn is not None:
+            x = self.bn(x)
+        if self.relu is not None:
+            x = self.relu(x)
+        return x
+
+
+class ChannelPool(nn.Module):
+    def forward(self, x):
+        return torch.cat((torch.max(x, 1)[0].unsqueeze(1), torch.mean(x, 1).unsqueeze(1)), dim=1)
+
+
+class spatial_attn_layer(nn.Module):
+    def __init__(self, kernel_size=3):
+        super(spatial_attn_layer, self).__init__()
+        self.compress = ChannelPool()
+        self.spatial = BasicConv(2, 1, kernel_size, stride=1, padding=(kernel_size - 1) // 2, relu=False)
+
+    def forward(self, x):
+        # import pdb;pdb.set_trace()
+        x_compress = self.compress(x)
+        x_out = self.spatial(x_compress)
+        scale = torch.sigmoid(x_out)  # broadcasting
+        return x * scale
+
+
+##########################################################################
+
+
+## Dual Attention Block (DAB)
+class DAB(nn.Module):
+    def __init__(self, n_feat: int, reduction: int, gamma_dab=-1, act_dab=None):
+        super().__init__()
+        self.SA = spatial_attn_layer()  ## Spatial Attention
+        self.CA = CALayer(n_feat, reduction)  ## Channel Attention
+        self.conv1x1 = nn.Conv2d(n_feat * 2, n_feat, kernel_size=1)
+        if gamma_dab == -1:
+            self.gamma = nn.Parameter(torch.ones(1))
+        else:
+            self.gamma = gamma_dab
+        self.act = act_dab
+
+    def forward(self, x):
+        sa_branch = self.SA(x)
+        ca_branch = self.CA(x)
+        attn = torch.cat([sa_branch, ca_branch], dim=1)
+        attn = self.conv1x1(attn)
+        res = self.gamma * attn + x
+        if self.act:
+            res = self.act(res)
+        return res
+
 import torch.nn as nn
 from torch import einsum
 import torch
@@ -75,20 +174,19 @@ class CrossAttention(nn.Module):
         output = torch.bmm(attn, v)
         return output, attn
 
-class DualCNNViTTest(nn.Module):
-    def __init__(self, gpu_id=-1, \
-                image_size=224, num_classes=1, dim=1024,\
+class DualDABCNNViT(nn.Module):
+    def __init__(self, image_size=224, num_classes=1, dim=1024,\
                 depth=6, heads=8, mlp_dim=2048,\
                 dim_head=64, dropout=0.15,\
                 backbone='xception_net', pretrained=True,\
                 normalize_ifft='batchnorm',\
                 flatten_type='patch',\
                 conv_attn=False, ratio=5, qkv_embed=True, init_ca_weight=True, prj_out=False, inner_ca_dim=512, act='none',\
-                patch_size=7, position_embed=False, pool='cls',\
-                version='ca-fcat-0.5', unfreeze_blocks=-1, \
+                patch_size=7, \
+                version='ca-fcat-0.5', unfreeze_blocks=-1, dab_block4=True, red4=1, red10=1, gamma_dab=0.5, act_dab='none',\
                 init_weight=False, init_linear="xavier", init_layernorm="normal", init_conv="kaiming", \
                 dropout_in_mlp=0.0, classifier='mlp'):  
-        super(DualCNNViTTest, self).__init__()
+        super(DualDABCNNViT, self).__init__()
 
         self.image_size = image_size
         self.patch_size = patch_size
@@ -109,8 +207,6 @@ class DualCNNViTTest(nn.Module):
         
         self.flatten_type = flatten_type # in ['patch', 'channel']
         self.version = version  # in ['ca-rgb_cat-0.5', 'ca-freq_cat-0.5']
-        self.position_embed = position_embed
-        self.pool = pool
         self.conv_attn = conv_attn
         self.activation = self.get_activation(act)
 
@@ -142,6 +238,15 @@ class DualCNNViTTest(nn.Module):
             self.key_conv = nn.Conv2d(in_channels=self.out_ext_channels, out_channels=self.out_ext_channels//ratio, kernel_size=1)
             self.value_conv = nn.Conv2d(in_channels=self.out_ext_channels, out_channels=self.out_ext_channels//ratio, kernel_size=1)
 
+        self.dab_block4 = dab_block4
+        self.gamma_dab = gamma_dab
+        self.act_dab = self.get_activation(act=act_dab)
+        if self.dab_block4:
+            self.dab_b4_rgb = DAB(n_feat=40, reduction=red4, gamma_dab=self.gamma_dab, act_dab=self.act_dab)
+            self.dab_b4_freq = DAB(n_feat=40, reduction=red4, gamma_dab=self.gamma_dab, act_dab=self.act_dab)
+        self.dab_b10_rgb = DAB(n_feat=112, reduction=red10, gamma_dab=self.gamma_dab, act_dab=self.act_dab)
+        self.dab_b10_freq = DAB(n_feat=112, reduction=red10, gamma_dab=self.gamma_dab, act_dab=self.act_dab)
+
         self.CA = CrossAttention(in_dim=self.in_dim, inner_dim=inner_ca_dim, prj_out=prj_out, qkv_embed=qkv_embed, init_weight=init_ca_weight)
 
         ############################# VIT #########################################
@@ -157,6 +262,13 @@ class DualCNNViTTest(nn.Module):
         if 'vit' in self.classifier:
             self.transformer = Transformer(self.dim, self.depth, self.heads, self.dim_head, self.mlp_dim, self.dropout_value)
             self.batchnorm = nn.BatchNorm1d(self.num_vecs)
+        if 'vit_aggregate' in self.classifier:
+            gamma = float(self.classifier.split('_')[-1])
+            if gamma == -1:
+                self.gamma = nn.Parameter(torch.ones(1))
+            else:
+                self.gamma = gamma
+
         self.mlp_relu = nn.ReLU(inplace=True)
         self.mlp_head_hidden = nn.Linear(self.dim, self.mlp_dim)
         self.mlp_dropout = nn.Dropout(dropout_in_mlp)
@@ -304,8 +416,21 @@ class DualCNNViTTest(nn.Module):
 
     def extract_feature(self, rgb_imgs, freq_imgs):
         if self.backbone == 'efficient_net':
-            rgb_features = self.rgb_extractor.extract_features(rgb_imgs)                 # shape (batchsize, 1280, 8, 8)
-            freq_features = self.freq_extractor.extract_features(freq_imgs)              # shape (batchsize, 1280, 4, 4)
+            #
+            rgb_features = self.rgb_extractor.extract_features_block_4(rgb_imgs)                 # shape (batchsize, 1280, 8, 8)
+            freq_features = self.freq_extractor.extract_features_block_4(freq_imgs)              # shape (batchsize, 1280, 4, 4)
+            # print(rgb_features.shape)
+            if self.dab_block4:
+                rgb_features = self.dab_b4_rgb(rgb_features)
+                freq_features = self.dab_b4_freq(freq_features)
+            #
+            rgb_features = self.rgb_extractor.extract_features_block_11(rgb_features)
+            freq_features = self.freq_extractor.extract_features_block_11(freq_features)
+            rgb_features = self.dab_b10_rgb(rgb_features)
+            freq_features = self.dab_b10_freq(freq_features)
+            #
+            rgb_features = self.rgb_extractor.extract_features_last_block_2(rgb_features)
+            freq_features = self.freq_extractor.extract_features_last_block_2(freq_features)
         else:
             rgb_features = self.rgb_extractor(rgb_imgs)
             freq_features = self.freq_extractor(freq_imgs)
@@ -367,9 +492,8 @@ class DualCNNViTTest(nn.Module):
 
         if 'vit_aggregate' in self.classifier:
             x = self.transformer(embed)
-            # x = self.batchnorm(x)
-            gamma = float(self.classifier.split('_')[-1])
-            x = embed + gamma * x
+            # x = self.batchnorm(x)    
+            x = embed + self.gamma * x
             x = x.mean(dim = 1).squeeze(dim=1)
             x = self.mlp_dropout(x)         
             x = self.mlp_head_hidden(x) # B, 1, D => 
@@ -383,14 +507,15 @@ from torchsummary import summary
 if __name__ == '__main__':
     x = torch.ones(32, 3, 128, 128)
     y = torch.ones(32, 1, 128, 128)
-    model_ = DualCNNViTTest(  image_size=128, num_classes=1, dim=1024,\
+    model_ = DualDABCNNViT(  image_size=128, num_classes=1, dim=1024,\
                                 depth=6, heads=8, mlp_dim=2048,\
                                 dim_head=64, dropout=0.15, \
-                                backbone='xception_net', pretrained=False,\
+                                backbone='efficient_net', pretrained=False,\
                                 normalize_ifft=True,\
                                 flatten_type='patch',\
-                                conv_attn=True, ratio=8, qkv_embed=True, inner_ca_dim=0, init_ca_weight=True, prj_out=False, act='none',\
-                                patch_size=1, position_embed=False, pool='cls',\
-                                version='ca-fcat-0.5', unfreeze_blocks=-1, classifier='vit_aggregate_0.3')
+                                conv_attn=True, ratio=8, qkv_embed=True, inner_ca_dim=0, init_ca_weight=True, prj_out=False, act='selu',\
+                                patch_size=1, \
+                                version='ca-fcat-0.5', unfreeze_blocks=-1, classifier='mlp', \
+                                dab_block4=True, red4=1, red10=1, gamma_dab=0.5, act_dab='none')
     out = model_(x, y)
     print(out.shape)

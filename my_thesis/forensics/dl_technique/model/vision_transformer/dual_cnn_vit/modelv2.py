@@ -303,10 +303,12 @@ class DualCNNCMATransformer(nn.Module):
             activation = nn.Tanh()
         elif act == 'sigmoid':
             activation = nn.Sigmoid()
-        elif act == 'leakyrelu':
-            activation = nn.LeakyReLU(inplace=True)
+        elif act == 'leakyrely':
+            activation = nn.LeakyReLU()
         elif act == 'selu':
-            activation = nn.SELU(inplace=True)
+            activation = nn.SELU()
+        elif act == 'gelu':
+            activation = nn.GELU()
         else:
             activation = None
         return activation
