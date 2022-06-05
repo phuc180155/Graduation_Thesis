@@ -155,6 +155,8 @@ def parse_args():
     parser_triple_cnn_vit.add_argument("--division_lr", type=int, default=0, help="")
     parser_triple_cnn_vit.add_argument("--classifier", type=str, default="mlp", help="")
     parser_triple_cnn_vit.add_argument("--freq_combine", type=str, default="cat", help="")
+    parser_triple_cnn_vit.add_argument("--prj_out", type=int, default=0, help="")
+    parser_triple_cnn_vit.add_argument("--share_weight", type=int, default=0, help="")
 
 
     parser_dual_dab_cnn_vit = sub_parser.add_parser('dual_dab_cnn_vit', help='My model')
@@ -641,16 +643,16 @@ if __name__ == "__main__":
                                 backbone=args.backbone, pretrained=bool(args.pretrained),\
                                 normalize_ifft=args.normalize_ifft,\
                                 flatten_type=args.flatten_type,\
-                                inner_ca_dim=args.inner_ca_dim, act=args.act,\
+                                inner_ca_dim=args.inner_ca_dim, act=args.act, prj_out=args.prj_out,\
                                 patch_size=args.patch_size, \
                                 version=args.version, unfreeze_blocks=args.unfreeze_blocks, \
                                 freq_combine=args.freq_combine, \
-                                dropout_in_mlp=args.dropout_in_mlp, classifier=args.classifier)
+                                dropout_in_mlp=args.dropout_in_mlp, classifier=args.classifier, share_weight=args.share_weight)
         
         args_txt = "lr{}-{}_b{}_es{}_l{}_freqc{}_cls{}_v_{}_d{}_md{}_h{}_d{}_p{}_bb{}_pre{}_unf{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.freq_combine, args.classifier, args.version, args.dim, args.mlp_dim, args.heads, args.depth, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
         args_txt += "norm{}_".format(args.normalize_ifft)
         args_txt += "f{}_pat{}_".format(args.flatten_type, args.patch_size)
-        args_txt += "cad{}_act{}_".format(args.inner_ca_dim, args.act)
+        args_txt += "cad{}_act{}_prj{}_share{}_".format(args.inner_ca_dim, args.act, args.prj_out, args.share_weight)
         args_txt += "seed{}".format(args.seed)
         args_txt += "_drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
         print(len(args_txt))

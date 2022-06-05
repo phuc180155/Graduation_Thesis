@@ -28,7 +28,7 @@ class CrossAttention(nn.Module):
             self.to_q = nn.Linear(in_dim, inner_dim, bias = False)
             self.to_out = nn.Sequential(
                 nn.Linear(inner_dim, in_dim),
-                nn.Dropout(p=0.1)
+                nn.Dropout(p=0.0)
             ) if prj_out else nn.Identity()
 
     def forward(self, x, y):
@@ -76,11 +76,11 @@ class TripleCNNViT(nn.Module):
                 backbone='xception_net', pretrained=True,\
                 normalize_ifft='batchnorm',\
                 flatten_type='patch',\
-                freq_combine='add', act='none',\
+                freq_combine='add', act='none', prj_out=True, \
                 patch_size=7, \
                 version='ca-fcat-0.5', unfreeze_blocks=-1, \
                 inner_ca_dim=0, \
-                dropout_in_mlp=0.0, classifier='mlp'):  
+                dropout_in_mlp=0.0, classifier='mlp', share_weight=False):  
         super(TripleCNNViT, self).__init__()
 
         self.image_size = image_size
@@ -103,11 +103,15 @@ class TripleCNNViT(nn.Module):
         self.flatten_type = flatten_type # in ['patch', 'channel']
         self.version = version  # in ['ca-rgb_cat-0.5', 'ca-freq_cat-0.5']
         self.activation = self.get_activation(act)
+        self.share_weight = share_weight
 
         self.pretrained = pretrained
-        self.rgb_extractor = self.get_feature_extractor(architecture=backbone, pretrained=pretrained, unfreeze_blocks=unfreeze_blocks, num_classes=num_classes, in_channels=3)   # efficient_net-b0, return shape (1280, 8, 8) or (1280, 7, 7)
-        self.mag_extractor = self.get_feature_extractor(architecture=backbone, pretrained=pretrained, unfreeze_blocks=unfreeze_blocks, num_classes=num_classes, in_channels=1)
-        self.phase_extractor = self.get_feature_extractor(architecture=backbone, pretrained=pretrained, unfreeze_blocks=unfreeze_blocks, num_classes=num_classes, in_channels=1)  
+        self.rgb_extractor = self.get_feature_extractor(architecture=backbone, pretrained=True, unfreeze_blocks=unfreeze_blocks, num_classes=num_classes, in_channels=3)   # efficient_net-b0, return shape (1280, 8, 8) or (1280, 7, 7)
+        if not self.share_weight:
+            self.mag_extractor = self.get_feature_extractor(architecture=backbone, pretrained=pretrained, unfreeze_blocks=unfreeze_blocks, num_classes=num_classes, in_channels=1)
+            self.phase_extractor = self.get_feature_extractor(architecture=backbone, pretrained=pretrained, unfreeze_blocks=unfreeze_blocks, num_classes=num_classes, in_channels=1)  
+        else:
+            self.freq_extractor = self.get_feature_extractor(architecture=backbone, pretrained=pretrained, unfreeze_blocks=unfreeze_blocks, num_classes=num_classes, in_channels=1)
         self.normalize_ifft = normalize_ifft
         if self.normalize_ifft == 'batchnorm':
             self.batchnorm_ifft = nn.BatchNorm2d(num_features=self.out_ext_channels)
@@ -134,7 +138,7 @@ class TripleCNNViT(nn.Module):
         else:
             self.in_dim = int(self.features_size[backbone][1] * self.features_size[backbone][2])
 
-        self.CA = CrossAttention(in_dim=self.in_dim, inner_dim=inner_ca_dim)
+        self.CA = CrossAttention(in_dim=self.in_dim, inner_dim=inner_ca_dim, prj_out=prj_out)
 
         ############################# VIT #########################################
         # Giảm chiều vector sau concat 2*patch_dim về D:
@@ -262,12 +266,20 @@ class TripleCNNViT(nn.Module):
     def extract_feature(self, rgb_imgs, mag_imgs, phase_imgs):
         if self.backbone == 'efficient_net':
             rgb_features = self.rgb_extractor.extract_features(rgb_imgs)                 # shape (batchsize, 1280, 8, 8)
-            mag_features = self.mag_extractor.extract_features(mag_imgs)              # shape (batchsize, 1280, 4, 4)
-            phase_features = self.phase_extractor.extract_features(phase_imgs)              # shape (batchsize, 1280, 4, 4)
+            if not self.share_weight:
+                mag_features = self.mag_extractor.extract_features(mag_imgs)              # shape (batchsize, 1280, 4, 4)
+                phase_features = self.phase_extractor.extract_features(phase_imgs)              # shape (batchsize, 1280, 4, 4)
+            else:
+                mag_features = self.freq_extractor.extract_features(mag_imgs)              # shape (batchsize, 1280, 4, 4)
+                phase_features = self.freq_extractor.extract_features(phase_imgs)              # shape (batchsize, 1280, 4, 4)  
         else:
             rgb_features = self.rgb_extractor(rgb_imgs)
-            mag_features = self.mag_extractor(mag_imgs)
-            phase_features = self.phase_extractor(phase_imgs)
+            if not self.share_weight:
+                mag_features = self.mag_extractor(mag_imgs)
+                phase_features = self.phase_extractor(phase_imgs)
+            else:
+                mag_features = self.freq_extractor(mag_imgs)
+                phase_features = self.freq_extractor(phase_imgs)
         return rgb_features, mag_features, phase_features
 
     def forward(self, rgb_imgs, mag_imgs, phase_imgs):
@@ -336,8 +348,8 @@ if __name__ == '__main__':
                                 backbone='efficient_net', pretrained=False,\
                                 normalize_ifft='batchnorm',\
                                 flatten_type='patch',\
-                                inner_ca_dim=0, freq_combine='add', \
+                                inner_ca_dim=0, freq_combine='add',  act='none', prj_out=True, \
                                 patch_size=2, \
-                                version='ca-fcat-0.5', unfreeze_blocks=-1, classifier='vit_aggregate_0.3')
+                                version='ca-fcat-0.5', unfreeze_blocks=-1, classifier='vit_aggregate_0.3', share_weight=False)
     out = model_(x, y, y)
     print(out.shape)
