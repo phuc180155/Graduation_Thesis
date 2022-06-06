@@ -315,6 +315,39 @@ def parse_args():
     parser_dual_patch_cnn_ca_vit.add_argument("--rm_ffvit", type=int, default=0)
     parser_dual_patch_cnn_ca_vit.add_argument("--patch_act", type=str, default='none', help="")
 
+    parser_pairwise_dual_patch_cnn_ca_vit = sub_parser.add_parser('pairwise_dual_patch_cnn_ca_vit', help='My model') 
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--weight_importance", type=float, default=2.0)
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--embedding_return", type=str, default='mlp_hidden')
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--margin", type=float, default=2.0)
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--flatten_type",type=str, default="channel", required=False, help="Type of backbone")
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--patch_size",type=int, default=2, required=False, help="Type of backbone")
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--backbone",type=str, default="efficient_net", required=False, help="Type of backbone")
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--pretrained",type=int, default=1, required=False, help="Load pretrained backbone")
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--unfreeze_blocks", type=int, default=-1, help="Unfreeze blocks in backbone")
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--normalize_ifft", type=str, default='batchnorm', help="Normalize after ifft")
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--act", type=str, default='relu', help="")
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--depth_block4", type=int, default=2, help="")
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--division_lr", type=int, default=0, help="")
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--classifier", type=str, default='mlp', help="")
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--in_vit_channels", type=int, default=64, help="")
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--init_type", type=str, default='xavier_uniform', help="")
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--gamma_crossattn_patchtrans", type=float, default=-1, help="")
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--patch_crossattn_resolution", type=str, default='1-2', help="in_size=8, in_channels=112")
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--gamma_self_patchtrans", type=float, default=-1, help="")
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--patch_self_resolution", type=str, default='1-2', help="in_size=16, in_channels=80")
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--rm_ff", type=int, default=0, help="")
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--conv_attn", type=int, default=0, help="")   
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--ratio", type=int, default=1, help="")   
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--qkv_embed", type=int, default=1, help="")   
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--inner_ca_dim", type=int, default=0, help="") 
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--init_ca_weight", type=int, default=1, help="") 
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--prj_out", type=int, default=0, help="")
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--version",type=str, default="ca-fadd-0.8", required=False, help="Some changes in model")
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--batchnorm_patchtrans", type=int, default=0)
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--gamma_vit", type=float, default=1)
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--rm_ffvit", type=int, default=0)
+    parser_pairwise_dual_patch_cnn_ca_vit.add_argument("--patch_act", type=str, default='none', help="")
+
     parser_pairwise_dual_patch_cnn_cma_vit = sub_parser.add_parser('pairwise_dual_patch_cnn_cma_vit', help='My model')
     parser_pairwise_dual_patch_cnn_cma_vit.add_argument("--weight_importance", type=float, default=2.0)
     parser_pairwise_dual_patch_cnn_cma_vit.add_argument("--margin", type=float, default=2.0)
@@ -1153,6 +1186,40 @@ if __name__ == "__main__":
         train_dual_stream(model_, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual_patch_cnn_ca_vit", args_txt=args_txt, augmentation=args.augmentation)
+
+    elif model == "pairwise_dual_patch_cnn_ca_vit":
+        from model.vision_transformer.dual_cnn_vit.pairwise_dual_patch_cnn_ca_vit import PairwiseDualPatchCNNCAViT
+        from module.train_pairwise import train_pairwise_dual_stream
+
+        model_ = PairwiseDualPatchCNNCAViT(image_size=args.image_size, num_classes=1, depth_block4=args.depth_block4, \
+                backbone=args.backbone, pretrained=args.pretrained, unfreeze_blocks=args.unfreeze_blocks, \
+                normalize_ifft=args.normalize_ifft,\
+                init_type=args.init_type, \
+                gamma_crossattn_patchtrans=args.gamma_crossattn_patchtrans, patch_crossattn_resolution=args.patch_crossattn_resolution, \
+                gamma_self_patchtrans=args.gamma_self_patchtrans, patch_act=args.patch_act, patch_self_resolution=args.patch_self_resolution, flatten_type='patch', patch_size=2, \
+                conv_attn=args.conv_attn, ratio=args.ratio, qkv_embed=args.qkv_embed, init_ca_weight=args.init_ca_weight, prj_out=args.prj_out, inner_ca_dim=args.inner_ca_dim, act=args.act,\
+                dim=args.dim, depth_vit=args.depth, heads=args.heads, dim_head=args.dim_head, dropout=0.1, emb_dropout=0.1, mlp_dim=args.mlp_dim, dropout_in_mlp=args.dropout_in_mlp, \
+                version=args.version,\
+                classifier=args.classifier, rm_ff=args.rm_ff, batchnorm_patchtrans=args.batchnorm_patchtrans, gamma_vit=args.gamma_vit, rm_ffvit=args.rm_ffvit, embedding_return=args.embedding_return)
+        
+        args_txt = "lr{}-{}_b{}_es{}_l{}_bb{}_pre{}_bnorm{}_rmff{}{}_g{}-{}-{}_d4{}_f{}p{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.backbone, args.pretrained, args.batchnorm_patchtrans, args.rm_ff, args.rm_ffvit, args.gamma_self_patchtrans, args.gamma_crossattn_patchtrans, args.gamma_vit, args.depth_block4, args.flatten_type, args.patch_size)
+        args_txt += "n{}_sere{}_attnre{}_".format(args.normalize_ifft, args.patch_self_resolution, args.patch_crossattn_resolution)
+        args_txt += "act{}{}_".format(args.act, args.patch_act)
+        args_txt += "init{}_".format(args.init_type)
+        args_txt += "seed{}_cls{}_".format(args.seed, args.classifier)
+        args_txt += 'v{}conv{}r{}qkv{}'.format(args.version, args.conv_attn, args.ratio, args.qkv_embed)
+        if 'vit' in args.classifier:
+            args_txt += 'd{}_md{}_d{}_h{}_'.format(args.dim, args.mlp_dim, args.depth, args.heads)
+        args_txt += "dr{}aug{}".format(args.dropout_in_mlp, args.augmentation)
+        print(len(args_txt))
+        criterion = [args.loss]
+        if args.gamma:
+            args_txt += "_gamma{}".format(args.gamma)
+            criterion.append(args.gamma)
+        use_pretrained = True if args.pretrained or args.resume != '' else False
+        train_pairwise_dual_stream(model_, args.weight_importance, args.margin, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
+                           batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="pairwise_dual_patch_cnn_ca_vit", args_txt=args_txt, augmentation=args.augmentation)
 
     elif model == "pairwise_dual_patch_cnn_cma_vit":
         from model.vision_transformer.dual_cnn_vit.pairwise_dual_patch_cnn_cma_vit import PairwiseDualPatchCNNCMAViT
