@@ -201,9 +201,9 @@ def eval_pairwise_dual_stream(model, weight_importance, dataloader, device, bce_
             embedding_0, logps0, embedding_1, logps1  = model.forward(inputs0, fft_imgs0, inputs1, fft_imgs1)     # Shape (32, 1)
             logps0 = logps0.squeeze()                     # Shape (32, )
             logps1 = logps1.squeeze()
-            sys.stdout = open('/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/dl_technique/check.txt', 'w')
-            print("logps0: ", logps0.shape, '          ===== ', logps0)
-            print("labels0: ", labels0.shape, '          ===== ', labels0)
+            # sys.stdout = open('/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/dl_technique/check.txt', 'w')
+            # print("logps0: ", logps0.shape, '          ===== ', logps0)
+            # print("labels0: ", labels0.shape, '          ===== ', labels0)
             if len(logps0.shape) == 0:
                 logps0 = logps0.unsqueeze(dim=0)
             if len(logps0.shape) == 2:
