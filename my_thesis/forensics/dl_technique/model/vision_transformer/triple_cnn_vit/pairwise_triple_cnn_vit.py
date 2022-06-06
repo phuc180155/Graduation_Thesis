@@ -1,4 +1,3 @@
-from telnetlib import OUTMRK
 import torch.nn as nn
 from torch import einsum
 import torch
@@ -12,15 +11,15 @@ import re
 import torch.nn.functional as F
 
 import re, math
-from model.vision_transformer.vit.vit import Transformer
+from model.vision_transformer.vit.vit import ViT, Transformer
+from model.vision_transformer.cnn_vit.efficient_vit import EfficientViT
 from pytorchcv.model_provider import get_model
 
 class CrossAttention(nn.Module):
-    def __init__(self, in_dim, inner_dim=0, prj_out=False, qkv_embed=True, init_weight=True):
+    def __init__(self, in_dim, inner_dim=0, prj_out=True, qkv_embed=True):
         super(CrossAttention, self).__init__()
         self.in_dim = in_dim
         self.qkv_embed = qkv_embed
-        self.init_weight = init_weight
         self.to_out = nn.Identity()
         if self.qkv_embed:
             inner_dim = self.in_dim if inner_dim == 0 else inner_dim
@@ -29,15 +28,10 @@ class CrossAttention(nn.Module):
             self.to_q = nn.Linear(in_dim, inner_dim, bias = False)
             self.to_out = nn.Sequential(
                 nn.Linear(inner_dim, in_dim),
-                nn.Dropout(p=0.1)
+                nn.Dropout(p=0.0)
             ) if prj_out else nn.Identity()
 
-        if self.init_weight:
-            for m in self.modules():
-                if isinstance(m, nn.Conv2d):
-                    nn.init.xavier_normal_(m.weight.data, gain=0.02)
-
-    def forward(self, x, y, z):
+    def forward(self, x, y):
         """
             x ~ rgb_vectors: (b, n, in_dim)
             y ~ freq_vectors: (b, n, in_dim)
@@ -49,9 +43,9 @@ class CrossAttention(nn.Module):
         if self.qkv_embed:
             q = self.to_q(x)
             k = self.to_k(y)
-            v = self.to_v(z)
+            v = self.to_v(y)
         else:
-            q, k, v = x, y, z
+            q, k, v = x, y, y
         out, attn = self.scale_dot(q, k, v, dropout_p=0.00)
         out = self.to_out(out)
         return out, attn
@@ -75,19 +69,19 @@ class CrossAttention(nn.Module):
         output = torch.bmm(attn, v)
         return output, attn
 
-class PairwiseDualCNNViT(nn.Module):
-    def __init__(self, \
-                image_size=224, num_classes=1, dim=1024,\
+class TripleCNNViT(nn.Module):
+    def __init__(self, image_size=224, num_classes=1, dim=1024,\
                 depth=6, heads=8, mlp_dim=2048,\
                 dim_head=64, dropout=0.15,\
                 backbone='xception_net', pretrained=True,\
-                normalize_ifft=True,\
+                normalize_ifft='batchnorm',\
                 flatten_type='patch',\
-                conv_attn=False, ratio=5, qkv_embed=True, init_ca_weight=True, prj_out=False, inner_ca_dim=512, act='none',\
-                patch_size=7, version='ca-rmifft-fcat-0.5', unfreeze_blocks=-1, \
-                init_weight=False, init_linear="xavier", init_layernorm="normal", init_conv="kaiming", \
-                dropout_in_mlp=0.0, classifier='vit_aggregate_-1', embedding_return='mlp_out'):  
-        super(PairwiseDualCNNViT, self).__init__()
+                freq_combine='add', act='none', prj_out=True, \
+                patch_size=7, \
+                version='ca-fcat-0.5', unfreeze_blocks=-1, \
+                inner_ca_dim=0, \
+                dropout_in_mlp=0.0, classifier='mlp', share_weight=False, embedding_return='mlp_before'):  
+        super(TripleCNNViT, self).__init__()
 
         self.image_size = image_size
         self.patch_size = patch_size
@@ -108,17 +102,26 @@ class PairwiseDualCNNViT(nn.Module):
         
         self.flatten_type = flatten_type # in ['patch', 'channel']
         self.version = version  # in ['ca-rgb_cat-0.5', 'ca-freq_cat-0.5']
-        self.conv_attn = conv_attn
         self.activation = self.get_activation(act)
+        self.share_weight = share_weight
 
         self.pretrained = pretrained
-        self.rgb_extractor = self.get_feature_extractor(architecture=backbone, pretrained=pretrained, unfreeze_blocks=unfreeze_blocks, num_classes=num_classes, in_channels=3)   # efficient_net-b0, return shape (1280, 8, 8) or (1280, 7, 7)
-        self.freq_extractor = self.get_feature_extractor(architecture=backbone, pretrained=pretrained, unfreeze_blocks=unfreeze_blocks, num_classes=num_classes, in_channels=1)     
+        self.rgb_extractor = self.get_feature_extractor(architecture=backbone, pretrained=True, unfreeze_blocks=unfreeze_blocks, num_classes=num_classes, in_channels=3)   # efficient_net-b0, return shape (1280, 8, 8) or (1280, 7, 7)
+        if not self.share_weight:
+            self.mag_extractor = self.get_feature_extractor(architecture=backbone, pretrained=pretrained, unfreeze_blocks=unfreeze_blocks, num_classes=num_classes, in_channels=1)
+            self.phase_extractor = self.get_feature_extractor(architecture=backbone, pretrained=pretrained, unfreeze_blocks=unfreeze_blocks, num_classes=num_classes, in_channels=1)  
+        else:
+            self.freq_extractor = self.get_feature_extractor(architecture=backbone, pretrained=pretrained, unfreeze_blocks=unfreeze_blocks, num_classes=num_classes, in_channels=1)
         self.normalize_ifft = normalize_ifft
         if self.normalize_ifft == 'batchnorm':
             self.batchnorm_ifft = nn.BatchNorm2d(num_features=self.out_ext_channels)
         if self.normalize_ifft == 'layernorm':
             self.layernorm_ifft = nn.LayerNorm(normalized_shape=self.features_size[self.backbone])
+        self.freq_combine = freq_combine
+        if self.freq_combine == 'add':
+            self.balance_magphase = nn.Parameter(torch.ones(1))
+        if self.freq_combine == 'cat':
+            self.convfreq = nn.Conv2d(in_channels=2*self.out_ext_channels, out_channels=self.out_ext_channels, kernel_size=1)
         ############################# PATCH CONFIG ################################
         
         if self.flatten_type == 'patch':
@@ -127,19 +130,15 @@ class PairwiseDualCNNViT(nn.Module):
             # Số lượng patches
             self.num_patches = int((self.features_size[backbone][1] * self.features_size[backbone][2]) / (self.patch_size * self.patch_size))
             # Patch_dim = P^2 * C
-            self.patch_dim = self.out_ext_channels//ratio * (self.patch_size ** 2)
+            self.patch_dim = self.out_ext_channels * (self.patch_size ** 2)
 
         ############################# CROSS ATTENTION #############################
         if self.flatten_type == 'patch':
             self.in_dim = self.patch_dim
         else:
             self.in_dim = int(self.features_size[backbone][1] * self.features_size[backbone][2])
-        if self.conv_attn:
-            self.query_conv = nn.Conv2d(in_channels=self.out_ext_channels, out_channels=self.out_ext_channels//ratio, kernel_size=1)
-            self.key_conv = nn.Conv2d(in_channels=self.out_ext_channels, out_channels=self.out_ext_channels//ratio, kernel_size=1)
-            self.value_conv = nn.Conv2d(in_channels=self.out_ext_channels, out_channels=self.out_ext_channels//ratio, kernel_size=1)
 
-        self.CA = CrossAttention(in_dim=self.in_dim, inner_dim=inner_ca_dim, prj_out=prj_out, qkv_embed=qkv_embed, init_weight=init_ca_weight)
+        self.CA = CrossAttention(in_dim=self.in_dim, inner_dim=inner_ca_dim, prj_out=prj_out)
 
         ############################# VIT #########################################
         # Giảm chiều vector sau concat 2*patch_dim về D:
@@ -150,8 +149,7 @@ class PairwiseDualCNNViT(nn.Module):
 
         # Thêm 1 embedding vector cho classify token:
         self.classifier = classifier
-        self.embedding_return= embedding_return
-        self.num_vecs = self.num_patches if self.flatten_type == 'patch' else self.out_ext_channels//ratio
+        self.num_vecs = self.num_patches if self.flatten_type == 'patch' else self.out_ext_channels
         if 'vit' in self.classifier:
             self.transformer = Transformer(self.dim, self.depth, self.heads, self.dim_head, self.mlp_dim, self.dropout_value)
             self.batchnorm = nn.BatchNorm1d(self.num_vecs)
@@ -167,9 +165,6 @@ class PairwiseDualCNNViT(nn.Module):
         self.mlp_dropout = nn.Dropout(dropout_in_mlp)
         self.mlp_head_out = nn.Linear(self.mlp_dim, self.num_classes)
         self.sigmoid = nn.Sigmoid()
-        self.init_linear, self.init_layernorm, self.init_conv = init_linear, init_layernorm, init_conv
-        if init_weight:
-            self.apply(self._init_weights)
 
     def get_activation(self, act):
         if act == 'relu':
@@ -187,53 +182,6 @@ class PairwiseDualCNNViT(nn.Module):
         else:
             activation = None
         return activation
-
-    def init_conv_weight(self, module):
-        for ly in module.children():
-            if isinstance(ly, nn.Conv2d):
-                nn.init.kaiming_normal_(ly.weight, a=1)
-                if not ly.bias is None:
-                    nn.init.constant_(ly.bias, 0)
-            elif isinstance(ly, nn.Module):
-                self.init_conv_weight(ly)
-
-    def init_transformer_weights(self, module):
-        if isinstance(module, nn.Linear):
-            print("Linear: ", module)
-            module.weight.data.normal_(mean=0.0, std=1.0)
-            if module.bias is not None:
-                module.bias.data.zero_()
-        elif isinstance(module, nn.LayerNorm):
-            print("Layer norm: ", module)
-            module.bias.data.zero_()
-            module.weight.data.fill_(1.0)
-    
-    def _init_weights(self, module):
-        if isinstance(module, nn.Linear):
-            # print("Linear: ", module)
-            if self.init_linear == 'normal':
-                module.weight.data.normal_(mean=0.0, std=1.0)
-            elif self.init_linear == 'xavier':
-                nn.init.xavier_uniform_(module.weight)
-            else:
-                pass
-            if module.bias is not None:
-                module.bias.data.zero_()
-        elif isinstance(module, nn.LayerNorm):
-            # print("Layer norm: ", module)
-            module.bias.data.zero_()
-            module.weight.data.fill_(1.0)
-        elif isinstance(module, nn.Conv2d) and self.pretrained == 0:
-            # print("Conv: ", module)
-            if self.init_conv == 'kaiming':
-                nn.init.kaiming_normal_(module.weight, a=1)
-            elif self.init_conv == "xavier":
-                nn.init.xavier_uniform_(module.weight)
-            else:
-                pass
-
-            if not module.bias is None:
-                nn.init.constant_(module.bias, 0)
 
     def get_feature_extractor(self, architecture="efficient_net", unfreeze_blocks=-1, pretrained=False, num_classes=1, in_channels=3):
         extractor = None
@@ -280,19 +228,27 @@ class PairwiseDualCNNViT(nn.Module):
             pass
         return vectors
 
-    def ifft(self, freq_feature, norm_type='none'):
-        ifreq_feature = torch.log(torch.abs(torch.fft.ifft2(torch.fft.ifftshift(freq_feature))) + 1e-10)  # Hơi ảo???
+    def reconstruct(self, mag_feature, phase_feature, norm_type='none', freq_combine='add'):
+        freq_feature = None
+        if freq_combine == 'add':
+            freq_feature = mag_feature + self.balance_magphase * phase_feature
+        if freq_combine == 'cat':
+            freq_feature = torch.cat([mag_feature, phase_feature], dim=1)
+            freq_feature = self.convfreq(freq_feature)
+
+        combined = torch.multiply(mag_feature, torch.exp(1j*phase_feature))
+        fftx = torch.fft.ifftshift(combined)
+        ffty = torch.fft.ifft2(fftx)
+        reconstructed = torch.abs(ffty)
         if norm_type == 'none':
-            pass
+            ifreq_feature = reconstructed
         elif norm_type == 'batchnorm':
-            ifreq_feature = self.batchnorm_ifft(ifreq_feature)
+            ifreq_feature = self.batchnorm_ifft(reconstructed)
         elif norm_type == 'layernorm':
-            ifreq_feature = self.layernorm_ifft(ifreq_feature)
+            ifreq_feature = self.layernorm_ifft(reconstructed)
         elif norm_type == 'normal':
-            ifreq_feature = F.normalize(ifreq_feature)
-        elif norm_type == 'no_ifft':
-            return freq_feature
-        return ifreq_feature
+            ifreq_feature = F.normalize(reconstructed)
+        return freq_feature, ifreq_feature
 
     def fusion(self, rgb, out_attn):
         """
@@ -305,45 +261,43 @@ class PairwiseDualCNNViT(nn.Module):
             out = torch.cat([rgb, weight * out_attn], dim=2)
         elif 'add' in self.version:
             out = torch.add(rgb, weight * out_attn)
-        # print(out.shape)
         return out
 
-    def extract_feature(self, rgb_imgs, freq_imgs):
+    def extract_feature(self, rgb_imgs, mag_imgs, phase_imgs):
         if self.backbone == 'efficient_net':
             rgb_features = self.rgb_extractor.extract_features(rgb_imgs)                 # shape (batchsize, 1280, 8, 8)
-            freq_features = self.freq_extractor.extract_features(freq_imgs)              # shape (batchsize, 1280, 4, 4)
+            if not self.share_weight:
+                mag_features = self.mag_extractor.extract_features(mag_imgs)              # shape (batchsize, 1280, 4, 4)
+                phase_features = self.phase_extractor.extract_features(phase_imgs)              # shape (batchsize, 1280, 4, 4)
+            else:
+                mag_features = self.freq_extractor.extract_features(mag_imgs)              # shape (batchsize, 1280, 4, 4)
+                phase_features = self.freq_extractor.extract_features(phase_imgs)              # shape (batchsize, 1280, 4, 4)  
         else:
             rgb_features = self.rgb_extractor(rgb_imgs)
-            freq_features = self.freq_extractor(freq_imgs)
-        return rgb_features, freq_features
+            if not self.share_weight:
+                mag_features = self.mag_extractor(mag_imgs)
+                phase_features = self.phase_extractor(phase_imgs)
+            else:
+                mag_features = self.freq_extractor(mag_imgs)
+                phase_features = self.freq_extractor(phase_imgs)
+        return rgb_features, mag_features, phase_features
 
-    def forward_once(self, rgb_imgs, freq_imgs):
-        rgb_features, freq_features = self.extract_feature(rgb_imgs, freq_imgs)
-        ifreq_features = self.ifft(freq_features, norm_type=self.normalize_ifft)
+    def forward_once(self, rgb_imgs, mag_imgs, phase_imgs):
+        rgb_features, mag_features, phase_features = self.extract_feature(rgb_imgs, mag_imgs, phase_imgs)
+        freq_features, ifreq_features = self.reconstruct(mag_features, phase_features, norm_type=self.normalize_ifft, freq_combine=self.freq_combine)
         # print("Features shape: ", rgb_features.shape, freq_features.shape, ifreq_features.shape)
 
         # Turn to q, k, v if use conv-attention, and then flatten to vector:
-        if self.conv_attn:
-            rgb_query = self.query_conv(rgb_features)
-            freq_value = self.value_conv(freq_features)
-            ifreq_key = self.key_conv(ifreq_features)
-            ifreq_value = self.value_conv(ifreq_features)
-        else:
-            rgb_query = rgb_features
-            freq_value = freq_features
-            ifreq_key = ifreq_features
-            ifreq_value = ifreq_features
         # print("Q K V shape: ", rgb_query.shape, freq_value.shape, ifreq_key.shape, ifreq_value.shape)
-        rgb_query_vectors = self.flatten_to_vectors(rgb_query)
-        freq_value_vectors = self.flatten_to_vectors(freq_value)
-        ifreq_key_vectors = self.flatten_to_vectors(ifreq_key)
-        ifreq_value_vectors = self.flatten_to_vectors(ifreq_value)
+        rgb_vectors = self.flatten_to_vectors(rgb_features)
+        freq_vectors = self.flatten_to_vectors(freq_features)
+        ifreq_vectors = self.flatten_to_vectors(ifreq_features)
         # print("Vectors shape: ", rgb_query_vectors.shape, freq_value_vectors.shape, ifreq_key_vectors.shape, ifreq_value_vectors.shape)
 
         ##### Cross attention and fusion:
-        out, attn_weight = self.CA(rgb_query_vectors, ifreq_key_vectors, ifreq_value_vectors)
-        attn_out = torch.bmm(attn_weight, freq_value_vectors)
-        fusion_out = self.fusion(rgb_query_vectors, attn_out)
+        _, attn_weight = self.CA(rgb_vectors, ifreq_vectors)
+        attn_freq = torch.bmm(attn_weight, freq_vectors)
+        fusion_out = self.fusion(rgb_vectors, attn_freq)
         if self.activation is not None:
             fusion_out = self.activation(fusion_out)
         # print("Fusion shape: ", fusion_out.shape)
@@ -394,23 +348,23 @@ class PairwiseDualCNNViT(nn.Module):
         out = self.sigmoid(e3)
         return e, out
 
-    def forward(self, rgb_imgs0, freq_imgs0, rgb_imgs1, freq_imgs1):
-        embedding_0, out_0 = self.forward_once(rgb_imgs0, freq_imgs0)
-        embedding_1, out_1 = self.forward_once(rgb_imgs1, freq_imgs1)
+    def forward(self, rgb_imgs0, mag_imgs0, phase_imgs0, rgb_imgs1, mag_imgs1, phase_imgs1):
+        embedding_0, out_0 = self.forward_once(rgb_imgs0, mag_imgs0, phase_imgs0)
+        embedding_1, out_1 = self.forward_once(rgb_imgs1, mag_imgs1, phase_imgs1)
         return embedding_0, out_0, embedding_1, out_1
 
 from torchsummary import summary
 if __name__ == '__main__':
     x = torch.ones(32, 3, 128, 128)
     y = torch.ones(32, 1, 128, 128)
-    model_ = PairwiseDualCNNViT(  image_size=128, num_classes=1, dim=1024,\
+    model_ = TripleCNNViT(  image_size=128, num_classes=1, dim=1024,\
                                 depth=6, heads=8, mlp_dim=2048,\
-                                dim_head=64, dropout=0.15, emb_dropout=0.15,\
-                                backbone='xception_net', pretrained=False,\
-                                normalize_ifft=True,\
+                                dim_head=64, dropout=0.15, \
+                                backbone='efficient_net', pretrained=False,\
+                                normalize_ifft='batchnorm',\
                                 flatten_type='patch',\
-                                conv_attn=True, ratio=8, qkv_embed=True, inner_ca_dim=0, init_ca_weight=True, prj_out=False, act='none',\
-                                patch_size=1, position_embed=False, pool='cls',\
-                                version='ca-fcat-0.5', unfreeze_blocks=-1, embedding_return='mlp_hidden')
-    out = model_(x, y)
+                                inner_ca_dim=0, freq_combine='add',  act='none', prj_out=True, \
+                                patch_size=2, \
+                                version='ca-fcat-0.5', unfreeze_blocks=-1, classifier='vit_aggregate_0.3', share_weight=False)
+    out = model_(x, y, y)
     print(out.shape)
