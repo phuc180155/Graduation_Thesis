@@ -210,8 +210,8 @@ def eval_pairwise_dual_stream(model, weight_importance, dataloader, device, bce_
                 logps0 = logps0.squeeze(dim=1)
             # Find mean loss
 
-            print("logps0: ", logps0.shape, '          ===== ', logps0)
-            print("labels0: ", labels0.shape, '          ===== ', labels0)
+            # print("logps0: ", logps0.shape, '          ===== ', logps0)
+            # print("labels0: ", labels0.shape, '          ===== ', labels0)
             sys.stdout = sys.__stdout__
             bceloss_0 = bce_loss(logps0, labels0)
             # bceloss_1 = bce_loss(logps1, labels1)
