@@ -158,6 +158,25 @@ def parse_args():
     parser_triple_cnn_vit.add_argument("--prj_out", type=int, default=0, help="")
     parser_triple_cnn_vit.add_argument("--share_weight", type=int, default=0, help="")
 
+    parser_pairwise_triple_cnn_vit = sub_parser.add_parser('pairwise_triple_cnn_vit', help='My model')
+    parser_pairwise_triple_cnn_vit.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
+    parser_pairwise_triple_cnn_vit.add_argument("--version",type=str, default="ca-fadd-0.8", required=False, help="Some changes in model")
+    parser_pairwise_triple_cnn_vit.add_argument("--backbone",type=str, default="efficient_net", required=False, help="Type of backbone")
+    parser_pairwise_triple_cnn_vit.add_argument("--pretrained",type=int, default=1, required=False, help="Load pretrained backbone")
+    parser_pairwise_triple_cnn_vit.add_argument("--unfreeze_blocks", type=int, default=-1, help="Unfreeze blocks in backbone")
+    parser_pairwise_triple_cnn_vit.add_argument("--normalize_ifft", type=str, default='batchnorm', help="Normalize after ifft")
+    parser_pairwise_triple_cnn_vit.add_argument("--flatten_type", type=str, default='patch', help="in ['patch', 'channel']") 
+    parser_pairwise_triple_cnn_vit.add_argument("--inner_ca_dim", type=int, default=0, help="") 
+    parser_pairwise_triple_cnn_vit.add_argument("--act", type=str, default='relu', help="")
+    parser_pairwise_triple_cnn_vit.add_argument("--division_lr", type=int, default=0, help="")
+    parser_pairwise_triple_cnn_vit.add_argument("--classifier", type=str, default="mlp", help="")
+    parser_pairwise_triple_cnn_vit.add_argument("--freq_combine", type=str, default="cat", help="")
+    parser_pairwise_triple_cnn_vit.add_argument("--prj_out", type=int, default=0, help="")
+    parser_pairwise_triple_cnn_vit.add_argument("--share_weight", type=int, default=0, help="")
+    parser_pairwise_triple_cnn_vit.add_argument("--embedding_return", type=str, default='mlp_hidden', help="")
+    parser_pairwise_triple_cnn_vit.add_argument("--weight_importance", type=float, default=2.0)
+    parser_pairwise_triple_cnn_vit.add_argument("--margin", type=float, default=2.0)
+
 
     parser_dual_dab_cnn_vit = sub_parser.add_parser('dual_dab_cnn_vit', help='My model')
     parser_dual_dab_cnn_vit.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
@@ -664,6 +683,40 @@ if __name__ == "__main__":
         train_triple_stream(model_, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="triple_cnn_vit", args_txt=args_txt, augmentation=args.augmentation)
+
+    elif model == "pairwise_triple_cnn_vit":
+        from module.train_pairwise import train_pairwise_triple_stream
+        from model.vision_transformer.triple_cnn_vit.pairwise_triple_cnn_vit import PairwiseTripleCNNViT
+        
+        dropout = 0.1
+        emb_dropout = 0.1
+        model_ = PairwiseTripleCNNViT(image_size=args.image_size, num_classes=1, dim=args.dim,\
+                                depth=args.depth, heads=args.heads, mlp_dim=args.mlp_dim,\
+                                dim_head=args.dim_head, dropout=0.15, \
+                                backbone=args.backbone, pretrained=bool(args.pretrained),\
+                                normalize_ifft=args.normalize_ifft,\
+                                flatten_type=args.flatten_type,\
+                                inner_ca_dim=args.inner_ca_dim, act=args.act, prj_out=args.prj_out,\
+                                patch_size=args.patch_size, \
+                                version=args.version, unfreeze_blocks=args.unfreeze_blocks, \
+                                freq_combine=args.freq_combine, \
+                                dropout_in_mlp=args.dropout_in_mlp, classifier=args.classifier, share_weight=args.share_weight, embedding_return=args.embedding_return)
+        
+        args_txt = "lr{}-{}_b{}_es{}_l{}_im{}_mar{}_ret{}_freqc{}_cls{}_v_{}_d{}_md{}_h{}_d{}_p{}_bb{}_pre{}_unf{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.weight_importance, args.margin, args.embedding_return, args.freq_combine, args.classifier, args.version, args.dim, args.mlp_dim, args.heads, args.depth, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
+        args_txt += "norm{}_".format(args.normalize_ifft)
+        args_txt += "f{}_pat{}_".format(args.flatten_type, args.patch_size)
+        args_txt += "cad{}_act{}_prj{}_share{}_".format(args.inner_ca_dim, args.act, args.prj_out, args.share_weight)
+        args_txt += "seed{}".format(args.seed)
+        args_txt += "_drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
+        print(len(args_txt))
+        criterion = [args.loss]
+        if args.gamma:
+            args_txt += "_gamma{}".format(args.gamma)
+            criterion.append(args.gamma)
+        use_pretrained = True if args.pretrained or args.resume != '' else False
+        train_pairwise_triple_stream(model_, args.weight_importance, args.margin, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
+                           batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="pairwise_triple_cnn_vit", args_txt=args_txt, augmentation=args.augmentation)
 
     elif model == "dual_dab_cnn_vit":
         from module.train_torch import train_dual_stream

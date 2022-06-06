@@ -69,7 +69,7 @@ class CrossAttention(nn.Module):
         output = torch.bmm(attn, v)
         return output, attn
 
-class TripleCNNViT(nn.Module):
+class PairwiseTripleCNNViT(nn.Module):
     def __init__(self, image_size=224, num_classes=1, dim=1024,\
                 depth=6, heads=8, mlp_dim=2048,\
                 dim_head=64, dropout=0.15,\
@@ -81,7 +81,7 @@ class TripleCNNViT(nn.Module):
                 version='ca-fcat-0.5', unfreeze_blocks=-1, \
                 inner_ca_dim=0, \
                 dropout_in_mlp=0.0, classifier='mlp', share_weight=False, embedding_return='mlp_before'):  
-        super(TripleCNNViT, self).__init__()
+        super(PairwiseTripleCNNViT, self).__init__()
 
         self.image_size = image_size
         self.patch_size = patch_size
@@ -104,6 +104,7 @@ class TripleCNNViT(nn.Module):
         self.version = version  # in ['ca-rgb_cat-0.5', 'ca-freq_cat-0.5']
         self.activation = self.get_activation(act)
         self.share_weight = share_weight
+        self.embedding_return=embedding_return
 
         self.pretrained = pretrained
         self.rgb_extractor = self.get_feature_extractor(architecture=backbone, pretrained=True, unfreeze_blocks=unfreeze_blocks, num_classes=num_classes, in_channels=3)   # efficient_net-b0, return shape (1280, 8, 8) or (1280, 7, 7)
@@ -305,7 +306,7 @@ class TripleCNNViT(nn.Module):
         # print("Inner ViT shape: ", embed.shape)
 
         ##### Forward to ViT
-        e0 = embed
+        e0 = embed.mean(dim = 1).squeeze(dim=1)     # B, N, D => B, 1, D
         if self.classifier == 'mlp':
             e1 = embed.mean(dim = 1).squeeze(dim=1)     # B, N, D => B, 1, D
             x = self.mlp_dropout(e1)         
@@ -357,7 +358,7 @@ from torchsummary import summary
 if __name__ == '__main__':
     x = torch.ones(32, 3, 128, 128)
     y = torch.ones(32, 1, 128, 128)
-    model_ = TripleCNNViT(  image_size=128, num_classes=1, dim=1024,\
+    model_ = PairwiseTripleCNNViT(  image_size=128, num_classes=1, dim=1024,\
                                 depth=6, heads=8, mlp_dim=2048,\
                                 dim_head=64, dropout=0.15, \
                                 backbone='efficient_net', pretrained=False,\
@@ -365,6 +366,6 @@ if __name__ == '__main__':
                                 flatten_type='patch',\
                                 inner_ca_dim=0, freq_combine='add',  act='none', prj_out=True, \
                                 patch_size=2, \
-                                version='ca-fcat-0.5', unfreeze_blocks=-1, classifier='vit_aggregate_0.3', share_weight=False)
+                                version='ca-fcat-0.5', unfreeze_blocks=-1, classifier='vit_aggregate_0.3', share_weight=False, embedding_return='vit_before')
     out = model_(x, y, y)
     print(out.shape)
