@@ -351,7 +351,7 @@ class PairwiseDualCNNViT(nn.Module):
         # print("Inner ViT shape: ", embed.shape)
 
         ##### Forward to ViT
-        e0 = embed
+        e0 = embed.mean(dim = 1).squeeze(dim=1)
         if self.classifier == 'mlp':
             e1 = embed.mean(dim = 1).squeeze(dim=1)     # B, N, D => B, 1, D
             x = self.mlp_dropout(e1)         
