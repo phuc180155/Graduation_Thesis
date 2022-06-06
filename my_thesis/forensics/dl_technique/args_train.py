@@ -396,6 +396,27 @@ def parse_args():
     parser_pairwise_dual_cnn_vit.add_argument("--classifier", type=str, default='vit_aggregate_-1', help="")
     parser_pairwise_dual_cnn_vit.add_argument("--embedding_return", type=str, default='mlp_hidden', help="")
 
+    parser_triplewise_dual_cnn_vit = sub_parser.add_parser('triplewise_dual_cnn_vit', help='My model')
+    parser_triplewise_dual_cnn_vit.add_argument("--weight_importance", type=float, default=2.0)
+    parser_triplewise_dual_cnn_vit.add_argument("--margin", type=float, default=2.0)
+    parser_triplewise_dual_cnn_vit.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
+    parser_triplewise_dual_cnn_vit.add_argument("--version",type=str, default="ca-fadd-0.8", required=False, help="Some changes in model")
+    parser_triplewise_dual_cnn_vit.add_argument("--backbone",type=str, default="efficient_net", required=False, help="Type of backbone")
+    parser_triplewise_dual_cnn_vit.add_argument("--pretrained",type=int, default=1, required=False, help="Load pretrained backbone")
+    parser_triplewise_dual_cnn_vit.add_argument("--unfreeze_blocks", type=int, default=-1, help="Unfreeze blocks in backbone")
+    parser_triplewise_dual_cnn_vit.add_argument("--normalize_ifft", type=str, default='batchnorm', help="Normalize after ifft")
+    parser_triplewise_dual_cnn_vit.add_argument("--flatten_type", type=str, default='patch', help="in ['patch', 'channel']")
+    parser_triplewise_dual_cnn_vit.add_argument("--conv_attn", type=int, default=0, help="")   
+    parser_triplewise_dual_cnn_vit.add_argument("--ratio", type=int, default=1, help="")   
+    parser_triplewise_dual_cnn_vit.add_argument("--qkv_embed", type=int, default=1, help="")   
+    parser_triplewise_dual_cnn_vit.add_argument("--inner_ca_dim", type=int, default=0, help="") 
+    parser_triplewise_dual_cnn_vit.add_argument("--init_ca_weight", type=int, default=1, help="") 
+    parser_triplewise_dual_cnn_vit.add_argument("--prj_out", type=int, default=0, help="")
+    parser_triplewise_dual_cnn_vit.add_argument("--act", type=str, default='relu', help="")
+    parser_triplewise_dual_cnn_vit.add_argument("--division_lr", type=int, default=0, help="")
+    parser_triplewise_dual_cnn_vit.add_argument("--classifier", type=str, default='vit_aggregate_-1', help="")
+    parser_triplewise_dual_cnn_vit.add_argument("--embedding_return", type=str, default='mlp_hidden', help="")
+
     parser_ori_dual_eff_vit = sub_parser.add_parser('origin_dual_efficient_vit', help='My model')
     parser_ori_dual_eff_vit.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
     parser_ori_dual_eff_vit.add_argument("--version",type=str, default="cross_attention-freq-add", required=True, help="Some changes in model")
@@ -893,6 +914,39 @@ if __name__ == "__main__":
         train_pairwise_dual_stream(model_, args.weight_importance, args.margin, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="pairwise_dual_cnn_vit", args_txt=args_txt, augmentation=args.augmentation)
+
+    elif model == "triplewise_dual_cnn_vit":
+        from module.train_triplewise import train_triplewise_dual_stream
+        from model.vision_transformer.dual_cnn_vit.triplewise_dual_cnn_vit import TriplewiseDualCNNViT
+
+        dropout = 0.15
+        emb_dropout = 0.15
+        model_ = TriplewiseDualCNNViT(image_size=args.image_size, num_classes=1, dim=args.dim,\
+                                depth=args.depth, heads=args.heads, mlp_dim=args.mlp_dim,\
+                                dim_head=args.dim_head, dropout=0.15,\
+                                backbone=args.backbone, pretrained=bool(args.pretrained),\
+                                normalize_ifft=args.normalize_ifft,\
+                                flatten_type=args.flatten_type,\
+                                conv_attn=bool(args.conv_attn), ratio=args.ratio, qkv_embed=bool(args.qkv_embed), inner_ca_dim=args.inner_ca_dim, init_ca_weight=bool(args.init_ca_weight), prj_out=bool(args.prj_out), act=args.act,\
+                                patch_size=args.patch_size, \
+                                version=args.version, unfreeze_blocks=args.unfreeze_blocks, \
+                                dropout_in_mlp=args.dropout_in_mlp, embedding_return=args.embedding_return, classifier=args.classifier)
+        
+        args_txt = "lr{}-{}_b{}_es{}_l{}_cls{}_ret{}_im{}_mar{}_v{}_md{}_d{}_h{}_d{}_p{}_bb{}_pre{}_unf{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.classifier, args.embedding_return, args.weight_importance, args.margin, args.version, args.mlp_dim, args.dim, args.heads, args.depth, args.pool, args.backbone, args.pretrained, args.unfreeze_blocks)
+        args_txt += "norm{}_".format(args.normalize_ifft)
+        args_txt += "f{}_patch{}_".format(args.flatten_type, args.patch_size)
+        args_txt += "conv{}_r{}_qkv{}_cad{}_prj{}_act{}_".format(args.conv_attn, args.ratio, args.qkv_embed, args.inner_ca_dim, args.prj_out, args.act)
+        args_txt += "seed{}".format(args.seed)
+        args_txt += "_drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
+        print(len(args_txt))
+        criterion = [args.loss]
+        if args.gamma:
+            args_txt += "_gamma{}".format(args.gamma)
+            criterion.append(args.gamma)
+        use_pretrained = True if args.pretrained or args.resume != '' else False
+        train_triplewise_dual_stream(model_, args.weight_importance, args.margin, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
+                           batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="triplewise_dual_cnn_vit", args_txt=args_txt, augmentation=args.augmentation)
 
     elif model == "dual_cnn_feedforward_vit":
         from module.train_torch import train_dual_stream
