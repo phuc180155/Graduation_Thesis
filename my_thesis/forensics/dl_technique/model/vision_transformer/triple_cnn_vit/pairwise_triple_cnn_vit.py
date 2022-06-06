@@ -137,6 +137,7 @@ class PairwiseTripleCNNViT(nn.Module):
         if self.flatten_type == 'patch':
             self.in_dim = self.patch_dim
         else:
+            self.conv = nn.Conv2d(in_channels=self.out_ext_channels, out_channels=self.out_ext_channels // 4, kernel_size=1)
             self.in_dim = int(self.features_size[backbone][1] * self.features_size[backbone][2])
 
         self.CA = CrossAttention(in_dim=self.in_dim, inner_dim=inner_ca_dim, prj_out=prj_out)
@@ -224,6 +225,7 @@ class PairwiseTripleCNNViT(nn.Module):
         if self.flatten_type == 'patch':
             vectors = rearrange(feature, 'b c (h p1) (w p2) -> b (h w) (p1 p2 c)', p1=self.patch_size, p2=self.patch_size)
         elif self.flatten_type == 'channel':
+            feature = self.conv(feature)
             vectors = rearrange(feature, 'b c h w -> b c (h w)')
         else:
             pass
