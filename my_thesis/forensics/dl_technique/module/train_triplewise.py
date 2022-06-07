@@ -387,7 +387,7 @@ def train_triplewise_dual_stream(model, weight_importance=2, margin=2, train_dir
                     # Save model:
                     step_model_saver(global_step, [val_bce_loss, val_total_loss, val_mic_acc, test_bce_loss, test_total_loss, test_mic_acc], step_ckcpoint, model)
                     step_model_saver.save_last_model(step_ckcpoint, model, global_step)
-                    step_model_saver.save_model_for_triplewise(step_ckcpoint, model, global_step, save_ckcpoint=False, global_acc=global_acc, global_triplet_loss=global_triplet_loss, global_bce_loss=global_bce_loss, global_total_loss=global_total_loss)
+                    step_model_saver.save_model_for_pairwise(step_ckcpoint, model, global_step, save_ckcpoint=False, global_acc=global_acc, global_triplet_loss=global_triplet_loss, global_bce_loss=global_bce_loss, global_total_loss=global_total_loss)
 
                     es_cur_score = find_current_earlystopping_score(es_metric, val_total_loss, val_mic_acc, test_total_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2])
                     early_stopping(es_cur_score)
