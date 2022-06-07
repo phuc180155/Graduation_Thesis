@@ -192,6 +192,7 @@ def eval_triplewise_dual_stream(model, weight_importance, dataloader, device, bc
     with torch.no_grad():
         for inputs0, fft_imgs0, labels0, inputs1, fft_imgs1, labels1, inputs2, fft_imgs2, labels2 in dataloader:
             # Push to device
+            y_label.extend(labels0.cpu().numpy().astype(np.float64))
             inputs0, fft_imgs0, labels0 = inputs0.float().to(device), fft_imgs0.float().to(device), labels0.float().to(device)
             inputs1, fft_imgs1, labels1 = inputs1.float().to(device), fft_imgs1.float().to(device), labels1.float().to(device)
             inputs2, fft_imgs2, labels2 = inputs2.float().to(device), fft_imgs2.float().to(device), labels2.float().to(device)
