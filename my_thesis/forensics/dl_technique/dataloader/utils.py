@@ -26,6 +26,26 @@ def make_weights_for_balanced_classes(images, nclasses):
         weight[idx] = weight_per_class[val[1]]
     return weight, count
 
+def make_weights_for_balanced_classes_2(image_paths, nclasses):
+    def find_label(path: str):
+        if '/0_real/' in path:
+            return 0
+        return 1
+
+    count = [0] * nclasses
+    for p in image_paths:
+        count[find_label(p)] += 1
+    weight_per_class = [0.] * nclasses
+    N = float(sum(count))
+    print(count)
+    for i in range(nclasses):
+        weight_per_class[i] = N/float(count[i])
+    print(weight_per_class)
+    weight = [0] * len(image_paths)
+    for idx, p in enumerate(image_paths):
+        weight[idx] = weight_per_class[find_label(p)]
+    return weight, count
+
 def azimuthalAverage(magnitude_image, center=None):
     """
     Calculate the azimuthally averaged radial profile.

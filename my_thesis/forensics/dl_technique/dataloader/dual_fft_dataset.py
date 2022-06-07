@@ -32,6 +32,8 @@ class DualFFTMagnitudeImageDataset(Dataset):
         else:
             data_path = copy.deepcopy(dset)
         self.data_path = data_path
+        # print("sample: ", self.data_path[:10])
+        # print("len: ", len(self.data_path))
         np.random.shuffle(self.data_path)
         self.indexes = range(len(self.data_path))
         self.on_epoch_end()
@@ -45,6 +47,7 @@ class DualFFTMagnitudeImageDataset(Dataset):
             
     def __getitem__(self, index):
         # Read image in RGB and resize to (image_size, image_size)
+        # print("idx: ", index)
         img = cv2.imread(self.data_path[index])
         img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
         img = cv2.resize(img,(self.image_size,self.image_size))
