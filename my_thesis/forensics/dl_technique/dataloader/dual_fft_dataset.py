@@ -11,12 +11,13 @@ import torch
 
 from dataloader.utils import azimuthalAverage
 from PIL import Image, ImageEnhance
+import copy
 
 """
     Class for make dual (spatial and spectrum) image dataset
 """
 class DualFFTMagnitudeImageDataset(Dataset):
-    def __init__(self, path,image_size, transform=None, transform_fft = None, should_invert=True,shuffle=True,adj_brightness=None, adj_contrast=None):
+    def __init__(self, path,image_size, transform=None, transform_fft = None, should_invert=True,shuffle=True,adj_brightness=None, adj_contrast=None, dset=None):
         self.path = path
         self.transform = transform
         self.image_size =image_size
@@ -24,9 +25,12 @@ class DualFFTMagnitudeImageDataset(Dataset):
         self.should_invert = should_invert
         self.shuffle = shuffle
         data_path = []
-        data_path = data_path + glob.glob(path + "/*/*.jpg")
-        data_path = data_path + glob.glob(path + "/*/*.jpeg")
-        data_path = data_path + glob.glob(path + "/*/*.png")
+        if dset is None:
+            data_path = data_path + glob.glob(path + "/*/*.jpg")
+            data_path = data_path + glob.glob(path + "/*/*.jpeg")
+            data_path = data_path + glob.glob(path + "/*/*.png")
+        else:
+            data_path = copy.deepcopy(dset)
         self.data_path = data_path
         np.random.shuffle(self.data_path)
         self.indexes = range(len(self.data_path))
