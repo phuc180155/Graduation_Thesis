@@ -309,8 +309,8 @@ class DualCMACNNAttn(nn.Module):
             freq_features = self.freq_extractor.extract_features_block_4(freq_imgs)              # shape (batchsize, 1280, 4, 4)
             rgb_features = self.cma0(rgb_features, freq_features, freq_features)
             #
-            rgb_features = self.rgb_extractor.extract_features_block_11(rgb_features)                 # shape (batchsize, 1280, 8, 8)
-            freq_features = self.freq_extractor.extract_features_block_11(freq_features)              # shape (batchsize, 1280, 4, 4)
+            rgb_features = self.rgb_extractor.extract_features_block_10(rgb_features)                 # shape (batchsize, 1280, 8, 8)
+            freq_features = self.freq_extractor.extract_features_block_10(freq_features)              # shape (batchsize, 1280, 4, 4)
             rgb_features = self.cma1(rgb_features, freq_features, freq_features)
             #
             rgb_features = self.rgb_extractor.extract_features_last_block(rgb_features)

@@ -632,8 +632,8 @@ class DualPatchCNNCMAViT(nn.Module):
                 rgb_features = attn(rgb_features)
             freq_features = self.freq_extractor.extract_features_block_4(freq_imgs)              # shape (batchsize, 1280, 4, 4)
             #
-            rgb_features = self.rgb_extractor.extract_features_block_11(rgb_features)
-            freq_features = self.freq_extractor.extract_features_block_11(freq_features)
+            rgb_features = self.rgb_extractor.extract_features_block_10(rgb_features)
+            freq_features = self.freq_extractor.extract_features_block_10(freq_features)
             rgb_features_1 = self.transformer_block_10_rgb(rgb_features, freq_features)
             freq_features_1 = self.transformer_block_10_freq(freq_features, rgb_features)
             rgb_features = self.rgb_extractor.extract_features_last_block(rgb_features_1, classifier=self.classifier)

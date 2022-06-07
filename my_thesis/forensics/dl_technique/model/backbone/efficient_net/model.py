@@ -178,8 +178,7 @@ class EfficientNet(nn.Module):
             x = block(x, drop_connect_rate=drop_connect_rate)
         return x    # (B, 40, 16, 16) if image_size=128
 
-    def extract_features_block_11(self, inputs):
-        x = inputs
+    def extract_features_block_10(self, x):
         for idx, block in enumerate(self._blocks[5:11]):
             drop_connect_rate = self._global_params.drop_connect_rate
             if drop_connect_rate:
@@ -187,8 +186,7 @@ class EfficientNet(nn.Module):
             x = block(x, drop_connect_rate=drop_connect_rate)
         return x    # (B, 112, 8, 8) if image_size=128
 
-    def extract_features_last_block(self, inputs, classifier='mlp'):
-        x = inputs
+    def extract_features_last_block(self, x, classifier='mlp'):
         for idx, block in enumerate(self._blocks[11:]):
             drop_connect_rate = self._global_params.drop_connect_rate
             if drop_connect_rate:
@@ -198,8 +196,7 @@ class EfficientNet(nn.Module):
             x = self._swish(self._bn1(self._conv_head(x)))
         return x    # (B, )
 
-    def extract_features_last_block_2(self, inputs):
-        x = inputs
+    def extract_features_last_block_2(self, x):
         for idx, block in enumerate(self._blocks[11:]):
             drop_connect_rate = self._global_params.drop_connect_rate
             if drop_connect_rate:

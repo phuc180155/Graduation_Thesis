@@ -178,6 +178,7 @@ def train_kfold_dual_stream(model, n_folds=5, use_trick=True, criterion_name=Non
               adj_brightness=1.0, adj_contrast=1.0, es_metric='val_loss', es_patience=5, model_name="dual-efficient", args_txt="", augmentation=True):
 
     kfold = CustomizeKFold(n_folds=n_folds, train_dir=train_dir, val_dir=val_dir, trick=use_trick)
+    next_fold=False
     for fold_idx in range(n_folds):
         print("\n*********************************************************************************************")
         print("****************************************** FOLD {} *******************************************".format(fold_idx))
@@ -308,7 +309,16 @@ def train_kfold_dual_stream(model, n_folds=5, use_trick=True, criterion_name=Non
                             print('Early stopping. Best {}: {:.6f}'.format(es_metric, early_stopping.best_score))
                             time.sleep(5)
                             os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, args_txt if resume == '' else '', "({:.4f}_{:.4f}_{:.4f}_{:.4f})_{}_{}".format(step_model_saver.best_scores[0], step_model_saver.best_scores[1], step_model_saver.best_scores[2], step_model_saver.best_scores[3], 'fold' if resume == '' else 'resume', fold_idx)))
+                            next_fold = True
+                        if next_fold:
+                            break
                         model.train()
+            if next_fold:
+                break
+        if next_fold:
+            next_fold=False
+            continue
+                
 
             # Eval
             # print("Validating epoch...")
