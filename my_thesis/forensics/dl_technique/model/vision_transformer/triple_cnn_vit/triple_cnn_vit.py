@@ -307,10 +307,10 @@ class TripleCNNViT(nn.Module):
         else:
             rgb_vectors = self.flatten_to_vectors(rgb_features)
             ifreq_vectors = self.flatten_to_vectors(ifreq_features)
-            sys.stdout = open('/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/dl_technique/check.txt', 'w')
-            print("ifreq: ", ifreq_vectors)
-            print("rgb: ", rgb_vectors)
-            sys.stdout = sys.__stdout__
+            # sys.stdout = open('/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/dl_technique/check.txt', 'w')
+            # print("ifreq: ", ifreq_vectors)
+            # print("rgb: ", rgb_vectors)
+            # sys.stdout = sys.__stdout__
             ##### Cross attention and fusion:
             _, attn_weight = self.CA(rgb_vectors, ifreq_vectors)
             attn_ifreq = torch.bmm(attn_weight, ifreq_vectors)
