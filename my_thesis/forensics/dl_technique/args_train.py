@@ -48,6 +48,7 @@ def parse_args():
     parser_kfold_dual_eff = sub_parser.add_parser('kfold_dual_efficient', help="Efficient-Frequency Net")
     parser_kfold_dual_eff.add_argument('--pretrained', type=int, default=0, required=True)
     parser_kfold_dual_eff.add_argument("--n_folds",type=int,default=5,help="")
+    parser_kfold_dual_eff.add_argument("--what_fold",type=str,default='all',help="")
     parser_kfold_dual_eff.add_argument("--use_trick",type=int,default=0,help="")
 
     parser_srm_2_stream = sub_parser.add_parser('srm_two_stream', help="SRM 2 stream net from \"Generalizing Face Forgery Detection with High-frequency Features (CVPR 2021).\"")
@@ -150,6 +151,7 @@ def parse_args():
 
     parser_kfold_dual_cnn_vit = sub_parser.add_parser('kfold_dual_cnn_vit', help='My model')
     parser_kfold_dual_cnn_vit.add_argument("--n_folds",type=int,default=5,help="")
+    parser_kfold_dual_cnn_vit.add_argument("--what_fold",type=str,default='all',help="")
     parser_kfold_dual_cnn_vit.add_argument("--use_trick",type=int,default=0,help="")
     parser_kfold_dual_cnn_vit.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
     parser_kfold_dual_cnn_vit.add_argument("--version",type=str, default="ca-fadd-0.8", required=False, help="Some changes in model")
@@ -645,7 +647,7 @@ if __name__ == "__main__":
             criterion.append(args.gamma)
         
         use_pretrained = True if args.pretrained or args.resume != '' else False
-        train_kfold_dual_stream(model_, args.n_folds, args.use_trick, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir, image_size=args.image_size, lr=args.lr, division_lr=False, use_pretrained=False,\
+        train_kfold_dual_stream(model_, what_fold=args.what_fold, n_folds=args.n_folds, use_trick=args.use_trick, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir, image_size=args.image_size, lr=args.lr, division_lr=False, use_pretrained=False,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="kfold_dual_efficient", args_txt=args_txt, augmentation=args.augmentation)
 
@@ -783,7 +785,7 @@ if __name__ == "__main__":
             args_txt += "_gamma{}".format(args.gamma)
             criterion.append(args.gamma)
         use_pretrained = True if args.pretrained or args.resume != '' else False
-        train_kfold_dual_stream(model_, n_folds=args.n_folds, use_trick=args.use_trick, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
+        train_kfold_dual_stream(model_, what_fold=args.what_fold, n_folds=args.n_folds, use_trick=args.use_trick, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="kfold_dual_cnn_vit", args_txt=args_txt, augmentation=args.augmentation)
 

@@ -173,16 +173,37 @@ def eval_kfold_dual_stream(model, dataloader, device, criterion, adj_brightness=
     calculate_cls_metrics(y_label=np.array(y_label, dtype=np.float64), y_pred_label=np.array(y_pred_label, dtype=np.float64), save=True, print_metric=False)
     return loss, mac_accuracy, mic_accuracy, reals, fakes, micros, macros
     
-def train_kfold_dual_stream(model, n_folds=5, use_trick=True, criterion_name=None, train_dir = '', val_dir ='', test_dir= '', image_size=256, lr=3e-4, division_lr=True, use_pretrained=False,\
+def train_kfold_dual_stream(model_, what_fold='all', n_folds=5, use_trick=True, criterion_name=None, train_dir = '', val_dir ='', test_dir= '', image_size=256, lr=3e-4, division_lr=True, use_pretrained=False,\
               batch_size=16, num_workers=8, checkpoint='', resume='', epochs=30, eval_per_iters=-1, seed=0, \
               adj_brightness=1.0, adj_contrast=1.0, es_metric='val_loss', es_patience=5, model_name="dual-efficient", args_txt="", augmentation=True):
 
     kfold = CustomizeKFold(n_folds=n_folds, train_dir=train_dir, val_dir=val_dir, trick=use_trick)
     next_fold=False
+    # what_fold: 'x', 'x-all', 'all', 'x-only'
+    if 'all' not in what_fold:
+        if 'only' not in what_fold:
+            try:
+                fold_resume = int(what_fold)
+            except:
+                raise Exception("what fold should be an integer")
+        else:
+            fold_resume = int(what_fold.split('_')[0])
+    else:
+        if 'all' == what_fold:
+            fold_resume = 0
+        else:
+            fold_resume = int(what_fold.split('_')[0])
+
+    import copy
+    model_copy = copy.deepcopy(model_)
     for fold_idx in range(n_folds):
         print("\n*********************************************************************************************")
         print("****************************************** FOLD {} *******************************************".format(fold_idx))
         print("*********************************************************************************************")
+        if fold_idx < fold_resume:
+            continue
+        if 'only' in what_fold and fold_idx > fold_resume:
+            continue
         # Generate dataloader train and validation:
         trainset, valset = kfold.get_fold(fold_idx=fold_idx)
         dataloader_train, dataloader_val, num_samples = generate_dataloader_dual_cnn_stream_for_kfold(train_dir, trainset, valset, image_size, batch_size, num_workers, augmentation=augmentation)
@@ -212,6 +233,7 @@ def train_kfold_dual_stream(model, n_folds=5, use_trick=True, criterion_name=Non
             except:
                 pass
 
+        model = copy.deepcopy(model_copy)
         optimizer = define_optimizer(model, model_name=model_name, init_lr=init_lr, division_lr=division_lr, use_pretrained=use_pretrained)
         scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones = [2*i for i in range(1, epochs//2 + 1)], gamma = 0.8)
         
@@ -233,6 +255,7 @@ def train_kfold_dual_stream(model, n_folds=5, use_trick=True, criterion_name=Non
         step_model_saver = ModelSaver(save_metrics=["val_loss", "val_acc", "test_loss", 'test_acc'])
         
         # Define and load model
+        
         model = model.to(device)
         if resume != "":
             model.load_state_dict(torch.load(osp.join(checkpoint, resume)))
