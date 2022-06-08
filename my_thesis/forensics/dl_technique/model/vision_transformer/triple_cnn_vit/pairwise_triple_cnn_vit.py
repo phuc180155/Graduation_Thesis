@@ -292,19 +292,32 @@ class PairwiseTripleCNNViT(nn.Module):
 
         # Turn to q, k, v if use conv-attention, and then flatten to vector:
         # print("Q K V shape: ", rgb_query.shape, freq_value.shape, ifreq_key.shape, ifreq_value.shape)
-        rgb_vectors = self.flatten_to_vectors(rgb_features)
-        freq_vectors = self.flatten_to_vectors(freq_features)
-        ifreq_vectors = self.flatten_to_vectors(ifreq_features)
-        # print("Vectors shape: ", rgb_query_vectors.shape, freq_value_vectors.shape, ifreq_key_vectors.shape, ifreq_value_vectors.shape)
-
-        ##### Cross attention and fusion:
-        _, attn_weight = self.CA(rgb_vectors, ifreq_vectors)
-        attn_freq = torch.bmm(attn_weight, freq_vectors)
-        fusion_out = self.fusion(rgb_vectors, attn_freq)
-        if self.activation is not None:
-            fusion_out = self.activation(fusion_out)
-        # print("Fusion shape: ", fusion_out.shape)
-        embed = self.embedding(fusion_out)
+        if self.freq_combine != 'none':
+            rgb_vectors = self.flatten_to_vectors(rgb_features)
+            freq_vectors = self.flatten_to_vectors(freq_features)
+            ifreq_vectors = self.flatten_to_vectors(ifreq_features)
+            ##### Cross attention and fusion:
+            _, attn_weight = self.CA(rgb_vectors, ifreq_vectors)
+            attn_freq = torch.bmm(attn_weight, freq_vectors)
+            fusion_out = self.fusion(rgb_vectors, attn_freq)
+            if self.activation is not None:
+                fusion_out = self.activation(fusion_out)
+            # print("Fusion shape: ", fusion_out.shape)
+            embed = self.embedding(fusion_out)
+        else:
+            rgb_vectors = self.flatten_to_vectors(rgb_features)
+            ifreq_vectors = self.flatten_to_vectors(ifreq_features)
+            # sys.stdout = open('/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/dl_technique/check.txt', 'w')
+            # print("ifreq: ", ifreq_vectors)
+            # print("rgb: ", rgb_vectors)
+            # sys.stdout = sys.__stdout__
+            ##### Cross attention and fusion:
+            _, attn_weight = self.CA(rgb_vectors, ifreq_vectors)
+            attn_ifreq = torch.bmm(attn_weight, ifreq_vectors)
+            fusion_out = self.fusion(rgb_vectors, attn_ifreq)
+            if self.activation is not None:
+                fusion_out = self.activation(fusion_out)
+            embed = self.embedding(fusion_out)
         # print("Inner ViT shape: ", embed.shape)
 
         ##### Forward to ViT
