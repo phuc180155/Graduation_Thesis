@@ -1507,7 +1507,7 @@ if __name__ == "__main__":
         emb_dropout = 0.0
         model_ = DualCNNMultiViT(image_size=args.image_size, num_classes=1, \
                 dim=args.dim, depth=args.depth, heads=args.heads, mlp_dim=args.mlp_dim, dim_head=args.dim_head, dropout=dropout,\
-                backbone=args.efficient_net, pretrained=args.pretrained,unfreeze_blocks=args.unfreeze_blocks,\
+                backbone=args.backbone, pretrained=args.pretrained,unfreeze_blocks=args.unfreeze_blocks,\
                 normalize_ifft=args.normalize_ifft,\
                 qkv_embed=args.qkv_embed, prj_out=args.prj_out, act=args.act,\
                 patch_reso=args.patch_reso, gammaagg_reso=args.gammaagg_reso,\
