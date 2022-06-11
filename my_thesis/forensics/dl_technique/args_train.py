@@ -192,6 +192,25 @@ def parse_args():
     parser_kfold_dual_cnn_vit.add_argument("--division_lr", type=int, default=0, help="")
     parser_kfold_dual_cnn_vit.add_argument("--classifier", type=str, default="mlp", help="")
 
+    parser_kfold_dual_cnn_multivit = sub_parser.add_parser('kfold_dual_cnn_multivit', help='My model')
+    parser_kfold_dual_cnn_multivit.add_argument("--n_folds",type=int,default=5,help="")
+    parser_kfold_dual_cnn_multivit.add_argument("--what_fold",type=str,default='all',help="")
+    parser_kfold_dual_cnn_multivit.add_argument("--use_trick",type=int,default=0,help="")
+    parser_kfold_dual_cnn_multivit.add_argument("--version",type=str, default="ca-fadd-0.8", required=False, help="Some changes in model")
+    parser_kfold_dual_cnn_multivit.add_argument("--backbone",type=str, default="efficient_net", required=False, help="Type of backbone")
+    parser_kfold_dual_cnn_multivit.add_argument("--pretrained",type=int, default=1, required=False, help="Load pretrained backbone")
+    parser_kfold_dual_cnn_multivit.add_argument("--unfreeze_blocks", type=int, default=-1, help="Unfreeze blocks in backbone")
+    parser_kfold_dual_cnn_multivit.add_argument("--normalize_ifft", type=str, default='batchnorm', help="Normalize after ifft")
+    parser_kfold_dual_cnn_multivit.add_argument("--qkv_embed", type=int, default=1, help="")   
+    parser_kfold_dual_cnn_multivit.add_argument("--prj_out", type=int, default=0, help="")
+    parser_kfold_dual_cnn_multivit.add_argument("--act", type=str, default='relu', help="")
+    parser_kfold_dual_cnn_multivit.add_argument("--division_lr", type=int, default=0, help="")
+    parser_kfold_dual_cnn_multivit.add_argument("--patch_reso", type=str, default='1-2', help="")
+    parser_kfold_dual_cnn_multivit.add_argument("--residual", type=int, default=1, help="")
+    parser_kfold_dual_cnn_multivit.add_argument("--gammaagg_reso", type='-1_-1', default=0, help="")
+    parser_kfold_dual_cnn_multivit.add_argument("--features_at_block", type=str, default='10', help="")
+    parser_kfold_dual_cnn_multivit.add_argument("--transformer_shareweight", type=int, default=0, help="")
+
     parser_triple_cnn_vit = sub_parser.add_parser('triple_cnn_vit', help='My model')
     parser_triple_cnn_vit.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
     parser_triple_cnn_vit.add_argument("--version",type=str, default="ca-fadd-0.8", required=False, help="Some changes in model")
@@ -1479,4 +1498,37 @@ if __name__ == "__main__":
         train_kfold_dual_stream(model_, what_fold=args.what_fold, n_folds=args.n_folds, use_trick=args.use_trick, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="dual_cnn_vit_experiment", args_txt=args_txt, augmentation=args.augmentation)
+
+    elif model == "kfold_dual_cnn_multivit":
+        from module.train_kfold import train_kfold_dual_stream
+        from model.vision_transformer.dual_cnn_vit.dual_cnn_multivit import DualCNNMultiViT
+        
+        dropout = 0.0
+        emb_dropout = 0.0
+        model_ = DualCNNMultiViT(image_size=args.image_size, num_classes=1, \
+                dim=args.dim, depth=args.depth, heads=args.heads, mlp_dim=args.mlp_dim, dim_head=args.dim_head, dropout=dropout,\
+                backbone='efficient_net', pretrained=True,unfreeze_blocks=-1,\
+                normalize_ifft=args.normalize_ifft,\
+                qkv_embed=args.qkv_embed, prj_out=args.prj_out, act=args.act,\
+                patch_reso=args.patch_reso, gammaagg_reso=args.gammaagg_reso,\
+                fusca_version=args.version,\
+                features_at_block=args.feature_at_block,\
+                dropout_in_mlp=args.dropout_in_mlp, residual=args.residual, transformer_shareweight=args.transformer_shareweight)
+        
+        args_txt = "lr{}-{}_b{}_es{}_l{}_nf{}_trick{}_v_{}_d{}_md{}_h{}_d{}_bb{}_pre{}_unf{}_fatblock{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.n_folds, args.use_trick, args.classifier, args.version, args.dim, args.mlp_dim, args.heads, args.depth, args.backbone, args.pretrained, args.unfreeze_blocks, args.feature_at_block)
+        args_txt += "patchreso{}_resi{}_gammareso{}_share{}_".format(args.patch_reso, args.residual, args.gammaagg_reso, args.transformer_shareweight)
+        args_txt += "norm{}_".format(args.normalize_ifft)
+        args_txt += "qkv{}_prj{}_act{}_".format(args.qkv_embed, args.prj_out, args.act)
+
+        args_txt += "seed{}".format(args.seed)
+        args_txt += "_drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
+        print(len(args_txt))
+        criterion = [args.loss]
+        if args.gamma:
+            args_txt += "_gamma{}".format(args.gamma)
+            criterion.append(args.gamma)
+        use_pretrained = True if args.pretrained or args.resume != '' else False
+        train_kfold_dual_stream(model_, what_fold=args.what_fold, n_folds=args.n_folds, use_trick=args.use_trick, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
+                           batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="kfold_dual_cnn_multivit", args_txt=args_txt, augmentation=args.augmentation)
     
