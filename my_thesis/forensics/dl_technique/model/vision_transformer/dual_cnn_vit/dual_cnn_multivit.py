@@ -94,7 +94,7 @@ class CrossAttention(nn.Module):
         return out
 
 class MultiscaleViT(nn.Module):
-    def __init__(self, in_channels=112, in_size=8, patch_reso='1-2-4-8', gamma_reso='0.8_0.4_0.2_0.1', residual=True,\
+    def __init__(self, in_channels=112, in_size=8, patch_reso='1-2-4-8', gamma_reso='0.8-0.4-0.2-0.1', residual=True,\
                 qkv_embed=True, prj_out=True, activation=None, fusca_version='ca-fcat-0.5', \
                 depth=6, heads=8, dim=1024, mlp_dim=2048, dim_head=64, dropout=0.15, share_weight=True):
         super(MultiscaleViT, self).__init__()
@@ -111,7 +111,7 @@ class MultiscaleViT(nn.Module):
         self.gamma_reso = gamma_reso
 
         self.patch_size = list(map(int, patch_reso.split('-')))
-        self.gamma_reso = list(map(float, gamma_reso.split('_')))
+        self.gamma_reso = list(map(float, gamma_reso.split('-')))
         self.gamma = []
         if residual:
             for g in self.gamma_reso:
