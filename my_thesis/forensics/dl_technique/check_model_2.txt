@@ -1,0 +1,292 @@
+----------------------------------------------------------------
+        Layer (type)               Output Shape         Param #
+================================================================
+         ZeroPad2d-1          [32, 3, 129, 129]               0
+Conv2dStaticSamePadding-2           [32, 32, 64, 64]             864
+       BatchNorm2d-3           [32, 32, 64, 64]              64
+MemoryEfficientSwish-4           [32, 32, 64, 64]               0
+         ZeroPad2d-5           [32, 32, 66, 66]               0
+Conv2dStaticSamePadding-6           [32, 32, 64, 64]             288
+       BatchNorm2d-7           [32, 32, 64, 64]              64
+MemoryEfficientSwish-8           [32, 32, 64, 64]               0
+          Identity-9             [32, 32, 1, 1]               0
+Conv2dStaticSamePadding-10              [32, 8, 1, 1]             264
+MemoryEfficientSwish-11              [32, 8, 1, 1]               0
+         Identity-12              [32, 8, 1, 1]               0
+Conv2dStaticSamePadding-13             [32, 32, 1, 1]             288
+         Identity-14           [32, 32, 64, 64]               0
+Conv2dStaticSamePadding-15           [32, 16, 64, 64]             512
+      BatchNorm2d-16           [32, 16, 64, 64]              32
+      MBConvBlock-17           [32, 16, 64, 64]               0
+         Identity-18           [32, 16, 64, 64]               0
+Conv2dStaticSamePadding-19           [32, 96, 64, 64]           1,536
+      BatchNorm2d-20           [32, 96, 64, 64]             192
+MemoryEfficientSwish-21           [32, 96, 64, 64]               0
+        ZeroPad2d-22           [32, 96, 65, 65]               0
+Conv2dStaticSamePadding-23           [32, 96, 32, 32]             864
+      BatchNorm2d-24           [32, 96, 32, 32]             192
+MemoryEfficientSwish-25           [32, 96, 32, 32]               0
+         Identity-26             [32, 96, 1, 1]               0
+Conv2dStaticSamePadding-27              [32, 4, 1, 1]             388
+MemoryEfficientSwish-28              [32, 4, 1, 1]               0
+         Identity-29              [32, 4, 1, 1]               0
+Conv2dStaticSamePadding-30             [32, 96, 1, 1]             480
+         Identity-31           [32, 96, 32, 32]               0
+Conv2dStaticSamePadding-32           [32, 24, 32, 32]           2,304
+      BatchNorm2d-33           [32, 24, 32, 32]              48
+      MBConvBlock-34           [32, 24, 32, 32]               0
+         Identity-35           [32, 24, 32, 32]               0
+Conv2dStaticSamePadding-36          [32, 144, 32, 32]           3,456
+      BatchNorm2d-37          [32, 144, 32, 32]             288
+MemoryEfficientSwish-38          [32, 144, 32, 32]               0
+        ZeroPad2d-39          [32, 144, 34, 34]               0
+Conv2dStaticSamePadding-40          [32, 144, 32, 32]           1,296
+      BatchNorm2d-41          [32, 144, 32, 32]             288
+MemoryEfficientSwish-42          [32, 144, 32, 32]               0
+         Identity-43            [32, 144, 1, 1]               0
+Conv2dStaticSamePadding-44              [32, 6, 1, 1]             870
+MemoryEfficientSwish-45              [32, 6, 1, 1]               0
+         Identity-46              [32, 6, 1, 1]               0
+Conv2dStaticSamePadding-47            [32, 144, 1, 1]           1,008
+         Identity-48          [32, 144, 32, 32]               0
+Conv2dStaticSamePadding-49           [32, 24, 32, 32]           3,456
+      BatchNorm2d-50           [32, 24, 32, 32]              48
+      MBConvBlock-51           [32, 24, 32, 32]               0
+         Identity-52           [32, 24, 32, 32]               0
+Conv2dStaticSamePadding-53          [32, 144, 32, 32]           3,456
+      BatchNorm2d-54          [32, 144, 32, 32]             288
+MemoryEfficientSwish-55          [32, 144, 32, 32]               0
+        ZeroPad2d-56          [32, 144, 35, 35]               0
+Conv2dStaticSamePadding-57          [32, 144, 16, 16]           3,600
+      BatchNorm2d-58          [32, 144, 16, 16]             288
+MemoryEfficientSwish-59          [32, 144, 16, 16]               0
+         Identity-60            [32, 144, 1, 1]               0
+Conv2dStaticSamePadding-61              [32, 6, 1, 1]             870
+MemoryEfficientSwish-62              [32, 6, 1, 1]               0
+         Identity-63              [32, 6, 1, 1]               0
+Conv2dStaticSamePadding-64            [32, 144, 1, 1]           1,008
+         Identity-65          [32, 144, 16, 16]               0
+Conv2dStaticSamePadding-66           [32, 40, 16, 16]           5,760
+      BatchNorm2d-67           [32, 40, 16, 16]              80
+      MBConvBlock-68           [32, 40, 16, 16]               0
+         Identity-69           [32, 40, 16, 16]               0
+Conv2dStaticSamePadding-70          [32, 240, 16, 16]           9,600
+      BatchNorm2d-71          [32, 240, 16, 16]             480
+MemoryEfficientSwish-72          [32, 240, 16, 16]               0
+        ZeroPad2d-73          [32, 240, 20, 20]               0
+Conv2dStaticSamePadding-74          [32, 240, 16, 16]           6,000
+      BatchNorm2d-75          [32, 240, 16, 16]             480
+MemoryEfficientSwish-76          [32, 240, 16, 16]               0
+         Identity-77            [32, 240, 1, 1]               0
+Conv2dStaticSamePadding-78             [32, 10, 1, 1]           2,410
+MemoryEfficientSwish-79             [32, 10, 1, 1]               0
+         Identity-80             [32, 10, 1, 1]               0
+Conv2dStaticSamePadding-81            [32, 240, 1, 1]           2,640
+         Identity-82          [32, 240, 16, 16]               0
+Conv2dStaticSamePadding-83           [32, 40, 16, 16]           9,600
+      BatchNorm2d-84           [32, 40, 16, 16]              80
+      MBConvBlock-85           [32, 40, 16, 16]               0
+         Identity-86           [32, 40, 16, 16]               0
+Conv2dStaticSamePadding-87          [32, 240, 16, 16]           9,600
+      BatchNorm2d-88          [32, 240, 16, 16]             480
+MemoryEfficientSwish-89          [32, 240, 16, 16]               0
+        ZeroPad2d-90          [32, 240, 17, 17]               0
+Conv2dStaticSamePadding-91            [32, 240, 8, 8]           2,160
+      BatchNorm2d-92            [32, 240, 8, 8]             480
+MemoryEfficientSwish-93            [32, 240, 8, 8]               0
+         Identity-94            [32, 240, 1, 1]               0
+Conv2dStaticSamePadding-95             [32, 10, 1, 1]           2,410
+MemoryEfficientSwish-96             [32, 10, 1, 1]               0
+         Identity-97             [32, 10, 1, 1]               0
+Conv2dStaticSamePadding-98            [32, 240, 1, 1]           2,640
+         Identity-99            [32, 240, 8, 8]               0
+Conv2dStaticSamePadding-100             [32, 80, 8, 8]          19,200
+     BatchNorm2d-101             [32, 80, 8, 8]             160
+     MBConvBlock-102             [32, 80, 8, 8]               0
+        Identity-103             [32, 80, 8, 8]               0
+Conv2dStaticSamePadding-104            [32, 480, 8, 8]          38,400
+     BatchNorm2d-105            [32, 480, 8, 8]             960
+MemoryEfficientSwish-106            [32, 480, 8, 8]               0
+       ZeroPad2d-107          [32, 480, 10, 10]               0
+Conv2dStaticSamePadding-108            [32, 480, 8, 8]           4,320
+     BatchNorm2d-109            [32, 480, 8, 8]             960
+MemoryEfficientSwish-110            [32, 480, 8, 8]               0
+        Identity-111            [32, 480, 1, 1]               0
+Conv2dStaticSamePadding-112             [32, 20, 1, 1]           9,620
+MemoryEfficientSwish-113             [32, 20, 1, 1]               0
+        Identity-114             [32, 20, 1, 1]               0
+Conv2dStaticSamePadding-115            [32, 480, 1, 1]          10,080
+        Identity-116            [32, 480, 8, 8]               0
+Conv2dStaticSamePadding-117             [32, 80, 8, 8]          38,400
+     BatchNorm2d-118             [32, 80, 8, 8]             160
+     MBConvBlock-119             [32, 80, 8, 8]               0
+        Identity-120             [32, 80, 8, 8]               0
+Conv2dStaticSamePadding-121            [32, 480, 8, 8]          38,400
+     BatchNorm2d-122            [32, 480, 8, 8]             960
+MemoryEfficientSwish-123            [32, 480, 8, 8]               0
+       ZeroPad2d-124          [32, 480, 10, 10]               0
+Conv2dStaticSamePadding-125            [32, 480, 8, 8]           4,320
+     BatchNorm2d-126            [32, 480, 8, 8]             960
+MemoryEfficientSwish-127            [32, 480, 8, 8]               0
+        Identity-128            [32, 480, 1, 1]               0
+Conv2dStaticSamePadding-129             [32, 20, 1, 1]           9,620
+MemoryEfficientSwish-130             [32, 20, 1, 1]               0
+        Identity-131             [32, 20, 1, 1]               0
+Conv2dStaticSamePadding-132            [32, 480, 1, 1]          10,080
+        Identity-133            [32, 480, 8, 8]               0
+Conv2dStaticSamePadding-134             [32, 80, 8, 8]          38,400
+     BatchNorm2d-135             [32, 80, 8, 8]             160
+     MBConvBlock-136             [32, 80, 8, 8]               0
+        Identity-137             [32, 80, 8, 8]               0
+Conv2dStaticSamePadding-138            [32, 480, 8, 8]          38,400
+     BatchNorm2d-139            [32, 480, 8, 8]             960
+MemoryEfficientSwish-140            [32, 480, 8, 8]               0
+       ZeroPad2d-141          [32, 480, 12, 12]               0
+Conv2dStaticSamePadding-142            [32, 480, 8, 8]          12,000
+     BatchNorm2d-143            [32, 480, 8, 8]             960
+MemoryEfficientSwish-144            [32, 480, 8, 8]               0
+        Identity-145            [32, 480, 1, 1]               0
+Conv2dStaticSamePadding-146             [32, 20, 1, 1]           9,620
+MemoryEfficientSwish-147             [32, 20, 1, 1]               0
+        Identity-148             [32, 20, 1, 1]               0
+Conv2dStaticSamePadding-149            [32, 480, 1, 1]          10,080
+        Identity-150            [32, 480, 8, 8]               0
+Conv2dStaticSamePadding-151            [32, 112, 8, 8]          53,760
+     BatchNorm2d-152            [32, 112, 8, 8]             224
+     MBConvBlock-153            [32, 112, 8, 8]               0
+        Identity-154            [32, 112, 8, 8]               0
+Conv2dStaticSamePadding-155            [32, 672, 8, 8]          75,264
+     BatchNorm2d-156            [32, 672, 8, 8]           1,344
+MemoryEfficientSwish-157            [32, 672, 8, 8]               0
+       ZeroPad2d-158          [32, 672, 12, 12]               0
+Conv2dStaticSamePadding-159            [32, 672, 8, 8]          16,800
+     BatchNorm2d-160            [32, 672, 8, 8]           1,344
+MemoryEfficientSwish-161            [32, 672, 8, 8]               0
+        Identity-162            [32, 672, 1, 1]               0
+Conv2dStaticSamePadding-163             [32, 28, 1, 1]          18,844
+MemoryEfficientSwish-164             [32, 28, 1, 1]               0
+        Identity-165             [32, 28, 1, 1]               0
+Conv2dStaticSamePadding-166            [32, 672, 1, 1]          19,488
+        Identity-167            [32, 672, 8, 8]               0
+Conv2dStaticSamePadding-168            [32, 112, 8, 8]          75,264
+     BatchNorm2d-169            [32, 112, 8, 8]             224
+     MBConvBlock-170            [32, 112, 8, 8]               0
+        Identity-171            [32, 112, 8, 8]               0
+Conv2dStaticSamePadding-172            [32, 672, 8, 8]          75,264
+     BatchNorm2d-173            [32, 672, 8, 8]           1,344
+MemoryEfficientSwish-174            [32, 672, 8, 8]               0
+       ZeroPad2d-175          [32, 672, 12, 12]               0
+Conv2dStaticSamePadding-176            [32, 672, 8, 8]          16,800
+     BatchNorm2d-177            [32, 672, 8, 8]           1,344
+MemoryEfficientSwish-178            [32, 672, 8, 8]               0
+        Identity-179            [32, 672, 1, 1]               0
+Conv2dStaticSamePadding-180             [32, 28, 1, 1]          18,844
+MemoryEfficientSwish-181             [32, 28, 1, 1]               0
+        Identity-182             [32, 28, 1, 1]               0
+Conv2dStaticSamePadding-183            [32, 672, 1, 1]          19,488
+        Identity-184            [32, 672, 8, 8]               0
+Conv2dStaticSamePadding-185            [32, 112, 8, 8]          75,264
+     BatchNorm2d-186            [32, 112, 8, 8]             224
+     MBConvBlock-187            [32, 112, 8, 8]               0
+        Identity-188            [32, 112, 8, 8]               0
+Conv2dStaticSamePadding-189            [32, 672, 8, 8]          75,264
+     BatchNorm2d-190            [32, 672, 8, 8]           1,344
+MemoryEfficientSwish-191            [32, 672, 8, 8]               0
+       ZeroPad2d-192          [32, 672, 11, 11]               0
+Conv2dStaticSamePadding-193            [32, 672, 4, 4]          16,800
+     BatchNorm2d-194            [32, 672, 4, 4]           1,344
+MemoryEfficientSwish-195            [32, 672, 4, 4]               0
+        Identity-196            [32, 672, 1, 1]               0
+Conv2dStaticSamePadding-197             [32, 28, 1, 1]          18,844
+MemoryEfficientSwish-198             [32, 28, 1, 1]               0
+        Identity-199             [32, 28, 1, 1]               0
+Conv2dStaticSamePadding-200            [32, 672, 1, 1]          19,488
+        Identity-201            [32, 672, 4, 4]               0
+Conv2dStaticSamePadding-202            [32, 192, 4, 4]         129,024
+     BatchNorm2d-203            [32, 192, 4, 4]             384
+     MBConvBlock-204            [32, 192, 4, 4]               0
+        Identity-205            [32, 192, 4, 4]               0
+Conv2dStaticSamePadding-206           [32, 1152, 4, 4]         221,184
+     BatchNorm2d-207           [32, 1152, 4, 4]           2,304
+MemoryEfficientSwish-208           [32, 1152, 4, 4]               0
+       ZeroPad2d-209           [32, 1152, 8, 8]               0
+Conv2dStaticSamePadding-210           [32, 1152, 4, 4]          28,800
+     BatchNorm2d-211           [32, 1152, 4, 4]           2,304
+MemoryEfficientSwish-212           [32, 1152, 4, 4]               0
+        Identity-213           [32, 1152, 1, 1]               0
+Conv2dStaticSamePadding-214             [32, 48, 1, 1]          55,344
+MemoryEfficientSwish-215             [32, 48, 1, 1]               0
+        Identity-216             [32, 48, 1, 1]               0
+Conv2dStaticSamePadding-217           [32, 1152, 1, 1]          56,448
+        Identity-218           [32, 1152, 4, 4]               0
+Conv2dStaticSamePadding-219            [32, 192, 4, 4]         221,184
+     BatchNorm2d-220            [32, 192, 4, 4]             384
+     MBConvBlock-221            [32, 192, 4, 4]               0
+        Identity-222            [32, 192, 4, 4]               0
+Conv2dStaticSamePadding-223           [32, 1152, 4, 4]         221,184
+     BatchNorm2d-224           [32, 1152, 4, 4]           2,304
+MemoryEfficientSwish-225           [32, 1152, 4, 4]               0
+       ZeroPad2d-226           [32, 1152, 8, 8]               0
+Conv2dStaticSamePadding-227           [32, 1152, 4, 4]          28,800
+     BatchNorm2d-228           [32, 1152, 4, 4]           2,304
+MemoryEfficientSwish-229           [32, 1152, 4, 4]               0
+        Identity-230           [32, 1152, 1, 1]               0
+Conv2dStaticSamePadding-231             [32, 48, 1, 1]          55,344
+MemoryEfficientSwish-232             [32, 48, 1, 1]               0
+        Identity-233             [32, 48, 1, 1]               0
+Conv2dStaticSamePadding-234           [32, 1152, 1, 1]          56,448
+        Identity-235           [32, 1152, 4, 4]               0
+Conv2dStaticSamePadding-236            [32, 192, 4, 4]         221,184
+     BatchNorm2d-237            [32, 192, 4, 4]             384
+     MBConvBlock-238            [32, 192, 4, 4]               0
+        Identity-239            [32, 192, 4, 4]               0
+Conv2dStaticSamePadding-240           [32, 1152, 4, 4]         221,184
+     BatchNorm2d-241           [32, 1152, 4, 4]           2,304
+MemoryEfficientSwish-242           [32, 1152, 4, 4]               0
+       ZeroPad2d-243           [32, 1152, 8, 8]               0
+Conv2dStaticSamePadding-244           [32, 1152, 4, 4]          28,800
+     BatchNorm2d-245           [32, 1152, 4, 4]           2,304
+MemoryEfficientSwish-246           [32, 1152, 4, 4]               0
+        Identity-247           [32, 1152, 1, 1]               0
+Conv2dStaticSamePadding-248             [32, 48, 1, 1]          55,344
+MemoryEfficientSwish-249             [32, 48, 1, 1]               0
+        Identity-250             [32, 48, 1, 1]               0
+Conv2dStaticSamePadding-251           [32, 1152, 1, 1]          56,448
+        Identity-252           [32, 1152, 4, 4]               0
+Conv2dStaticSamePadding-253            [32, 192, 4, 4]         221,184
+     BatchNorm2d-254            [32, 192, 4, 4]             384
+     MBConvBlock-255            [32, 192, 4, 4]               0
+        Identity-256            [32, 192, 4, 4]               0
+Conv2dStaticSamePadding-257           [32, 1152, 4, 4]         221,184
+     BatchNorm2d-258           [32, 1152, 4, 4]           2,304
+MemoryEfficientSwish-259           [32, 1152, 4, 4]               0
+       ZeroPad2d-260           [32, 1152, 6, 6]               0
+Conv2dStaticSamePadding-261           [32, 1152, 4, 4]          10,368
+     BatchNorm2d-262           [32, 1152, 4, 4]           2,304
+MemoryEfficientSwish-263           [32, 1152, 4, 4]               0
+        Identity-264           [32, 1152, 1, 1]               0
+Conv2dStaticSamePadding-265             [32, 48, 1, 1]          55,344
+MemoryEfficientSwish-266             [32, 48, 1, 1]               0
+        Identity-267             [32, 48, 1, 1]               0
+Conv2dStaticSamePadding-268           [32, 1152, 1, 1]          56,448
+        Identity-269           [32, 1152, 4, 4]               0
+Conv2dStaticSamePadding-270            [32, 320, 4, 4]         368,640
+     BatchNorm2d-271            [32, 320, 4, 4]             640
+     MBConvBlock-272            [32, 320, 4, 4]               0
+        Identity-273            [32, 320, 4, 4]               0
+Conv2dStaticSamePadding-274           [32, 1280, 4, 4]         409,600
+     BatchNorm2d-275           [32, 1280, 4, 4]           2,560
+MemoryEfficientSwish-276           [32, 1280, 4, 4]               0
+AdaptiveAvgPool2d-277           [32, 1280, 1, 1]               0
+         Dropout-278                 [32, 1280]               0
+          Linear-279                    [32, 1]           1,281
+================================================================
+Total params: 4,008,829
+Trainable params: 4,008,829
+Non-trainable params: 0
+----------------------------------------------------------------
+Input size (MB): 6.00
+Forward/backward pass size (MB): 2287.64
+Params size (MB): 15.29
+Estimated Total Size (MB): 2308.93
+----------------------------------------------------------------
