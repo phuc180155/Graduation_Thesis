@@ -115,7 +115,7 @@ class MultiscaleViT(nn.Module):
         self.gamma = []
         if residual:
             for g in self.gamma_reso:
-                if g != -1:
+                if g != 0:
                     self.gamma.append(g)
                 else:
                     self.gamma.append(nn.Parameter(torch.ones(1)))
@@ -152,12 +152,12 @@ class MultiscaleViT(nn.Module):
             rgb_vectors = self.flatten_to_vectors(feature=rgb_features, p_size=self.patch_size[i])      # B, num_patch, patch_dim
             freq_vectors = self.flatten_to_vectors(feature=freq_features, p_size=self.patch_size[i])    # B, num_patch, patch_dim
             ifreq_vectors = self.flatten_to_vectors(feature=ifreq_features, p_size=self.patch_size[i])  # B, num_patch, patch_dim
-            print("patchsize: ", self.patch_size[i])
-            print("     Vectors shape: ", rgb_vectors.shape, freq_vectors.shape, ifreq_vectors.shape)
+            # print("patchsize: ", self.patch_size[i])
+            # print("     Vectors shape: ", rgb_vectors.shape, freq_vectors.shape, ifreq_vectors.shape)
 
             # Cross attention:
             attn_out = self.cross_attention[i](rgb_vectors, freq_vectors, ifreq_vectors)    # B, num_patch, patch_dim/2*patch_dim
-            print("     attn out shape: ", attn_out.shape)
+            # print("     attn out shape: ", attn_out.shape)
 
             # ViT:
             embed = self.embedding[i](attn_out)                # B, num_patch, dim
@@ -167,12 +167,12 @@ class MultiscaleViT(nn.Module):
                 output = self.transformer(embed)
             if self.residual:
                 output = embed + self.gamma[i] * output        # B, num_patch, dim
-            print("     output shape: ", output.shape)
+            # print("     output shape: ", output.shape)
             output = output.mean(dim = 1).squeeze(dim=1)          # B, 1, dim
             outputs.append(output)
         
         out = torch.cat(outputs, dim=1)
-        print("multi shape: ", out.shape)
+        # print("multi shape: ", out.shape)
         return out
 
     def flatten_to_vectors(self, feature=None, p_size=1):
