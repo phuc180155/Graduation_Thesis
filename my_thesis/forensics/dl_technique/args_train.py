@@ -1515,7 +1515,7 @@ if __name__ == "__main__":
                 features_at_block=args.features_at_block,\
                 dropout_in_mlp=args.dropout_in_mlp, residual=args.residual, transformer_shareweight=args.transformer_shareweight)
         
-        args_txt = "lr{}-{}_b{}_es{}_l{}_nf{}_trick{}_v_{}_d{}_md{}_h{}_d{}_bb{}_pre{}_unf{}_fatblock{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.n_folds, args.use_trick, args.classifier, args.version, args.dim, args.mlp_dim, args.heads, args.depth, args.backbone, args.pretrained, args.unfreeze_blocks, args.features_at_block)
+        args_txt = "lr{}-{}_b{}_es{}_l{}_nf{}_trick{}_v_{}_d{}_md{}_h{}_d{}_bb{}_pre{}_unf{}_fatblock{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.n_folds, args.use_trick, args.version, args.dim, args.mlp_dim, args.heads, args.depth, args.backbone, args.pretrained, args.unfreeze_blocks, args.features_at_block)
         args_txt += "patchreso{}_resi{}_gammareso{}_share{}_".format(args.patch_reso, args.residual, args.gammaagg_reso, args.transformer_shareweight)
         args_txt += "norm{}_".format(args.normalize_ifft)
         args_txt += "qkv{}_prj{}_act{}_".format(args.qkv_embed, args.prj_out, args.act)
