@@ -17,7 +17,7 @@ from pytorchcv.model_provider import get_model
 
 class CrossAttention(nn.Module):
     def __init__(self, version='ca-fcat-0.5', in_dim=1024, activation=None, inner_dim=0, prj_out=False, qkv_embed=True):
-        super(CrossAttention, self).__init__()
+        super().__init__()
         self.version = version
         self.use_freq = True if self.version.split('-')[1] == 'fcat' else False
         self.in_dim = in_dim
@@ -113,12 +113,25 @@ class MultiscaleViT(nn.Module):
         self.patch_size = list(map(int, patch_reso.split('-')))
         self.gamma_reso = list(map(float, gamma_reso.split('_')))
         self.gamma = []
+        self.g0 = nn.Parameter(torch.ones(1))
+        self.g1 = nn.Parameter(torch.ones(1))
+        self.g2 = nn.Parameter(torch.ones(1))
+        self.g3 = nn.Parameter(torch.ones(1))
+        cnt = 0
         if residual:
             for g in self.gamma_reso:
                 if g != 0:
                     self.gamma.append(g)
                 else:
-                    self.gamma.append(nn.Parameter(torch.ones(1)))
+                    if cnt == 0:
+                        self.gamma.append(self.g0)
+                    if cnt == 1:
+                        self.gamma.append(self.g1)
+                    if cnt == 2:
+                        self.gamma.append(self.g2)
+                    if cnt == 3:
+                        self.gamma.append(self.g3)
+                    cnt += 1
 
         self.num_patches = [int((in_size // p)** 2) for p in self.patch_size]
         self.patch_dim = [int(in_channels * (p ** 2)) for p in self.patch_size]
@@ -328,7 +341,7 @@ class DualCNNMultiViT(nn.Module):
     def forward(self, rgb_imgs, freq_imgs):
         rgb_features, freq_features = self.extract_feature(rgb_imgs, freq_imgs)
         ifreq_features = self.ifft(freq_features, norm_type=self.normalize_ifft)
-        print("Features shape: ", rgb_features.shape, freq_features.shape, ifreq_features.shape)
+        # print("Features shape: ", rgb_features.shape, freq_features.shape, ifreq_features.shape)
 
         ##### Forward to ViT
         x = self.multi_transformer(rgb_features, freq_features, ifreq_features)     # B, number_of_patch * D
