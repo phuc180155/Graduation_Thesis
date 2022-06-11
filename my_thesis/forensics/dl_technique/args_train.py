@@ -207,7 +207,7 @@ def parse_args():
     parser_kfold_dual_cnn_multivit.add_argument("--division_lr", type=int, default=0, help="")
     parser_kfold_dual_cnn_multivit.add_argument("--patch_reso", type=str, default='1-2', help="")
     parser_kfold_dual_cnn_multivit.add_argument("--residual", type=int, default=1, help="")
-    parser_kfold_dual_cnn_multivit.add_argument("--gammaagg_reso", type='-1_-1', default=0, help="")
+    parser_kfold_dual_cnn_multivit.add_argument("--gammaagg_reso", type=str, default='-1_-1', help="")
     parser_kfold_dual_cnn_multivit.add_argument("--features_at_block", type=str, default='10', help="")
     parser_kfold_dual_cnn_multivit.add_argument("--transformer_shareweight", type=int, default=0, help="")
 
