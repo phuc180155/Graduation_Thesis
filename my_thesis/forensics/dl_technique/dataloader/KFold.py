@@ -176,15 +176,15 @@ class CustomizeKFold(object):
             if datasetname == 'dfdcv5':
                 prefix_old = '/mnt/disk1/doan/'
                 prefix_new = '/home/'
-                return True, '../inspect/61dfdcv5/train/fold_{}.txt'.format(fold_idx), '../inspect/61dfdcv5/val/fold_{}.txt'.format(fold_idx), prefix_old, prefix_new
+                return True, 'inspect/61dfdcv5/train/fold_{}.txt'.format(fold_idx), 'inspect/61dfdcv5/val/fold_{}.txt'.format(fold_idx), prefix_old, prefix_new
             if datasetname == 'wildv5':
                 prefix_new = '/mnt/disk1/doan/'
                 prefix_old = '/home/'
-                return True, '../inspect/8wildv5/train/fold_{}.txt'.format(fold_idx), '../inspect/8wildv5/val/fold_{}.txt'.format(fold_idx), prefix_old, prefix_new
+                return True, 'inspect/8wildv5/train/fold_{}.txt'.format(fold_idx), 'inspect/8wildv5/val/fold_{}.txt'.format(fold_idx), prefix_old, prefix_new
             if datasetname == 'celeb_dfv5':
                 prefix_new = '/mnt/disk1/doan/'
                 prefix_old = '/home/'
-                return True, '../inspect/8celebdfv5/train/fold_{}.txt'.format(fold_idx), '../inspect/8celebdfv5/val/fold_{}.txt'.format(fold_idx), prefix_old, prefix_new
+                return True, 'inspect/8celebdfv5/train/fold_{}.txt'.format(fold_idx), 'inspect/8celebdfv5/val/fold_{}.txt'.format(fold_idx), prefix_old, prefix_new
 
     def get_curdevice(self):
         return '61' if '/mnt/disk1/doan' in self.train_dir else '8'
