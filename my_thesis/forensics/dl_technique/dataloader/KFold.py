@@ -83,6 +83,7 @@ class CustomizeKFold(object):
         # 
         readfile, train_file, val_file, prefix_old, prefix_new = self.inspect_must_read_files(fold_idx=fold_idx)
         if readfile:
+            print("Reading images from files...")
             train_images = self.read_images_from_file(file=train_file, prefix_old=prefix_old, prefix_new=prefix_new)
             val_images = self.read_images_from_file(file=val_file, prefix_old=prefix_old, prefix_new=prefix_new)
             return train_images, val_images

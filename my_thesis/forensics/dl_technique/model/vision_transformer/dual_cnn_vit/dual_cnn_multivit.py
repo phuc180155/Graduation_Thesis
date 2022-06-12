@@ -19,7 +19,7 @@ class CrossAttention(nn.Module):
     def __init__(self, version='ca-fcat-0.5', in_dim=1024, activation=None, inner_dim=0, prj_out=False, qkv_embed=True):
         super().__init__()
         self.version = version
-        self.use_freq = True if self.version.split('-')[1] == 'fcat' else False
+        self.use_freq = True if self.version.split('-')[1][0] == 'f' else False
         self.in_dim = in_dim
         self.qkv_embed = qkv_embed
         self.to_out = nn.Identity()
@@ -33,6 +33,7 @@ class CrossAttention(nn.Module):
                 nn.Linear(inner_dim, in_dim),
                 nn.Dropout(p=0.1)
             ) if prj_out else nn.Identity()
+        print("freq combine: ", self.use_freq)
 
     def forward(self, rgb, freq, ifreq):
         """
@@ -363,8 +364,8 @@ if __name__ == '__main__':
                 backbone='efficient_net', pretrained=True,unfreeze_blocks=-1,\
                 normalize_ifft='batchnorm',\
                 qkv_embed=True, prj_out=False, act='none',\
-                patch_reso='1-2', gammaagg_reso='0.8-0.4',\
-                fusca_version='ca-fcat-0.5',\
+                patch_reso='1-2', gammaagg_reso='0.8_0.4',\
+                fusca_version='ca-ifcat-0.5',\
                 features_at_block='10',\
                 dropout_in_mlp=0.0, residual=True, transformer_shareweight=True)
 
