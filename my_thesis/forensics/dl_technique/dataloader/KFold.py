@@ -37,8 +37,8 @@ class CustomizeKFold(object):
         self.real_video_names = list(self.real_videos.keys())
         self.fake_video_names = list(self.fake_videos.keys())
         self.num_real_videos, self.num_fake_videos = len(self.real_video_names), len(self.fake_video_names)
-        # random.shuffle(self.real_video_names)
-        # random.shuffle(self.fake_video_names)
+        random.shuffle(self.real_video_names)
+        random.shuffle(self.fake_video_names)
         # print("real video: ", self.num_real_videos)
         # print("Sample list real: ", self.real_video_names[0], self.real_video_names[-1])
         # print("Sample list dict real: ", (self.real_video_names[0], self.real_videos[self.real_video_names[0]]), (self.real_video_names[-1], self.real_videos[self.real_video_names[-1]]))
@@ -80,6 +80,13 @@ class CustomizeKFold(object):
     def get_fold(self, fold_idx: int):
         """ Trả về tập train_path, val_path
         """
+        # 
+        readfile, train_file, val_file, prefix_old, prefix_new = self.inspect_must_read_files(fold_idx=fold_idx)
+        if readfile:
+            train_images = self.read_images_from_file(file=train_file, prefix_old=prefix_old, prefix_new=prefix_new)
+            val_images = self.read_images_from_file(file=val_file, prefix_old=prefix_old, prefix_new=prefix_new)
+            return train_images, val_images
+
         # Get fold in real class
         train_real_videos, val_real_videos = self.get_fold_in_cls(fold_idx=fold_idx, cls='real')
         train_real_images, val_real_images = [], []
@@ -143,10 +150,59 @@ class CustomizeKFold(object):
         train = np.concatenate([samples[:val_idx_from], samples[val_idx_to:]])
         return train, val
 
+    def read_images_from_file(self, file: str, prefix_old: str, prefix_new: str):
+        imgs = []
+        with open(file, 'r') as f:
+            lines = f.readlines()
+            for line in lines:
+                img = line.strip().replace(prefix_old, prefix_new)
+                if not osp.exists(img):
+                    print('bug: ', img)
+                else:
+                    imgs.append(img)
+        return imgs
+
+    def inspect_must_read_files(self, fold_idx: str):
+        datasetname = self.get_datasetname()
+        curdev = self.get_curdevice()
+        dataset_pos = {
+            'dfdcv5': '61',
+            'celeb_df5': '8',
+            'wildv5': '8'
+        }
+        if dataset_pos[datasetname] == curdev:
+            return True, 'trainfile', 'valfile', '', ''
+        else:
+            if datasetname == 'dfdcv5':
+                prefix_old = '/mnt/disk1/doan/'
+                prefix_new = '/home/'
+                return False, '../inspect/61dfdcv5/train/fold_{}.txt'.format(fold_idx), '../inspect/61dfdcv5/val/fold_{}.txt'.format(fold_idx), prefix_old, prefix_new
+            if datasetname == 'wildv5':
+                prefix_new = '/mnt/disk1/doan/'
+                prefix_old = '/home/'
+                return False, '../inspect/8wildv5/train/fold_{}.txt'.format(fold_idx), '../inspect/8wildv5/val/fold_{}.txt'.format(fold_idx), prefix_old, prefix_new
+            if datasetname == 'celeb_dfv5':
+                prefix_new = '/mnt/disk1/doan/'
+                prefix_old = '/home/'
+                return False, '../inspect/8celebdfv5/train/fold_{}.txt'.format(fold_idx), '../inspect/8celebdfv5/val/fold_{}.txt'.format(fold_idx), prefix_old, prefix_new
+
+    def get_curdevice(self):
+        return '61' if '/mnt/disk1/doan' in self.train_dir else '8tcp'
+
+    def get_datasetname(self):
+        if 'dfdcv5' in self.train_dir:
+            return 'dfdcv5'
+        if 'Celeb-DFv5' in self.train_dir:
+            return 'celeb_dfv5'
+        if 'df_in_the_wildv5' in self.train_dir:
+            return 'wildv5'
+        return ''
+        
+
 if __name__ == '__main__':
     customize_kfold = CustomizeKFold(n_folds=5, train_dir='/mnt/disk1/doan/phucnp/Dataset/Celeb-DFv5/image/train', val_dir='/mnt/disk1/doan/phucnp/Dataset/Celeb-DFv5/image/val', trick=True)
-    for i in range(5):
-        train, val = customize_kfold.get_fold(i)
-        print("Fold: ", i)
-        print("     train: ", len(train))
-        print("     val: ", len(val))
+    # for i in range(5):
+    #     train, val = customize_kfold.get_fold(i)
+    #     print("Fold: ", i)
+    #     print("     train: ", len(train))
+    #     print("     val: ", len(val))

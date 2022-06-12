@@ -207,13 +207,15 @@ def train_kfold_dual_stream(model_, what_fold='all', n_folds=5, use_trick=True, 
         # Generate dataloader train and validation:
 
         trainset, valset = kfold.get_fold(fold_idx=fold_idx)
-        sys.stdout = open('/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/dl_technique/inspect/dfdc_fold_{}.txt'.format(fold_idx), 'a')
-        print("\n=====================================================================================================")
-        print("**** Train: ")
-        for img in trainset[:20]:
+        sys.stdout = open('/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/dl_technique/inspect/61dfdc/train/fold_{}.txt'.format(fold_idx), 'w')
+        # print("\n=====================================================================================================")
+        # print("**** Train: ")
+        for img in trainset:
             print(img)
-        print("\n**** Val: ")
-        for img in valset[:20]:
+        sys.stdout = sys.__stdout__
+        sys.stdout = open('/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/dl_technique/inspect/61dfdc/val/fold_{}.txt'.format(fold_idx), 'w')
+        # print("\n**** Val: ")
+        for img in valset:
             print(img)
         sys.stdout = sys.__stdout__
         continue
