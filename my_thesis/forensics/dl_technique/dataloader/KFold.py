@@ -187,7 +187,7 @@ class CustomizeKFold(object):
                 return True, '../inspect/8celebdfv5/train/fold_{}.txt'.format(fold_idx), '../inspect/8celebdfv5/val/fold_{}.txt'.format(fold_idx), prefix_old, prefix_new
 
     def get_curdevice(self):
-        return '61' if '/mnt/disk1/doan' in self.train_dir else '8tcp'
+        return '61' if '/mnt/disk1/doan' in self.train_dir else '8'
 
     def get_datasetname(self):
         if 'dfdcv5' in self.train_dir:
