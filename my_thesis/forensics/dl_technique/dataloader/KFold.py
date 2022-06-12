@@ -167,7 +167,7 @@ class CustomizeKFold(object):
         curdev = self.get_curdevice()
         dataset_pos = {
             'dfdcv5': '61',
-            'celeb_df5': '8',
+            'celeb_dfv5': '8',
             'wildv5': '8'
         }
         if dataset_pos[datasetname] == curdev:
