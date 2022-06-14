@@ -194,7 +194,7 @@ class MultiscaleViT(nn.Module):
 
     
     
-class DualCNNMultiViT(nn.Module):
+class PairwiseDualCNNMultiViT(nn.Module):
     def __init__(self, image_size=224, num_classes=1, \
                 dim=1024, depth=6, heads=8, mlp_dim=2048, dim_head=64, dropout=0.15,\
                 backbone='xception_net', pretrained=True,unfreeze_blocks=-1,\
@@ -203,9 +203,9 @@ class DualCNNMultiViT(nn.Module):
                 patch_reso='1-2-4-8', gammaagg_reso='0.8_0.4_0.2_0.1',\
                 fusca_version='ca-fcat-0.5',\
                 features_at_block='10', use_dab='1-3-6-9', \
-                dropout_in_mlp=0.0, residual=True, transformer_shareweight=True):  
+                dropout_in_mlp=0.0, residual=True, transformer_shareweight=True, embedding_return="mlp_hidden"):  
 
-        super(DualCNNMultiViT, self).__init__()
+        super(PairwiseDualCNNMultiViT, self).__init__()
 
         self.image_size = image_size
         self.num_classes = num_classes
@@ -260,6 +260,8 @@ class DualCNNMultiViT(nn.Module):
         self.mlp_dropout = nn.Dropout(dropout_in_mlp)
         self.mlp_head_out = nn.Linear(mlp_dim, self.num_classes)
         self.sigmoid = nn.Sigmoid()
+        #
+        self.embedding_return = embedding_return
 
     def get_activation(self, act):
         if act == 'relu':
@@ -339,35 +341,49 @@ class DualCNNMultiViT(nn.Module):
             freq_features = self.freq_extractor(freq_imgs)
         return rgb_features, freq_features
 
-    def forward(self, rgb_imgs, freq_imgs):
+    def forward_once(self, rgb_imgs, freq_imgs):
         rgb_features, freq_features = self.extract_feature(rgb_imgs, freq_imgs)
         ifreq_features = self.ifft(freq_features, norm_type=self.normalize_ifft)
         # print("Features shape: ", rgb_features.shape, freq_features.shape, ifreq_features.shape)
 
         ##### Forward to ViT
-        x = self.multi_transformer(rgb_features, freq_features, ifreq_features)     # B, number_of_patch * D
+        e1 = self.multi_transformer(rgb_features, freq_features, ifreq_features)     # B, number_of_patch * D
 
-        x = self.mlp_dropout(x)         # B, number_of_patch * D
-        x = self.mlp_head_hidden(x)     # B, number_of_patch * D => B, mlp_dim
-        x = self.mlp_relu(x)
+        x = self.mlp_dropout(e1)         # B, number_of_patch * D
+        e2 = self.mlp_head_hidden(x)     # B, number_of_patch * D => B, mlp_dim
+        x = self.mlp_relu(e2)
         x = self.mlp_dropout(x)
-        x = self.mlp_head_out(x)        # B, mlp_dim => B, 1
-        x = self.sigmoid(x)
-        return x
+        e3 = self.mlp_head_out(x)        # B, mlp_dim => B, 1
+        x = self.sigmoid(e3)
+        e = None
+        if self.embedding_return=='mlp_before':
+            e = e1
+        if self.embedding_return=='mlp_hidden':
+            e = e2
+        if self.embedding_return=='mlp_out':
+            e = e3
+        return e, x
+
+    def forward(self, rgb_imgs0, freq_imgs0, rgb_imgs1, freq_imgs1):
+        embedding_0, out_0 = self.forward_once(rgb_imgs0, freq_imgs0)
+        embedding_1, out_1 = self.forward_once(rgb_imgs1, freq_imgs1)
+        return embedding_0, out_0, embedding_1, out_1
 
 from torchsummary import summary
 if __name__ == '__main__':
     x = torch.ones(32, 3, 128, 128)
     y = torch.ones(32, 1, 128, 128)
-    model_ = DualCNNMultiViT(image_size=224, num_classes=1, \
+    model_ = PairwiseDualCNNMultiViT(image_size=224, num_classes=1, \
                 dim=1024, depth=6, heads=8, mlp_dim=2048, dim_head=64, dropout=0.15,\
                 backbone='efficient_net', pretrained=True,unfreeze_blocks=-1,\
                 normalize_ifft='batchnorm',\
                 qkv_embed=True, prj_out=False, act='none',\
                 patch_reso='1-2', gammaagg_reso='0.8_0.4',\
                 fusca_version='ca-ifcat-0.5',\
-                features_at_block='10',\
-                dropout_in_mlp=0.0, residual=True, transformer_shareweight=True)
+                features_at_block='11',\
+                dropout_in_mlp=0.0, residual=True, transformer_shareweight=True, \
+                embedding_return="mlp_before")
 
-    out = model_(x, y)
+    embed, out, _, _ = model_(x, y, x, y)
+    print(embed.shape)
     print(out.shape)

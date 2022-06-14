@@ -9,11 +9,12 @@ import cv2
 from PIL import Image, ImageEnhance
 import torch
 from dataloader.utils import azimuthalAverage
+import copy
 
 class PairwiseDualFFTMagnitudeImageDataset(Dataset):
-    def __init__(self, path=None, image_size=128, transform=None, transform_fft=None, should_invert=True,shuffle=True, adj_brightness=None, adj_contrast=None):
+    def __init__(self, path=None, image_size=128, transform=None, transform_fft=None, should_invert=True,shuffle=True, adj_brightness=None, adj_contrast=None, dset=None):
         self.path = path
-        self.imageFolderDataset = ImageFolder(path)
+        # self.imageFolderDataset = ImageFolder(path)
         self.image_size = image_size
         self.transform = transform
         self.transform_fft = transform_fft
@@ -22,9 +23,12 @@ class PairwiseDualFFTMagnitudeImageDataset(Dataset):
         self.adj_brightness = adj_brightness
         self.adj_contrast = adj_contrast
         data_path = []
-        data_path = data_path + glob.glob(path + "/*/*.jpg")
-        data_path = data_path + glob.glob(path + "/*/*.jpeg")
-        data_path = data_path + glob.glob(path + "/*/*.png")
+        if dset is None:
+            data_path = data_path + glob.glob(path + "/*/*.jpg")
+            data_path = data_path + glob.glob(path + "/*/*.jpeg")
+            data_path = data_path + glob.glob(path + "/*/*.png")
+        else:
+            data_path = copy.deepcopy(dset)
         self.data_path = data_path
         np.random.shuffle(self.data_path)
         self.indexes = range(len(self.data_path))
