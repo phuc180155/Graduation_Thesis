@@ -176,7 +176,7 @@ def eval_kfold_dual_stream(model, dataloader, device, criterion, adj_brightness=
     
 def train_kfold_dual_stream(model_, what_fold='all', n_folds=5, use_trick=True, criterion_name=None, train_dir = '', val_dir ='', test_dir= '', image_size=256, lr=3e-4, division_lr=True, use_pretrained=False,\
               batch_size=16, num_workers=8, checkpoint='', resume='', epochs=30, eval_per_iters=-1, seed=0, \
-              adj_brightness=1.0, adj_contrast=1.0, es_metric='val_loss', es_patience=5, model_name="dual-efficient", args_txt="", augmentation=True):
+              adj_brightness=1.0, adj_contrast=1.0, es_metric='val_loss', es_patience=5, model_name="dual-efficient", args_txt="", augmentation=True, highpass=None):
 
     kfold = CustomizeKFold(n_folds=n_folds, train_dir=train_dir, val_dir=val_dir, trick=use_trick)
     next_fold=False
@@ -221,8 +221,8 @@ def train_kfold_dual_stream(model_, what_fold='all', n_folds=5, use_trick=True, 
         # sys.stdout = sys.__stdout__
         # continue
 
-        dataloader_train, dataloader_val, num_samples = generate_dataloader_dual_cnn_stream_for_kfold(train_dir, trainset, valset, image_size, batch_size, num_workers, augmentation=augmentation)
-        dataloader_test = generate_test_dataloader_dual_cnn_stream_for_kfold(test_dir, image_size, 2*batch_size, num_workers)        
+        dataloader_train, dataloader_val, num_samples = generate_dataloader_dual_cnn_stream_for_kfold(train_dir, trainset, valset, image_size, batch_size, num_workers, augmentation=augmentation, highpass=highpass)
+        dataloader_test = generate_test_dataloader_dual_cnn_stream_for_kfold(test_dir, image_size, 2*batch_size, num_workers, highpass=highpass)        
         # Define optimizer (Adam) and learning rate decay
         init_lr = lr
         init_epoch = 0

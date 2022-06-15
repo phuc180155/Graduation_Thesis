@@ -210,6 +210,7 @@ def parse_args():
     parser_kfold_dual_cnn_multivit.add_argument("--gammaagg_reso", type=str, default='-1_-1', help="")
     parser_kfold_dual_cnn_multivit.add_argument("--features_at_block", type=str, default='10', help="")
     parser_kfold_dual_cnn_multivit.add_argument("--transformer_shareweight", type=int, default=0, help="")
+    parser_kfold_dual_cnn_multivit.add_argument("--highpass", default=None, help="")
 
     parser_kfold_pairwise_dual_cnn_multivit = sub_parser.add_parser('kfold_pairwise_dual_cnn_multivit', help='My model')
     parser_kfold_pairwise_dual_cnn_multivit.add_argument("--n_folds",type=int,default=5,help="")
@@ -1591,7 +1592,7 @@ if __name__ == "__main__":
         args_txt += "norm{}_".format(args.normalize_ifft)
         args_txt += "qkv{}_prj{}_act{}_".format(args.qkv_embed, args.prj_out, args.act)
 
-        args_txt += "seed{}".format(args.seed)
+        args_txt += "sd{}_hp{}".format(args.seed, args.highpass)
         args_txt += "_drmlp{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
         print(len(args_txt))
         criterion = [args.loss]
@@ -1601,7 +1602,7 @@ if __name__ == "__main__":
         use_pretrained = True if args.pretrained or args.resume != '' else False
         train_kfold_dual_stream(model_, what_fold=args.what_fold, n_folds=args.n_folds, use_trick=args.use_trick, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
-                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="kfold_dual_cnn_multivit", args_txt=args_txt, augmentation=args.augmentation)
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="kfold_dual_cnn_multivit", args_txt=args_txt, augmentation=args.augmentation, highpass=args.highpass)
 
     elif model == "kfold_pairwise_dual_cnn_multivit":
         from module.train_kfold import train_kfold_pairwise_dual_stream

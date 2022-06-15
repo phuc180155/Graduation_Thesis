@@ -575,7 +575,7 @@ def generate_test_dataloader_dual_cnnfeedforward_stream_for_pairwise(test_dir, i
     Make  dataloader for both spatial image and spectrum image in training phase
 
 """
-def generate_dataloader_dual_cnn_stream_for_kfold(train_dir, train_set, val_set, image_size, batch_size, num_workers, augmentation=True, sampler_type='weight_random_sampler'):
+def generate_dataloader_dual_cnn_stream_for_kfold(train_dir, train_set, val_set, image_size, batch_size, num_workers, augmentation=True, sampler_type='weight_random_sampler', highpass=None):
     # Transform for train phase:
     if not augmentation:
         transform_fwd = transforms.Compose([transforms.Resize((image_size,image_size)),\
@@ -590,7 +590,7 @@ def generate_dataloader_dual_cnn_stream_for_kfold(train_dir, train_set, val_set,
     # Make dataloader train:
     fft_train_dataset = DualFFTMagnitudeImageDataset(path='', image_size=image_size,\
                                               transform=transform_fwd, transform_fft=transform_fft,\
-                                              should_invert=False,shuffle=True, dset=train_set)
+                                              should_invert=False,shuffle=True, dset=train_set, highpass_filter=highpass)
     
     print("fft dual train len :   ", fft_train_dataset.__len__())
     assert fft_train_dataset, "Dataset is empty!"
@@ -608,7 +608,7 @@ def generate_dataloader_dual_cnn_stream_for_kfold(train_dir, train_set, val_set,
     # Make dataloader val
     fft_val_dataset = DualFFTMagnitudeImageDataset(path='',image_size=image_size,\
                                             transform=transform_fwd, transform_fft=transform_fft,\
-                                            should_invert=False,shuffle=False, dset=val_set)
+                                            should_invert=False,shuffle=False, dset=val_set, highpass_filter=highpass)
     assert fft_val_dataset
     print("fft dual val len :   ", fft_val_dataset.__len__())
     dataloader_val = torch.utils.data.DataLoader(fft_val_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
@@ -617,7 +617,7 @@ def generate_dataloader_dual_cnn_stream_for_kfold(train_dir, train_set, val_set,
 """
     Make test dataloader for dual (spatial and frequency) stream
 """
-def generate_test_dataloader_dual_cnn_stream_for_kfold(test_dir, image_size, batch_size, num_workers, adj_brightness=1.0, adj_contrast=1.0):
+def generate_test_dataloader_dual_cnn_stream_for_kfold(test_dir, image_size, batch_size, num_workers, adj_brightness=1.0, adj_contrast=1.0, highpass=None):
     # Transform for RGB image
     transform_fwd = transforms.Compose([transforms.Resize((image_size,image_size)),\
                                         transforms.ToTensor(),\
@@ -630,7 +630,7 @@ def generate_test_dataloader_dual_cnn_stream_for_kfold(test_dir, image_size, bat
     # Generate dataset and make test dataloader
     test_dual_dataset = DualFFTMagnitudeImageDataset(path=test_dir, image_size=image_size,\
                                         transform=transform_fwd, transform_fft=transform_fft,\
-                                        should_invert=False, shuffle=False, adj_brightness=adj_brightness, adj_contrast=adj_contrast)
+                                        should_invert=False, shuffle=False, adj_brightness=adj_brightness, adj_contrast=adj_contrast, highpass_filter=highpass)
     print("fft dual test len: ", test_dual_dataset.__len__())
     assert test_dual_dataset, "Dataset is empty!"
     dataloader_test = torch.utils.data.DataLoader(test_dual_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)

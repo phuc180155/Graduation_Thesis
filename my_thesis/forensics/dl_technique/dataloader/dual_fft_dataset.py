@@ -17,7 +17,7 @@ import copy
     Class for make dual (spatial and spectrum) image dataset
 """
 class DualFFTMagnitudeImageDataset(Dataset):
-    def __init__(self, path,image_size, transform=None, transform_fft = None, should_invert=True,shuffle=True,adj_brightness=None, adj_contrast=None, dset=None):
+    def __init__(self, path,image_size, transform=None, transform_fft = None, should_invert=True,shuffle=True,adj_brightness=None, adj_contrast=None, dset=None, highpass_filter=None):
         self.path = path
         self.transform = transform
         self.image_size =image_size
@@ -32,6 +32,7 @@ class DualFFTMagnitudeImageDataset(Dataset):
         else:
             data_path = copy.deepcopy(dset)
         self.data_path = data_path
+        self.highpass = highpass_filter
         # print("sample: ", self.data_path[:10])
         # print("len: ", len(self.data_path))
         np.random.shuffle(self.data_path)
@@ -77,10 +78,11 @@ class DualFFTMagnitudeImageDataset(Dataset):
         fshift += 1e-8
         # Generate magnitude spectrum image
         magnitude_spectrum = np.log(np.abs(fshift))
+        if self.highpass is not None:
+            magnitude_spectrum = self.highpass_filter(fshift=fshift, img=cv2.cvtColor(img2,cv2.COLOR_RGB2GRAY))
         magnitude_spectrum = cv2.resize(magnitude_spectrum, (self.image_size,self.image_size))
         magnitude_spectrum = np.array([magnitude_spectrum])
         magnitude_spectrum = np.transpose(magnitude_spectrum, (1, 2, 0))    # From C, H, W =>  H, W, C
-        
         if self.transform_fft is not None:
             magnitude_spectrum = self.transform_fft(magnitude_spectrum)
 
@@ -91,6 +93,29 @@ class DualFFTMagnitudeImageDataset(Dataset):
         elif '1_df' in self.data_path[index] or '1_f2f' in self.data_path[index] or '1_fs' in self.data_path[index] or '1_nt' in self.data_path[index] or '1_fake' in self.data_path[index]:
             y = 1
         return PIL_img, magnitude_spectrum, y
+
+    def highpass_filter(self, fshift: np.ndarray, img=None):
+        H, W = img.shape[:2]
+        crow, ccol = self.image_size // 2, self.image_size // 2
+
+        # Create a mask with two channels because DFT result in 2D
+        mask = np.ones((H, W), dtype=np.uint8)
+
+        # Circular radius from center
+        r = H // int(self.highpass)
+        center = [crow, ccol]
+
+        # @return x: np.ndarray([[0], [1]...[H-1]], shape=(H, 1))
+        # @return y: np.ndarray([[0, 1... W-1]], shape=(1, W))
+        x, y = np.ogrid[:H, :W]
+
+        # Tạo mask_area: Lọc các tần số thấp <=> mask = 0
+        mask_area = (x - center[0])**2 + (y - center[1])**2 <= r*r
+        mask[mask_area] = 0
+        f_shift = fshift * mask
+        f_shift += 1e-8
+        filtered_magnitude_spectrum = np.log(np.abs(f_shift))
+        return filtered_magnitude_spectrum
 
     def __len__(self):
         return int(len(self.data_path))
