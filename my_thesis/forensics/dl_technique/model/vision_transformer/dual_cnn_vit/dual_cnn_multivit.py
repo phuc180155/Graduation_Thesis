@@ -12,6 +12,7 @@ import torch.nn.functional as F
 
 import re, math
 from model.vision_transformer.vit.vit import ViT, Transformer
+from model.vision_transformer.vit.kvit import kNNTransformer
 from model.vision_transformer.cnn_vit.efficient_vit import EfficientViT
 from pytorchcv.model_provider import get_model
 
@@ -97,7 +98,7 @@ class CrossAttention(nn.Module):
 class MultiscaleViT(nn.Module):
     def __init__(self, in_channels=112, in_size=8, patch_reso='1-2-4-8', gamma_reso='0.8_0.4_0.2_0.1', residual=True,\
                 qkv_embed=True, prj_out=True, activation=None, fusca_version='ca-fcat-0.5', \
-                depth=6, heads=8, dim=1024, mlp_dim=2048, dim_head=64, dropout=0.15, share_weight=True):
+                useKNN=0, depth=6, heads=8, dim=1024, mlp_dim=2048, dim_head=64, dropout=0.15, share_weight=True):
         super(MultiscaleViT, self).__init__()
         self.dim = dim
         self.depth = depth
@@ -155,9 +156,23 @@ class MultiscaleViT(nn.Module):
         if not share_weight:
             self.transformers = nn.ModuleList([])
             for _ in range(len(self.patch_size)):
-                self.transformers.append(Transformer(self.dim, self.depth, self.heads, self.dim_head, self.mlp_dim, self.dropout_value))
+                if useKNN == 0:
+                    print("use vanilla attention")
+                    self.transformers.append(Transformer(self.dim, self.depth, self.heads, self.dim_head, self.mlp_dim, self.dropout_value))
+                elif useKNN > 0:
+                    print("use KNN attention: topK ratio: ", useKNN)
+                    self.transformers.append(kNNTransformer(self.dim, self.depth, self.heads, self.mlp_dim, self.dropout_value, useKNN))
+                else:
+                    print("error when use attention...")
         else:
-            self.transformer = Transformer(self.dim, self.depth, self.heads, self.dim_head, self.mlp_dim, self.dropout_value)
+            if useKNN == 0:
+                print("use vanilla attention")
+                self.transformer = Transformer(self.dim, self.depth, self.heads, self.dim_head, self.mlp_dim, self.dropout_value)
+            elif useKNN > 0:
+                print("use KNN attention: topK ratio: ", useKNN)
+                self.transformer = kNNTransformer(self.dim, self.depth, self.heads, self.mlp_dim, self.dropout_value, useKNN)
+            else:
+                print("error when use attention...")
         
     def forward(self, rgb_features, freq_features, ifreq_features):
         outputs = []
@@ -203,7 +218,7 @@ class DualCNNMultiViT(nn.Module):
                 patch_reso='1-2-4-8', gammaagg_reso='0.8_0.4_0.2_0.1',\
                 fusca_version='ca-fcat-0.5',\
                 features_at_block='10', use_dab='1-3-6-9', \
-                dropout_in_mlp=0.0, residual=True, transformer_shareweight=True):  
+                dropout_in_mlp=0.0, residual=True, transformer_shareweight=True, useKNN=0):  
 
         super(DualCNNMultiViT, self).__init__()
 
@@ -253,7 +268,7 @@ class DualCNNMultiViT(nn.Module):
 
         self.multi_transformer = MultiscaleViT(in_channels=self.out_ext_channels, in_size=self.out_ext_size, patch_reso=patch_reso, gamma_reso=gammaagg_reso,\
                                           qkv_embed=qkv_embed, prj_out=prj_out, activation=self.activation, fusca_version=fusca_version,\
-                                          depth=depth, heads=heads, dim=dim, mlp_dim=mlp_dim, dim_head=dim_head, dropout=dropout, residual=residual, share_weight=transformer_shareweight)
+                                          useKNN=useKNN, depth=depth, heads=heads, dim=dim, mlp_dim=mlp_dim, dim_head=dim_head, dropout=dropout, residual=residual, share_weight=transformer_shareweight)
 
         self.mlp_relu = nn.ReLU(inplace=True)
         self.mlp_head_hidden = nn.Linear(len(patch_reso.split('-')) * dim, mlp_dim)
@@ -367,7 +382,7 @@ if __name__ == '__main__':
                 patch_reso='1-2', gammaagg_reso='0.8_0.4',\
                 fusca_version='ca-ifcat-0.5',\
                 features_at_block='10',\
-                dropout_in_mlp=0.0, residual=True, transformer_shareweight=True)
+                dropout_in_mlp=0.0, residual=True, transformer_shareweight=True, useKNN=0)
 
     out = model_(x, y)
     print(out.shape)

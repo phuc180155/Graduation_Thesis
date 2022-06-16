@@ -661,6 +661,7 @@ def train_kfold_pairwise_dual_stream(model_, what_fold='all', n_folds=5, use_tri
             
         # Define criterion
         bce_loss = nn.BCELoss()
+        # bce_loss = WBCE(weights=[1.0, 1.0])
         contrastive_loss = ContrastiveLoss(device=device, margin=margin)
         bce_loss = bce_loss.to(device)
         contrastive_loss = contrastive_loss.to(device)

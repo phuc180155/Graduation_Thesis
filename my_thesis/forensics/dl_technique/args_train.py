@@ -99,6 +99,7 @@ def parse_args():
     parser_dual_cma_cnn_attn.add_argument("--division_lr", type=int, default=0, help="")
     
     ######################## Vision transformer architecture ########################
+    parser.add_argument('--useKNN', type=float, default=0, help='vanilla or KNN attention')
     parser.add_argument('--dim',type=int, default = 1024, help='dim of embeding')
     parser.add_argument('--depth',type=int, default = 6, help='Number of attention layer in transformer module')
     parser.add_argument('--heads',type=int, default = 8, help='number of head in attention layer')
@@ -1585,9 +1586,9 @@ if __name__ == "__main__":
                 patch_reso=args.patch_reso, gammaagg_reso=args.gammaagg_reso,\
                 fusca_version=args.version,\
                 features_at_block=args.features_at_block,\
-                dropout_in_mlp=args.dropout_in_mlp, residual=args.residual, transformer_shareweight=args.transformer_shareweight)
+                dropout_in_mlp=args.dropout_in_mlp, residual=args.residual, transformer_shareweight=args.transformer_shareweight, useKNN=args.useKNN)
         
-        args_txt = "lr{}-{}_b{}_es{}_l{}_nf{}_trick{}_v_{}_d{}_md{}_h{}_d{}_bb{}_pre{}_unf{}_fatblock{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.n_folds, args.use_trick, args.version, args.dim, args.mlp_dim, args.heads, args.depth, args.backbone, args.pretrained, args.unfreeze_blocks, args.features_at_block)
+        args_txt = "lr{}-{}_b{}_es{}_l{}_nf{}_trick{}_v_{}_kNN{}_d{}_md{}_h{}_d{}_bb{}_pre{}_unf{}_fatblock{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.n_folds, args.use_trick, args.version, args.useKNN, args.dim, args.mlp_dim, args.heads, args.depth, args.backbone, args.pretrained, args.unfreeze_blocks, args.features_at_block)
         args_txt += "patchreso{}_resi{}_gammareso{}_share{}_".format(args.patch_reso, args.residual, args.gammaagg_reso, args.transformer_shareweight)
         args_txt += "norm{}_".format(args.normalize_ifft)
         args_txt += "qkv{}_prj{}_act{}_".format(args.qkv_embed, args.prj_out, args.act)
@@ -1619,9 +1620,9 @@ if __name__ == "__main__":
                 fusca_version=args.version,\
                 features_at_block=args.features_at_block,\
                 dropout_in_mlp=args.dropout_in_mlp, residual=args.residual, transformer_shareweight=args.transformer_shareweight, \
-                embedding_return=args.embedding_return)
+                embedding_return=args.embedding_return, useKNN=args.useKNN)
         
-        args_txt = "lr{}-{}_b{}_es{}_l{}_nf{}{}_ret{}_im{}_mar{}_v_{}_d{}_md{}_h{}_d{}_bb{}_pre{}_unf{}_fatblock{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.n_folds, args.use_trick, args.embedding_return, args.weight_importance, args.margin, args.version, args.dim, args.mlp_dim, args.heads, args.depth, args.backbone, args.pretrained, args.unfreeze_blocks, args.features_at_block)
+        args_txt = "lr{}-{}_b{}_es{}_l{}_nf{}{}_ret{}_im{}_mar{}_v{}_kNN{}_d{}_md{}_h{}_d{}_bb{}_pre{}_unf{}_fatblock{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.n_folds, args.use_trick, args.embedding_return, args.weight_importance, args.margin, args.version, args.useKNN, args.dim, args.mlp_dim, args.heads, args.depth, args.backbone, args.pretrained, args.unfreeze_blocks, args.features_at_block)
         args_txt += "preso{}_resi{}_greso{}_sh{}_".format(args.patch_reso, args.residual, args.gammaagg_reso, args.transformer_shareweight)
         args_txt += "norm{}_".format(args.normalize_ifft)
         args_txt += "qkv{}_prj{}_act{}_".format(args.qkv_embed, args.prj_out, args.act)
@@ -1649,9 +1650,10 @@ if __name__ == "__main__":
                 fusca_version=args.version,\
                 features_at_block=args.features_at_block,\
                 dropout_in_mlp=args.dropout_in_mlp, residual=args.residual, transformer_shareweight=args.transformer_shareweight,\
-                act_dab=args.act_dab, dab_modules=args.dab_modules, dabifft_normalize=args.dabifft_normalize, dab_blocks=args.dab_blocks)
+                act_dab=args.act_dab, dab_modules=args.dab_modules, dabifft_normalize=args.dabifft_normalize, dab_blocks=args.dab_blocks,\
+                useKNN=args.useKNN)
         
-        args_txt = "lr{}-{}_b{}_es{}_l{}_nf{}_trick{}_v_{}_d{}_md{}_h{}_d{}_bb{}_pre{}_unf{}_fatblock{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.n_folds, args.use_trick, args.version, args.dim, args.mlp_dim, args.heads, args.depth, args.backbone, args.pretrained, args.unfreeze_blocks, args.features_at_block)
+        args_txt = "lr{}-{}_b{}_es{}_l{}_nf{}_trick{}_v_{}_KNN{}_d{}_md{}_h{}_d{}_bb{}_pre{}_unf{}_fatblock{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.n_folds, args.use_trick, args.version, args.useKNN, args.dim, args.mlp_dim, args.heads, args.depth, args.backbone, args.pretrained, args.unfreeze_blocks, args.features_at_block)
         args_txt += "preso{}_resi{}_greso{}_sh{}_".format(args.patch_reso, args.residual, args.gammaagg_reso, args.transformer_shareweight)
         args_txt += "norm{}_".format(args.normalize_ifft)
         args_txt += "qkv{}_prj{}_act{}{}_".format(args.qkv_embed, args.prj_out, args.act, args.act_dab)
@@ -1685,9 +1687,9 @@ if __name__ == "__main__":
                 features_at_block=args.features_at_block,\
                 dropout_in_mlp=args.dropout_in_mlp, residual=args.residual, transformer_shareweight=args.transformer_shareweight,\
                 act_dab=args.act_dab, dab_modules=args.dab_modules, dabifft_normalize=args.dabifft_normalize, dab_blocks=args.dab_blocks,\
-                embedding_return=args.embedding_return)
+                embedding_return=args.embedding_return, useKNN=args.useKNN)
         
-        args_txt = "lr{}-{}_b{}_es{}_l{}_nf{}_trick{}_ret{}_im{}_mar{}_v_{}_d{}_md{}_h{}_d{}_bb{}_pre{}_unf{}_fatblock{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.n_folds, args.use_trick, args.embedding_return, args.weight_importance, args.margin, args.version, args.dim, args.mlp_dim, args.heads, args.depth, args.backbone, args.pretrained, args.unfreeze_blocks, args.features_at_block)
+        args_txt = "lr{}-{}_b{}_es{}_l{}_nf{}_trick{}_ret{}_im{}_mar{}_v_KNN{}_{}_d{}_md{}_h{}_d{}_bb{}_pre{}_unf{}_fatblock{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.n_folds, args.use_trick, args.embedding_return, args.weight_importance, args.margin, args.version, args.useKNN, args.dim, args.mlp_dim, args.heads, args.depth, args.backbone, args.pretrained, args.unfreeze_blocks, args.features_at_block)
         args_txt += "preso{}_resi{}_greso{}_sh{}_".format(args.patch_reso, args.residual, args.gammaagg_reso, args.transformer_shareweight)
         args_txt += "norm{}_".format(args.normalize_ifft)
         args_txt += "qkv{}_prj{}_act{}{}_".format(args.qkv_embed, args.prj_out, args.act, args.act_dab)
