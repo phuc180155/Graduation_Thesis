@@ -373,7 +373,7 @@ def train_kfold_dual_stream(model_, what_fold='all', n_folds=5, use_trick=True, 
 ########################################################
 ################# PAIRWISE DUAL STREAM #################
 ########################################################
-def define_log_writer_for_pairwise(checkpoint: str, resume: str, args_txt:str, model: Tuple[torch.nn.Module, str, int]):
+def define_log_writer_for_kfold_pairwise(checkpoint: str, fold_idx: int, resume: str, args_txt:str, model: Tuple[torch.nn.Module, str, int]):
     """Defines some logging writer and saves model to text file
 
     Args:
@@ -387,7 +387,7 @@ def define_log_writer_for_pairwise(checkpoint: str, resume: str, args_txt:str, m
     # Create checkpoint dir and sub-checkpoint dir for each hyperparameter:
     if not osp.exists(checkpoint):
         os.makedirs(checkpoint)
-    ckc_pointdir = osp.join(checkpoint, args_txt if resume == '' else 'resume')
+    ckc_pointdir = osp.join(checkpoint, args_txt + '/fold_{}'.format(fold_idx) if resume == '' else 'resume')
     if not osp.exists(ckc_pointdir):
         os.makedirs(ckc_pointdir)
     # Save log with tensorboard
@@ -666,7 +666,7 @@ def train_kfold_pairwise_dual_stream(model_, what_fold='all', n_folds=5, use_tri
         contrastive_loss = contrastive_loss.to(device)
         
         # Define logging factor:
-        ckc_pointdir, log, batch_contrast_writer, batch_bce_writer, batch_total_writer, epoch_writer_tup, step_writer_tup = define_log_writer_for_pairwise(checkpoint, resume, args_txt, (model, model_name, image_size))
+        ckc_pointdir, log, batch_contrast_writer, batch_bce_writer, batch_total_writer, epoch_writer_tup, step_writer_tup = define_log_writer_for_kfold_pairwise(checkpoint, fold_idx, resume, args_txt, (model, model_name, image_size))
         epoch_ckcpoint, epoch_val_writer, epoch_test_writer = epoch_writer_tup
         step_ckcpoint, step_val_writer, step_test_writer = step_writer_tup
             
@@ -767,7 +767,7 @@ def train_kfold_pairwise_dual_stream(model_, what_fold='all', n_folds=5, use_tri
                         if early_stopping.early_stop:
                             print('Early stopping. Best {}: {:.6f}'.format(es_metric, early_stopping.best_score))
                             time.sleep(5)
-                            os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, args_txt if resume == '' else '', "({:.4f}_{:.4f}_{:.4f}_{:.4f})_{}_{}".format(step_model_saver.best_scores[0], step_model_saver.best_scores[1], step_model_saver.best_scores[2], step_model_saver.best_scores[3], 'fold' if resume == '' else 'resume', fold_idx)))
+                            os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, args_txt if resume == '' else '', "({:.4f}_{:.4f}_{:.4f}_{:.4f})_{}_{}".format(step_model_saver.best_scores[0], step_model_saver.best_scores[2], step_model_saver.best_scores[3], step_model_saver.best_scores[5], 'fold' if resume == '' else 'resume', fold_idx)))
                             next_fold = True
                         if next_fold:
                             break
@@ -787,5 +787,5 @@ def train_kfold_pairwise_dual_stream(model_, what_fold='all', n_folds=5, use_tri
         time.sleep(5)
         # Save epoch acc val, epoch acc test, step acc val, step acc test
         if osp.exists(ckc_pointdir):
-            os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, args_txt if resume == '' else '', "({:.4f}_{:.4f}_{:.4f}_{:.4f})_{}_{}".format(step_model_saver.best_scores[0], step_model_saver.best_scores[1], step_model_saver.best_scores[2], step_model_saver.best_scores[3], 'fold' if resume == '' else 'resume', fold_idx)))
+            os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, args_txt if resume == '' else '', "({:.4f}_{:.4f}_{:.4f}_{:.4f})_{}_{}".format(step_model_saver.best_scores[0], step_model_saver.best_scores[2], step_model_saver.best_scores[3], step_model_saver.best_scores[5], 'fold' if resume == '' else 'resume', fold_idx)))
     return
