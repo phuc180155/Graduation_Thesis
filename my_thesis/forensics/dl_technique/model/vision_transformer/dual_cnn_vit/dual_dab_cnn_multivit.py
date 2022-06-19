@@ -71,7 +71,7 @@ class spatial_attn_layer(nn.Module):
         return x * scale
 
 class DAB(nn.Module):
-    def __init__(self, n_feat: int, reduction: int, act_dab=None, dab_modules='sa-ca'):
+    def __init__(self, n_feat: int, reduction: int, topk_rate=0.5, act_dab=None, dab_modules='sa-ca'):
         super(DAB, self).__init__()
         self.use_sa = True if 'sa' in dab_modules else False
         self.use_ca = True if 'ca' in dab_modules else False
@@ -79,9 +79,10 @@ class DAB(nn.Module):
         self.SA = spatial_attn_layer() if self.use_sa else None             ## Spatial Attention
         self.CA = CALayer(n_feat, reduction)  if self.use_ca else None      ## Channel Attention
         self.conv1x1_1 = nn.Conv2d(n_feat * 2, n_feat, kernel_size=1)
-        self.conv1x1_2 = nn.Conv2d(n_feat, n_feat, kernel_size=1)
+        # self.conv1x1_2 = nn.Conv2d(n_feat, n_feat, kernel_size=1)
         self.conv1x1_3 = nn.Conv2d(n_feat * 2, n_feat, kernel_size=1)
         self.act = act_dab
+        self.topk_rate = topk_rate
 
     def forward(self, ifreq, rgb):
         if self.use_sa:
@@ -96,10 +97,14 @@ class DAB(nn.Module):
         if not self.use_sa and self.use_ca:
             attn = ca_branch
 
+        topk = int(self.topk_rate * ifreq.shape[1]) if ifreq.shape[1] != 1 else 1
+        index = torch.topk(input=attn,k=topk,dim=1,largest=True,sorted=False).indices
+        mask = torch.zeros_like(input=attn, device=attn.device, requires_grad=False)
+        mask.scatter_(1, index, 1)
+        attn = torch.where(mask>0, attn, torch.full_like(attn, 0.0))
+
         if '-' in self.dab_modules:
             attn = self.conv1x1_1(attn)
-        else:
-            attn = self.conv1x1_2(attn)
 
         # print("        attn shape: ", rgb.shape, attn.shape)
         res = torch.cat([rgb, attn], dim=1)
@@ -310,7 +315,7 @@ class DualDabCNNMultiViT(nn.Module):
                 fusca_version='ca-fcat-0.5',\
                 features_at_block='10', \
                 dropout_in_mlp=0.0, residual=True, transformer_shareweight=True, \
-                act_dab='none', dab_modules='sa-ca', dabifft_normalize='none', dab_blocks='1_3_6_9', \
+                act_dab='none', topk_channels=0.5, dab_modules='sa-ca', dabifft_normalize='none', dab_blocks='1_3_6_9', \
                 useKNN=0.5):  
 
         super(DualDabCNNMultiViT, self).__init__()
@@ -371,7 +376,7 @@ class DualDabCNNMultiViT(nn.Module):
         for i in range(num_dab):
             at_block = self.dab_blocks[i+1]
             in_features = self.features_size[backbone][str(at_block)][0]
-            self.dab.append(DAB(n_feat=in_features, reduction=1, act_dab=self.dab_activation, dab_modules=dab_modules))
+            self.dab.append(DAB(n_feat=in_features, reduction=1, topk_rate=topk_channels, act_dab=self.dab_activation, dab_modules=dab_modules))
 
         # Multi ViT:
         # print(type(useKNN))
@@ -510,7 +515,7 @@ if __name__ == '__main__':
                 fusca_version='ca-fcat-0.5',\
                 features_at_block='11', \
                 dropout_in_mlp=0.0, residual=True, transformer_shareweight=True, \
-                act_dab='none', dab_modules='ca', dabifft_normalize='normal', dab_blocks='0_3_5_6_10',\
+                act_dab='none', topk_channels=0.5, dab_modules='ca', dabifft_normalize='normal', dab_blocks='0_3_5_6_10',\
                 useKNN=0.5)
     
     import os

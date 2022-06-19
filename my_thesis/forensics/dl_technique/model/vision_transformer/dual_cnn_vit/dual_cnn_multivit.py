@@ -24,7 +24,7 @@ class CrossAttention(nn.Module):
         self.in_dim = in_dim
         self.qkv_embed = qkv_embed
         self.to_out = nn.Identity()
-        self.activation = None
+        self.activation = activation
         if self.qkv_embed:
             inner_dim = self.in_dim if inner_dim == 0 else inner_dim
             self.to_k = nn.Linear(in_dim, inner_dim, bias=False)

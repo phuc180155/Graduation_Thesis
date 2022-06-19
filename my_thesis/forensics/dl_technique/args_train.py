@@ -257,6 +257,7 @@ def parse_args():
     parser_kfold_dual_dab_cnn_multivit.add_argument("--dab_modules", type=str, default='sa', help="")
     parser_kfold_dual_dab_cnn_multivit.add_argument("--dabifft_normalize", type=str, default='none', help="")
     parser_kfold_dual_dab_cnn_multivit.add_argument("--dab_blocks", type=str, default='0_1_3_5', help="or [0_2_4_7_10]")
+    parser_kfold_dual_dab_cnn_multivit.add_argument("--topk_channels", type=float, default=1.0, help="or [0_2_4_7_10]")
 
     parser_kfold_pairwise_dual_dab_cnn_multivit = sub_parser.add_parser('kfold_pairwise_dual_dab_cnn_multivit', help='My model')
     parser_kfold_pairwise_dual_dab_cnn_multivit.add_argument("--n_folds",type=int,default=5,help="")
@@ -283,6 +284,7 @@ def parse_args():
     parser_kfold_pairwise_dual_dab_cnn_multivit.add_argument("--dab_modules", type=str, default='sa', help="")
     parser_kfold_pairwise_dual_dab_cnn_multivit.add_argument("--dabifft_normalize", type=str, default='none', help="")
     parser_kfold_pairwise_dual_dab_cnn_multivit.add_argument("--dab_blocks", type=str, default='0_1_3_5', help="or [0_2_4_7_10]")
+    parser_kfold_pairwise_dual_dab_cnn_multivit.add_argument("--topk_channels", type=float, default=1.0, help="or [0_2_4_7_10]")
     
     parser_triple_cnn_vit = sub_parser.add_parser('triple_cnn_vit', help='My model')
     parser_triple_cnn_vit.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
@@ -1650,14 +1652,14 @@ if __name__ == "__main__":
                 fusca_version=args.version,\
                 features_at_block=args.features_at_block,\
                 dropout_in_mlp=args.dropout_in_mlp, residual=args.residual, transformer_shareweight=args.transformer_shareweight,\
-                act_dab=args.act_dab, dab_modules=args.dab_modules, dabifft_normalize=args.dabifft_normalize, dab_blocks=args.dab_blocks,\
+                act_dab=args.act_dab, topk_channels=args.topk_channels, dab_modules=args.dab_modules, dabifft_normalize=args.dabifft_normalize, dab_blocks=args.dab_blocks,\
                 useKNN=args.useKNN)
         
         args_txt = "lr{}-{}_b{}_es{}_l{}_nf{}_trick{}_v_{}_KNN{}_d{}_md{}_h{}_d{}_bb{}_pre{}_unf{}_fatblock{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.n_folds, args.use_trick, args.version, args.useKNN, args.dim, args.mlp_dim, args.heads, args.depth, args.backbone, args.pretrained, args.unfreeze_blocks, args.features_at_block)
         args_txt += "preso{}_resi{}_greso{}_sh{}_".format(args.patch_reso, args.residual, args.gammaagg_reso, args.transformer_shareweight)
         args_txt += "norm{}_".format(args.normalize_ifft)
         args_txt += "qkv{}_prj{}_act{}{}_".format(args.qkv_embed, args.prj_out, args.act, args.act_dab)
-        args_txt += "dabm{}_dabi{}_dabb{}_".format(args.dab_modules, args.dabifft_normalize, args.dab_blocks)
+        args_txt += "topk{}_dabm{}_dabi{}_dabb{}_".format(args.topk_channels, args.dab_modules, args.dabifft_normalize, args.dab_blocks)
 
         args_txt += "seed{}".format(args.seed)
         args_txt += "_dr{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
@@ -1686,14 +1688,14 @@ if __name__ == "__main__":
                 fusca_version=args.version,\
                 features_at_block=args.features_at_block,\
                 dropout_in_mlp=args.dropout_in_mlp, residual=args.residual, transformer_shareweight=args.transformer_shareweight,\
-                act_dab=args.act_dab, dab_modules=args.dab_modules, dabifft_normalize=args.dabifft_normalize, dab_blocks=args.dab_blocks,\
+                act_dab=args.act_dab, topk_channels=args.topk_channels, dab_modules=args.dab_modules, dabifft_normalize=args.dabifft_normalize, dab_blocks=args.dab_blocks,\
                 embedding_return=args.embedding_return, useKNN=args.useKNN)
         
-        args_txt = "lr{}-{}_b{}_es{}_l{}_nf{}_trick{}_ret{}_im{}_mar{}_v_KNN{}_{}_d{}_md{}_h{}_d{}_bb{}_pre{}_unf{}_fatblock{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.n_folds, args.use_trick, args.embedding_return, args.weight_importance, args.margin, args.version, args.useKNN, args.dim, args.mlp_dim, args.heads, args.depth, args.backbone, args.pretrained, args.unfreeze_blocks, args.features_at_block)
+        args_txt = "lr{}-{}_b{}_es{}_l{}_nf{}_trick{}_ret{}_im{}mar{}_v{}_KNN{}_d{}md{}h{}d{}_bb{}pre{}_fatblock{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.n_folds, args.use_trick, args.embedding_return, args.weight_importance, args.margin, args.version, args.useKNN, args.dim, args.mlp_dim, args.heads, args.depth, args.backbone, args.pretrained, args.unfreeze_blocks, args.features_at_block)
         args_txt += "preso{}_resi{}_greso{}_sh{}_".format(args.patch_reso, args.residual, args.gammaagg_reso, args.transformer_shareweight)
         args_txt += "norm{}_".format(args.normalize_ifft)
         args_txt += "qkv{}_prj{}_act{}{}_".format(args.qkv_embed, args.prj_out, args.act, args.act_dab)
-        args_txt += "dabm{}_dabi{}_dabb{}_".format(args.dab_modules, args.dabifft_normalize, args.dab_blocks)
+        args_txt += "topk{}_dabm{}_dabi{}_dabb{}_".format(args.topk_channels, args.dab_modules, args.dabifft_normalize, args.dab_blocks)
 
         args_txt += "sd{}".format(args.seed)
         args_txt += "_dr{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
