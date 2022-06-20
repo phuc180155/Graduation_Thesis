@@ -24,8 +24,10 @@ class CustomizeKFold(object):
                     self.do_trick = 'real:4000,fake:2000'
                 if 'df_in_the_wildv6' in train_dir:
                     self.do_trick = 'real:0,fake:0'
-            if 'Celeb-DF' in train_dir:
+            if 'Celeb-DFv5' in train_dir:
                 self.do_trick = 'real:5000,fake:2000'
+            if 'Celeb-DFv6' in train_dir:
+                self.do_trick = 'real:0,fake:0'
             if 'UADFV' in train_dir:
                 self.do_trick = 'real:0,fake:0'
             if 'ff' in train_dir:
@@ -169,6 +171,7 @@ class CustomizeKFold(object):
         dataset_pos = {
             'dfdcv5': '61',
             'celeb_dfv5': '8',
+            'celeb_dfv6': '61',
             'wildv5': '8',
             'wildv6': '8'
         }
@@ -179,6 +182,10 @@ class CustomizeKFold(object):
                 prefix_old = '/mnt/disk1/doan/'
                 prefix_new = '/home/'
                 return True, 'inspect/61dfdcv5/train/fold_{}.txt'.format(fold_idx), 'inspect/61dfdcv5/val/fold_{}.txt'.format(fold_idx), prefix_old, prefix_new
+            if datasetname == 'celebdfv6':
+                prefix_old = '/mnt/disk1/doan/'
+                prefix_new = '/home/'
+                return True, 'inspect/61celebdfv6/train/fold_{}.txt'.format(fold_idx), 'inspect/61celebdfv6/val/fold_{}.txt'.format(fold_idx), prefix_old, prefix_new
             if datasetname == 'wildv5':
                 prefix_new = '/mnt/disk1/doan/'
                 prefix_old = '/home/'
@@ -204,6 +211,8 @@ class CustomizeKFold(object):
             return 'wildv5'
         if 'df_in_the_wildv6' in self.train_dir:
             return 'wildv6'
+        if 'Celeb-DFv6' in self.train_dir:
+            return 'celeb_dfv6'
         return ''
         
 

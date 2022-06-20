@@ -686,7 +686,7 @@ def truncate_images_in_dataset(dataset_path: str, phase='train', real_trunc_rati
                 os.remove(trunc_image)
 
 if __name__ == '__main__':
-    dataset_path = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv6/image"
+    dataset_path = "/mnt/disk1/doan/phucnp/Dataset/Celeb-DFv6/image"
     num_real_v_move = 500
     num_fake_v_move = 500
     move_v = False
@@ -698,7 +698,7 @@ if __name__ == '__main__':
     # merge = True
     # move(dataset_path=dataset_path, num_real_v_move=num_real_i_move if move_i else num_real_v_move, num_fake_v_move=num_fake_i_move if move_i else num_fake_v_move, merge=merge, move_v=move_v, move_i=move_i)
 
-    truncate_images_in_dataset(dataset_path=dataset_path, phase='test', real_trunc_ratio=float(110/122), fake_trunc_ratio=float(109/119), truncated=True)
+    # truncate_images_in_dataset(dataset_path=dataset_path, phase='train', real_trunc_ratio=float(66/76), fake_trunc_ratio=float(26/31), truncated=True)
     # statisticize_dataset(dataset_path=dataset_path)
     # val_real_want = 20000
     # val_fake_want = 30000
@@ -712,11 +712,11 @@ if __name__ == '__main__':
     # split_by_video(dataset_path, val_real_image=val_real_image,val_fake_image=val_fake_image, move=move, phase_two=phase_two)
     statisticize_dataset(dataset_path=dataset_path)
     print("\n")
-    statistic_video(data_dir="/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv6/image/train")
+    statistic_video(data_dir="/mnt/disk1/doan/phucnp/Dataset/Celeb-DFv6/image/train")
     print("\n")
-    statistic_video(data_dir="/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv6/image/test")
+    statistic_video(data_dir="/mnt/disk1/doan/phucnp/Dataset/Celeb-DFv6/image/test")
     print("\n")
-    statistic_video(data_dir="/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv6/image/val")
+    statistic_video(data_dir="/mnt/disk1/doan/phucnp/Dataset/Celeb-DFv6/image/val")
     # # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv5/image"
 
     # val_real_image = 10000
