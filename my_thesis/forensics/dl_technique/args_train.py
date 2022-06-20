@@ -1691,14 +1691,14 @@ if __name__ == "__main__":
                 act_dab=args.act_dab, topk_channels=args.topk_channels, dab_modules=args.dab_modules, dabifft_normalize=args.dabifft_normalize, dab_blocks=args.dab_blocks,\
                 embedding_return=args.embedding_return, useKNN=args.useKNN)
         
-        args_txt = "lr{}-{}_b{}_es{}_l{}_nf{}_trick{}_ret{}_im{}mar{}_v{}_KNN{}_d{}md{}h{}d{}_bb{}pre{}_fatblock{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.n_folds, args.use_trick, args.embedding_return, args.weight_importance, args.margin, args.version, args.useKNN, args.dim, args.mlp_dim, args.heads, args.depth, args.backbone, args.pretrained, args.unfreeze_blocks, args.features_at_block)
-        args_txt += "preso{}_resi{}_greso{}_sh{}_".format(args.patch_reso, args.residual, args.gammaagg_reso, args.transformer_shareweight)
-        args_txt += "norm{}_".format(args.normalize_ifft)
+        args_txt = "lr{}-{}_b{}_es{}_l{}_nf{}trick{}_ret{}_im{}mar{}_v{}_KNN{}_d{}md{}h{}d{}_bb{}pre{}_fatb{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.n_folds, args.use_trick, args.embedding_return, args.weight_importance, args.margin, args.version, args.useKNN, args.dim, args.mlp_dim, args.heads, args.depth, args.backbone, args.pretrained, args.features_at_block)
+        args_txt += "pres{}_res{}_gres{}_sh{}_".format(args.patch_reso, args.residual, args.gammaagg_reso, args.transformer_shareweight)
+        args_txt += "nrm{}_".format(args.normalize_ifft)
         args_txt += "qkv{}_prj{}_act{}{}_".format(args.qkv_embed, args.prj_out, args.act, args.act_dab)
         args_txt += "topk{}_dabm{}_dabi{}_dabb{}_".format(args.topk_channels, args.dab_modules, args.dabifft_normalize, args.dab_blocks)
 
         args_txt += "sd{}".format(args.seed)
-        args_txt += "_dr{}_aug{}".format(args.dropout_in_mlp, args.augmentation)
+        args_txt += "_dr{}aug{}".format(args.dropout_in_mlp, args.augmentation)
         print(len(args_txt))
         use_pretrained = True if args.pretrained or args.resume != '' else False
         train_kfold_pairwise_dual_stream(model_, what_fold=args.what_fold, n_folds=args.n_folds, use_trick=args.use_trick, weight_importance=args.weight_importance, margin=args.margin, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\

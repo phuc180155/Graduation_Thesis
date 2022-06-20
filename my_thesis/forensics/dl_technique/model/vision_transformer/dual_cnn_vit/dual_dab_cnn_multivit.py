@@ -80,7 +80,7 @@ class DAB(nn.Module):
         self.CA = CALayer(n_feat, reduction)  if self.use_ca else None      ## Channel Attention
         self.conv1x1_1 = nn.Conv2d(n_feat * 2, n_feat, kernel_size=1)
         # self.conv1x1_2 = nn.Conv2d(n_feat, n_feat, kernel_size=1)
-        self.conv1x1_3 = nn.Conv2d(n_feat * 2, n_feat, kernel_size=1)
+        self.conv1x1_3 = nn.Conv2d(int(n_feat * (1 + topk_rate)), n_feat, kernel_size=1)
         self.act = act_dab
         self.topk_rate = topk_rate
 
@@ -97,11 +97,8 @@ class DAB(nn.Module):
         if not self.use_sa and self.use_ca:
             attn = ca_branch
 
-        topk = int(self.topk_rate * ifreq.shape[1]) if ifreq.shape[1] != 1 else 1
-        index = torch.topk(input=attn,k=topk,dim=1,largest=True,sorted=False).indices
-        mask = torch.zeros_like(input=attn, device=attn.device, requires_grad=False)
-        mask.scatter_(1, index, 1)
-        attn = torch.where(mask>0, attn, torch.full_like(attn, 0.0))
+        topk = int(self.topk_rate * ifreq.shape[1])
+        attn = torch.topk(input=attn,k=topk,dim=1,largest=True,sorted=False).values
 
         if '-' in self.dab_modules:
             attn = self.conv1x1_1(attn)

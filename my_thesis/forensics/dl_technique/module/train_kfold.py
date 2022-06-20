@@ -620,7 +620,7 @@ def train_kfold_pairwise_dual_stream(model_, what_fold='all', n_folds=5, use_tri
         # continue
 
         dataloader_train, dataloader_val, num_samples = generate_dataloader_dual_cnn_stream_for_kfold_pairwise(train_dir, trainset, valset, image_size, batch_size, num_workers, augmentation=augmentation)
-        dataloader_test = generate_test_dataloader_dual_cnn_stream_for_kfold_pairwise(test_dir, image_size, 2*batch_size, num_workers)    
+        dataloader_test = generate_test_dataloader_dual_cnn_stream_for_kfold_pairwise(test_dir, image_size, batch_size, num_workers)    
     
         # Define optimizer (Adam) and learning rate decay
         init_lr = lr
