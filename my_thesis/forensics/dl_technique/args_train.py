@@ -44,10 +44,14 @@ def parse_args():
     parser_kfold_xception.add_argument("--n_folds",type=int,default=5,help="")
     parser_kfold_xception.add_argument("--what_fold",type=str,default='all',help="")
     parser_kfold_xception.add_argument("--use_trick",type=int,default=0,help="")
-
     parser_xception_rfm = sub_parser.add_parser('xception_rfm', help='XceptionNet')
     parser_xception_rfm.add_argument('--pretrained', type=int, default=0, required=True)
+
     parser_meso4 = sub_parser.add_parser('meso4', help='MesoNet')
+    parser_kfold_meso4 = sub_parser.add_parser('kfold_meso4', help='MesoNet')
+    parser_kfold_meso4.add_argument("--n_folds",type=int,default=5,help="")
+    parser_kfold_meso4.add_argument("--what_fold",type=str,default='all',help="")
+    parser_kfold_meso4.add_argument("--use_trick",type=int,default=0,help="")
 
     parser_dual_eff = sub_parser.add_parser('dual_efficient', help="Efficient-Frequency Net")
     parser_dual_eff.add_argument('--pretrained', type=int, default=0, required=True)
@@ -738,9 +742,24 @@ if __name__ == "__main__":
         
     elif model == "meso4":
         from model.cnn.mesonet4.model import mesonet
-        from module.train_torch import train_image_stream
+        from module.train_kfold import train_kfold_image_stream
         model_ = mesonet(image_size=args.image_size)
         args_txt = "lr{}_batch{}_es{}_loss{}_seed{}".format(args.lr, args.batch_size, args.es_metric, args.loss, args.seed)
+        args_txt += "_drmlp{}_aug{}".format(0.0, args.augmentation)
+        criterion = [args.loss]
+        if args.gamma:
+            args_txt += "_gamma{}".format(args.gamma)
+            criterion.append(args.gamma)
+            
+        train_kfold_image_stream(model_, what_fold=args.what_fold, n_folds=args.n_folds, use_trick=args.use_trick, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir, image_size=args.image_size, lr=args.lr,\
+                           batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="kfold_meso4", args_txt=args_txt, augmentation=args.augmentation)
+
+    elif model == "kfold_meso4":
+        from model.cnn.mesonet4.model import mesonet
+        from module.train_torch import train_image_stream
+        model_ = mesonet(image_size=args.image_size)
+        args_txt = "lr{}_batch{}_es{}_loss{}_nf{}_trick{}_seed{}".format(args.lr, args.batch_size, args.es_metric, args.loss, args.n_folds, args.use_trick, args.seed)
         args_txt += "_drmlp{}_aug{}".format(0.0, args.augmentation)
         criterion = [args.loss]
         if args.gamma:
