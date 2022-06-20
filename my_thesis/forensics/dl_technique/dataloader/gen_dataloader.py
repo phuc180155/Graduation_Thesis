@@ -13,6 +13,7 @@ from .pairwise_triple_fft_dataset import PairwiseTripleFFTMagnitudePhaseDataset
 from .triplewise_dual_fft_dataset import TriplewiseDualFFTMagnitudeImageDataset
 from .transform import transform_method
 
+
 #################################################################################################################
 ########################################## SINGLE FOR RGB IMAGE STREAM ##########################################
 #################################################################################################################
@@ -665,7 +666,6 @@ def generate_dataloader_dual_cnn_stream_for_kfold_pairwise(train_dir, train_set,
         train_dataloader = torch.utils.data.DataLoader(train_pairwise_dualfft_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=True)
     else:
         train_dataloader = torch.utils.data.DataLoader(train_pairwise_dualfft_dataset, batch_size=batch_size, sampler=sampler, num_workers=num_workers)
-
     assert train_pairwise_dualfft_dataset, "Train dataset is None!"
 
     # Make val dataloader:
@@ -673,7 +673,7 @@ def generate_dataloader_dual_cnn_stream_for_kfold_pairwise(train_dir, train_set,
                                             transforms.ToTensor(),\
                                             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
                                             ])
-    val_pairwise_dualfft_dataset = PairwiseDualFFTMagnitudeImageDataset(path='', image_size=image_size, transform=transform_val_fwd, transform_fft=transform_fft, dset=val_set)
+    val_pairwise_dualfft_dataset = PairwiseDualFFTMagnitudeImageDataset(path='', image_size=image_size, transform=transform_val_fwd, transform_fft=transform_fft, dset=val_set, shuffle=False)
     val_dataloader  = torch.utils.data.DataLoader(val_pairwise_dualfft_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
     assert val_pairwise_dualfft_dataset, "Val dataset is None!"
     return train_dataloader, val_dataloader, num_samples
@@ -688,3 +688,65 @@ def generate_test_dataloader_dual_cnn_stream_for_kfold_pairwise(test_dir, image_
     test_dataloader  = torch.utils.data.DataLoader(test_pairwise_dualfft_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
     assert test_pairwise_dualfft_dataset, "Val dataset is None!"
     return test_dataloader
+
+###########################################################################################################################
+########################################## SINGLE FOR RGB IMAGE STREAM FOR KFOLD ##########################################
+###########################################################################################################################
+from dataloader.simple_dataset import SingleRGBStreamDataset
+def generate_dataloader_single_cnn_stream_for_kfold(train_dir, train_set, val_set, image_size, batch_size, num_workers, augmentation=False, sampler_type='weight_random_sampler'):
+    # Add augmentation:
+    if not augmentation:
+        transform_fwd = transforms.Compose([transforms.Resize((image_size,image_size)), \
+                                            transforms.RandomHorizontalFlip(p=0.5), \
+                                            transforms.RandomApply([ \
+                                                transforms.RandomRotation(5),\
+                                                transforms.RandomAffine(degrees=5, scale=(0.95, 1.05)) \
+                                            ], p=0.5), \
+                                            transforms.ToTensor(), \
+                                            transforms.Normalize(mean=[0.485, 0.456, 0.406],\
+                                                                std=[0.229, 0.224, 0.225]) \
+
+                                            ])
+    else:
+        transform_fwd = transform_method(image_size=image_size, mean_noise=0.1, std_noise=0.08)
+
+    # Make dataloader train
+    dataset_train = SingleRGBStreamDataset(path=train_set, transform=transform_fwd, image_size=image_size, shuffle=True)
+    assert dataset_train, "Train Dataset is empty"
+    weights, num_samples = make_weights_for_balanced_classes_2(dataset_train.data_path, 2)
+    weights = torch.DoubleTensor(weights)
+    sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
+    # Make dataloader with WeightedRandomSampler
+    if sampler_type == 'none':
+        train_dataloader = torch.utils.data.DataLoader(dataset_train, batch_size=batch_size, num_workers=num_workers, shuffle=True)
+    else:
+        train_dataloader = torch.utils.data.DataLoader(dataset_train, batch_size=batch_size, sampler=sampler, num_workers=num_workers)
+
+    # Make val dataloader:
+    transform_val_fwd = transforms.Compose([transforms.Resize((image_size,image_size)),\
+                                            transforms.ToTensor(),\
+                                            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+                                            ])
+    dataset_val = SingleRGBStreamDataset(path=val_set, transform=transform_val_fwd, image_size=image_size, shuffle=False)
+    assert dataset_val, "Val dataset is None!"
+    dataloader_val = torch.utils.data.DataLoader(dataset_val, batch_size=batch_size, num_workers=num_workers, shuffle=False)
+    return train_dataloader, dataloader_val, num_samples
+
+"""
+    Make test dataloader for single (spatial) image stream
+"""
+def generate_test_dataloader_single_cnn_stream_for_kfold(test_dir, image_size, batch_size, num_workers, adj_brightness=1.0, adj_contrast=1.0):
+    transform_fwd = transforms.Compose([transforms.Resize((image_size,image_size)),\
+                                        # transforms.Lambda(lambda img :transforms.functional.adjust_brightness(img,adj_brightness)),\
+                                        # transforms.Lambda(lambda img :transforms.functional.adjust_contrast(img,adj_contrast)),\
+                                        transforms.ToTensor(),\
+                                        transforms.Normalize(mean=[0.485, 0.456, 0.406],\
+                                                             std=[0.229, 0.224, 0.225]),\
+                                        ])
+    # Make dataset using built-in ImageFolder function of torch
+    test_dataset = datasets.ImageFolder(test_dir, transform=transform_fwd)
+    assert test_dataset, "Test Dataset is empty!"
+    print("Test image dataset: ", test_dataset.__len__())
+    # Make dataloader
+    dataloader_test = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    return dataloader_test
