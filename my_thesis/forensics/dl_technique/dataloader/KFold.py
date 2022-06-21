@@ -182,7 +182,7 @@ class CustomizeKFold(object):
                 prefix_old = '/mnt/disk1/doan/'
                 prefix_new = '/home/'
                 return True, 'inspect/61dfdcv5/train/fold_{}.txt'.format(fold_idx), 'inspect/61dfdcv5/val/fold_{}.txt'.format(fold_idx), prefix_old, prefix_new
-            if datasetname == 'celebdfv6':
+            if datasetname == 'celeb_dfv6':
                 prefix_old = '/mnt/disk1/doan/'
                 prefix_new = '/home/'
                 return True, 'inspect/61celebdfv6/train/fold_{}.txt'.format(fold_idx), 'inspect/61celebdfv6/val/fold_{}.txt'.format(fold_idx), prefix_old, prefix_new
