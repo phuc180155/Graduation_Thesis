@@ -108,7 +108,7 @@ class DAB(nn.Module):
         if not self.use_sa and self.use_ca:
             attn = ca_branch
 
-        print(attn.shape)
+        # print(attn.shape)
         if '-' in self.dab_modules:
             attn = self.conv1x1_1(attn)
 
