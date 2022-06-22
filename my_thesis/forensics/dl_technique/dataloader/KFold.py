@@ -17,8 +17,10 @@ class CustomizeKFold(object):
         self.n_folds = n_folds
         self.trick = trick
         if self.trick:
-            if 'dfdc' in train_dir:
+            if 'dfdcv5' in train_dir:
                 self.do_trick = 'real:5000,fake:2000'
+            if 'dfdcv6' in train_dir:
+                self.do_trick = 'real:0,fake:0'
             if 'df_in_the_wild' in train_dir:
                 if 'df_in_the_wildv5' in train_dir:
                     self.do_trick = 'real:4000,fake:2000'
@@ -170,6 +172,7 @@ class CustomizeKFold(object):
         curdev = self.get_curdevice()
         dataset_pos = {
             'dfdcv5': '61',
+            'dfdcv6': '61',
             'celeb_dfv5': '8',
             'celeb_dfv6': '61',
             'wildv5': '8',
@@ -182,6 +185,10 @@ class CustomizeKFold(object):
                 prefix_old = '/mnt/disk1/doan/'
                 prefix_new = '/home/'
                 return True, 'inspect/61dfdcv5/train/fold_{}.txt'.format(fold_idx), 'inspect/61dfdcv5/val/fold_{}.txt'.format(fold_idx), prefix_old, prefix_new
+            if datasetname == 'dfdcv6':
+                prefix_old = '/mnt/disk1/doan/'
+                prefix_new = '/home/'
+                return True, 'inspect/61dfdcv6/train/fold_{}.txt'.format(fold_idx), 'inspect/61dfdcv6/val/fold_{}.txt'.format(fold_idx), prefix_old, prefix_new
             if datasetname == 'celeb_dfv6':
                 prefix_old = '/mnt/disk1/doan/'
                 prefix_new = '/home/'
@@ -205,6 +212,8 @@ class CustomizeKFold(object):
     def get_datasetname(self):
         if 'dfdcv5' in self.train_dir:
             return 'dfdcv5'
+        if 'dfdcv6' in self.train_dir:
+            return 'dfdcv6'
         if 'Celeb-DFv5' in self.train_dir:
             return 'celeb_dfv5'
         if 'df_in_the_wildv5' in self.train_dir:

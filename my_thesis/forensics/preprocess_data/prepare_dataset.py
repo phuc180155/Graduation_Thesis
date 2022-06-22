@@ -685,20 +685,68 @@ def truncate_images_in_dataset(dataset_path: str, phase='train', real_trunc_rati
             for trunc_image in trunc_images:
                 os.remove(trunc_image)
 
+def truncate_videos_in_dataset(dataset_path: str, phase='train', real_trunc_ratio=0.0, fake_trunc_ratio=0.0, truncated=False):
+    dset = join(dataset_path, phase)
+    cls = ['1_df', '0_real']
+    for c in cls:
+        if not osp.exists(join(dset, c)):
+            print("Error! Can not find {} dataset.".format(c))
+    
+    def traverse_names(names, head_path):
+        # Traverse
+        res, trunc_accept = {}, True
+        for name_ in names:
+            name = name_.split('_')
+            v, id = "_".join(name[:-1]), name[-1]
+            if v not in res.keys():
+                res[v] = [join(head_path, name_)]
+            else:
+                res[v].append(join(head_path, name_))
+        # Check:
+        for k, values in res.items():
+            if len(values) != len(set(values)):
+                print(k, [osp.basename(v) for v in values])
+                trunc_accept = False
+        return res, trunc_accept
+
+    for c in cls:
+        print("Class: ", c)
+        cls_dir = join(dset, c)
+        trunc_ratio = real_trunc_ratio if 'real' in c else fake_trunc_ratio
+        img_names = os.listdir(cls_dir)
+
+        video_frame, trunc = traverse_names(img_names, cls_dir)
+        video_frame_key = list(video_frame.keys())
+        
+        if not trunc:
+            print("Error appears! Can not truncate images.")
+            return
+        if not truncated:
+            print("Permission denied!")
+            return
+        
+        trunc_v = random.sample(video_frame_key, k=int(trunc_ratio * len(video_frame_key)))
+        for v in tqdm(trunc_v):
+            if v not in video_frame.keys():
+                print("Bug", v)
+            for p in video_frame[v]:
+                os.remove(p)
+
 if __name__ == '__main__':
-    dataset_path = "/mnt/disk1/doan/phucnp/Dataset/Celeb-DFv6/image"
+    dataset_path = "/mnt/disk1/doan/phucnp/Dataset/dfdcv6/image"
     num_real_v_move = 500
     num_fake_v_move = 500
     move_v = False
     
     move_i = False
-    num_real_i_move = 10000
-    num_fake_i_move = 0
+    num_real_i_move = 9000
+    num_fake_i_move = 28000
 
-    # merge = True
+    merge = True
     # move(dataset_path=dataset_path, num_real_v_move=num_real_i_move if move_i else num_real_v_move, num_fake_v_move=num_fake_i_move if move_i else num_fake_v_move, merge=merge, move_v=move_v, move_i=move_i)
 
-    # truncate_images_in_dataset(dataset_path=dataset_path, phase='train', real_trunc_ratio=float(66/76), fake_trunc_ratio=float(26/31), truncated=True)
+    truncate_videos_in_dataset(dataset_path=dataset_path, phase='test', real_trunc_ratio=float(4/5), fake_trunc_ratio=float(4/5), truncated=True)
+
     # statisticize_dataset(dataset_path=dataset_path)
     # val_real_want = 20000
     # val_fake_want = 30000
@@ -712,11 +760,11 @@ if __name__ == '__main__':
     # split_by_video(dataset_path, val_real_image=val_real_image,val_fake_image=val_fake_image, move=move, phase_two=phase_two)
     statisticize_dataset(dataset_path=dataset_path)
     print("\n")
-    statistic_video(data_dir="/mnt/disk1/doan/phucnp/Dataset/Celeb-DFv6/image/train")
+    statistic_video(data_dir="/mnt/disk1/doan/phucnp/Dataset/dfdcv6/image/train")
     print("\n")
-    statistic_video(data_dir="/mnt/disk1/doan/phucnp/Dataset/Celeb-DFv6/image/test")
+    statistic_video(data_dir="/mnt/disk1/doan/phucnp/Dataset/dfdcv6/image/test")
     print("\n")
-    statistic_video(data_dir="/mnt/disk1/doan/phucnp/Dataset/Celeb-DFv6/image/val")
+    statistic_video(data_dir="/mnt/disk1/doan/phucnp/Dataset/dfdcv6/image/val")
     # # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv5/image"
 
     # val_real_image = 10000
