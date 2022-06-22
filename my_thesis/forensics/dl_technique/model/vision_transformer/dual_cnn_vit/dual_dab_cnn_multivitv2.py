@@ -17,7 +17,7 @@ from model.vision_transformer.cnn_vit.efficient_vit import EfficientViT
 from pytorchcv.model_provider import get_model
 
 class CALayer(nn.Module):
-    def __init__(self, channel, reduction=16, topk_rate=0.5):
+    def __init__(self, channel, reduction=16):
         super(CALayer, self).__init__()
         # global average pooling: feature --> point
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
@@ -28,22 +28,11 @@ class CALayer(nn.Module):
             nn.Conv2d(channel // reduction, channel, 1, padding=0, bias=True),
             nn.Sigmoid()
         )
-        self.channel = channel
-        self.topk_rate = topk_rate
-        self.topk = int(channel * topk_rate)
 
     def forward(self, x):
-
-        # x: B, C, W, H
-        # y: B, C, 1, 1
         y = self.avg_pool(x)
-        attn_weight = self.conv_du(y)   # B, C, 1, 1
-        attn = attn_weight * x
-        attnw_idx = torch.topk(input=attn_weight,k=self.topk,dim=1,largest=True, sorted=False).indices  # B, k, 1, 1
-        attnw_idx = attnw_idx.expand(-1, -1, x.shape[2], x.shape[3])     
-        attn = torch.gather(attn, dim=1, index=attnw_idx)
-        return attn
-
+        y = self.conv_du(y)
+        return x * y
 
 class BasicConv(nn.Module):
     def __init__(self, in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1, groups=1, relu=True,
@@ -88,7 +77,7 @@ class DAB(nn.Module):
         self.use_ca = True if 'ca' in dab_modules else False
         self.dab_modules = dab_modules
         self.SA = spatial_attn_layer() if self.use_sa else None             ## Spatial Attention
-        self.CA = CALayer(n_feat, reduction, topk_rate)  if self.use_ca else None      ## Channel Attention
+        self.CA = CALayer(n_feat, reduction)  if self.use_ca else None      ## Channel Attention
         self.conv1x1_1 = nn.Conv2d(n_feat * 2, n_feat, kernel_size=1)
         # self.conv1x1_2 = nn.Conv2d(n_feat, n_feat, kernel_size=1)
         self.conv1x1_3 = nn.Conv2d(int(n_feat * (1 + topk_rate)), n_feat, kernel_size=1)
@@ -108,7 +97,9 @@ class DAB(nn.Module):
         if not self.use_sa and self.use_ca:
             attn = ca_branch
 
-        print(attn.shape)
+        topk = int(self.topk_rate * ifreq.shape[1])
+        attn = torch.topk(input=attn,k=topk,dim=1,largest=True,sorted=False).values
+
         if '-' in self.dab_modules:
             attn = self.conv1x1_1(attn)
 
@@ -530,5 +521,13 @@ if __name__ == '__main__':
     x, y = x.to(device), y.to(device)
     model_ = model_.to(device)
 
+    # extractor = model_.rgb_extractor
+    # print(len(extractor._blocks))
+    # for idx in range(17):
+    #     print("after block ", idx, " shape: ", extractor.extract_features_at_block(x, selected_block=idx).shape)
+    ### CHECK @@@
+    # print("\nCheck @@@")
+    # for idx in range(16):
+    #     print("after block ", idx, " shape: ", extractor.extract_features_block_inrange(x, from_block=idx, to_block=idx+1).shape)
     out = model_(x, y)
     print(out.shape)

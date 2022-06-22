@@ -154,7 +154,6 @@ def train_kfold_image_stream(model_, what_fold='all', n_folds=5, use_trick=True,
               batch_size=16, num_workers=8, checkpoint='', resume='', epochs=20, eval_per_iters=-1, seed=0, \
               adj_brightness=1.0, adj_contrast=1.0, es_metric='val_loss', es_patience=5, model_name="xception", args_txt="", augmentation=True, gpu_id=2):
    
-   
     kfold = CustomizeKFold(n_folds=n_folds, train_dir=train_dir, val_dir=val_dir, trick=use_trick)
     next_fold=False
     # what_fold: 'x', 'x-all', 'all', 'x-only'
@@ -340,6 +339,272 @@ def train_kfold_image_stream(model_, what_fold='all', n_folds=5, use_trick=True,
         if osp.exists(ckc_pointdir):
             os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, args_txt if resume == '' else '', "({:.4f}_{:.4f}_{:.4f}_{:.4f})_{}_{}".format(step_model_saver.best_scores[0], step_model_saver.best_scores[1], step_model_saver.best_scores[2], step_model_saver.best_scores[3], 'fold' if resume == '' else 'resume', fold_idx)))
     return
+
+def eval_kfold_capsulenet(capnet, vgg_ext, dataloader, device, capsule_loss, adj_brightness=1.0, adj_contrast=1.0 ):
+    capnet.eval()
+    vgg_ext.eval()
+
+    y_label = []
+    y_pred = []
+    y_pred_label = []
+    loss = 0
+    mac_accuracy = 0
+    
+    for inputs, labels in dataloader:
+        labels[labels > 1] = 1
+        img_label = labels.numpy().astype(np.float)
+        inputs, labels = inputs.to(device), labels.to(device)
+
+        input_v = Variable(inputs)
+        x = vgg_ext(input_v)
+        classes, class_ = capnet(x, random=False)
+
+        loss_dis = capsule_loss(classes, Variable(labels, requires_grad=False))
+        loss_dis_data = loss_dis.item()
+        output_dis = class_.data.cpu().numpy()
+
+        output_pred = np.zeros((output_dis.shape[0]), dtype=np.float)
+
+        for i in range(output_dis.shape[0]):
+            if output_dis[i,1] >= output_dis[i,0]:
+                output_pred[i] = 1.0
+            else:
+                output_pred[i] = 0.0
+
+        loss += loss_dis_data
+        y_label.extend(img_label)
+        y_pred.extend(output_dis)
+        y_pred_label.extend(output_pred)
+        mac_accuracy += metrics.accuracy_score(img_label, output_pred)
+        
+    mac_accuracy /= len(dataloader)
+    loss /= len(dataloader)
+    assert len(y_label) == len(y_pred_label), "Bug"
+    ######## Calculate metrics:
+    # built-in methods for calculating metrics
+    mic_accuracy, reals, fakes, micros, macros = calculate_metric(y_label, y_pred_label)
+    calculate_cls_metrics(y_label=np.array(y_label, dtype=np.float64), y_pred_label=np.array(y_pred_label, dtype=np.float64), save=True, print_metric=False)
+    return loss, mac_accuracy, mic_accuracy, reals, fakes, micros, macros
+
+from model.cnn.capsule_net.model import VggExtractor, CapsuleNet
+from loss.capsule_loss import CapsuleLoss
+from torch.autograd import Variable
+def train_kfold_capsulenet(what_fold='all', n_folds=5, use_trick=True, train_dir = '', val_dir ='', test_dir = '', gpu_id=0, beta1=0.9, dropout=0.05, image_size=128, lr=3e-4, \
+              batch_size=16, num_workers=4, checkpoint='', resume='', epochs=20, eval_per_iters=-1, seed=0, \
+              adj_brightness=1.0, adj_contrast=1.0, es_metric='val_loss', es_patience=5, model_name="capsule", args_txt="", dropout_in_mlp=True, augmentation=False):
+
+    kfold = CustomizeKFold(n_folds=n_folds, train_dir=train_dir, val_dir=val_dir, trick=use_trick)
+    next_fold=False
+    # what_fold: 'x', 'x-all', 'all', 'x-only'
+    if 'all' not in what_fold:
+        if 'only' not in what_fold:
+            try:
+                fold_resume = int(what_fold)
+            except:
+                raise Exception("what fold should be an integer")
+        else:
+            fold_resume = int(what_fold.split('_')[0])
+    else:
+        if 'all' == what_fold:
+            fold_resume = 0
+        else:
+            fold_resume = int(what_fold.split('_')[0])
+
+    for fold_idx in range(n_folds):
+        print("\n*********************************************************************************************")
+        print("****************************************** FOLD {} *******************************************".format(fold_idx))
+        print("*********************************************************************************************")
+        if fold_idx < fold_resume:
+            continue
+        if 'only' in what_fold and fold_idx > fold_resume:
+            continue
+        # Generate dataloader train and validation:
+
+        trainset, valset = kfold.get_fold(fold_idx=fold_idx)
+
+        # Generate dataloader train and validation 
+        dataloader_train, dataloader_val, num_samples = generate_dataloader_single_cnn_stream_for_kfold(train_dir, trainset, valset, image_size, batch_size, num_workers, augmentation=augmentation)
+        dataloader_test = generate_test_dataloader_single_cnn_stream_for_kfold(test_dir, image_size, batch_size, num_workers)
+    
+        # Define devices
+        device = define_device(seed=seed, model_name=model_name)
+        
+        # Define and load model
+        vgg_ext = VggExtractor().to(device)
+        capnet = CapsuleNet(num_class=2, device=device).to(device)
+        
+        # Define optimizer (Adam) and learning rate decay
+        init_lr = lr
+        init_epoch = 0
+        init_step = 0
+        init_global_acc = 0
+        init_global_loss = 0
+        if resume != "":
+            try:
+                if 'epoch' in checkpoint:
+                    init_epoch = int(resume.split('_')[3])
+                    init_step = init_epoch * len(dataloader_train)
+                    init_lr = lr * (0.8 ** ((init_epoch - 1) // 2))
+                    print('Resume epoch: {} - with step: {} - lr: {}'.format(init_epoch, init_step, init_lr))
+                if 'step' in checkpoint:
+                    init_step = int(resume.split('_')[3])
+                    init_epoch = int(init_step / len(dataloader_train))
+                    init_lr = lr * (0.8 ** (init_epoch // 2))
+                    with open(osp.join(checkpoint, 'global_acc_loss.txt'), 'r') as f:
+                        line = f.read().strip()
+                        init_global_acc = float(line.split(',')[0])
+                        init_global_loss = float(line.split(',')[1])
+                    print('Resume step: {} - in epoch: {} - lr: {} - global_acc: {} - global_loss: {}'.format(init_step, init_epoch, init_lr, init_global_acc, init_global_loss))              
+            except:
+                pass
+        
+        optimizer = optim.Adam(capnet.parameters(), lr=init_lr, betas=(beta1, 0.999))
+        scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones = [2*i for i in range(1, epochs//2 + 1)], gamma = 0.8)
+
+        # Define criterion
+        capsule_loss = CapsuleLoss().to(device)
+        
+        # Define logging factor:
+        ckc_pointdir, log, batch_writer, epoch_writer_tup, step_writer_tup = define_log_writer_for_kfold(checkpoint, fold_idx, resume, args_txt, (capnet, model_name, image_size))
+        epoch_ckcpoint, epoch_val_writer, epoch_test_writer = epoch_writer_tup
+        step_ckcpoint, step_val_writer, step_test_writer = step_writer_tup
+            
+        # Define Early stopping and Model saver
+        early_stopping = EarlyStopping(patience=es_patience, verbose=True, tunning_metric=es_metric)
+        epoch_model_saver = ModelSaver(save_metrics=["val_loss", "val_acc", "test_loss", 'test_acc'])
+        step_model_saver = ModelSaver(save_metrics=["val_loss", "val_acc", "test_loss", 'test_acc'])
+        
+        if resume != "":
+            capnet.load_state_dict(torch.load(osp.join(checkpoint, resume)))
+            capnet.train(mode=True)
+            
+            if device != 'cpu':
+                for state in optimizer.state.values():
+                    for k, v in state.items():
+                        if isinstance(v, torch.Tensor):
+                            state[k] = v.cuda()
+
+        global_loss = init_global_loss
+        global_acc = init_global_acc
+        global_step = init_step
+
+        capnet.train()
+        vgg_ext.train()
+
+        for epoch in range(init_epoch, epochs):
+            print("\n=========================================")
+            print("Epoch: {}/{}".format(epoch+1, epochs))
+            print("Model: {} - {}".format(model_name, args_txt))
+            print("lr = ", optimizer.param_groups[0]['lr'])
+
+            # Train
+            capnet.train()
+            running_loss = 0
+            running_acc = 0
+            y_label = np.array([], dtype=np.float)
+            y_pred_label = np.array([], dtype=np.float)
+
+            y_label_step = []
+            y_pred_label_step = []
+            
+            print("Training...")
+            for inputs, labels in tqdm(dataloader_train):
+                global_step += 1
+                # Push to device
+                labels[labels > 1] = 1
+                img_label = labels.numpy().astype(np.float)
+                inputs, labels = inputs.to(device), labels.to(device)
+                # Clear gradient after a step
+                optimizer.zero_grad()
+
+                # Forward network
+                input_v = Variable(inputs)
+                x = vgg_ext(input_v)
+                classes, class_ = capnet(x, random=True, dropout=dropout)
+
+                # Find loss
+                loss_dis = capsule_loss(classes, Variable(labels, requires_grad=False))
+                loss_dis_data = loss_dis.item()
+                
+                # Backpropagation and update weights
+                loss_dis.backward()
+                optimizer.step()
+
+                # update running (train) loss and accuracy
+                output_dis = class_.data.cpu().numpy()
+                output_pred = np.zeros((output_dis.shape[0]), dtype=np.float)
+
+                for i in range(output_dis.shape[0]):
+                    if output_dis[i,1] >= output_dis[i,0]:
+                        output_pred[i] = 1.0
+                    else:
+                        output_pred[i] = 0.0
+                        
+                y_label = np.concatenate((y_label, img_label))
+                y_pred_label = np.concatenate((y_pred_label, output_pred))
+                        
+                running_loss += loss_dis_data
+                global_loss += loss_dis_data
+                y_label_step.extend(img_label)
+                y_pred_label_step.extend(output_pred)
+                global_acc += metrics.accuracy_score(y_label_step, y_pred_label_step)
+
+                # Save step's loss:
+                # To tensorboard and to writer
+                log.write_scalar(scalar_dict={"Loss/Single step": loss_dis_data}, global_step=global_step)
+                batch_writer.write("{},{:.4f}\n".format(global_step, loss_dis_data))
+
+                # Eval after <?> iters:
+                if eval_per_iters != -1:
+                    if global_step % eval_per_iters == 0:
+                        capnet.eval()
+                        # Eval validation set
+                        val_loss, val_mac_acc, val_mic_acc, val_reals, val_fakes, val_micros, val_macros = eval_kfold_capsulenet(capnet, vgg_ext, dataloader_val, device, capsule_loss, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
+                        save_result(step_val_writer, log, global_step, global_loss/global_step, global_acc/global_step, val_loss, val_mac_acc, val_mic_acc, val_reals, val_fakes, val_micros, val_macros, is_epoch=False, phase="val")
+                        # Eval test set
+                        test_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros = eval_kfold_capsulenet(capnet, vgg_ext, dataloader_test, device, capsule_loss, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
+                        save_result(step_test_writer, log, global_step, global_loss/global_step, global_acc/global_step, test_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros, is_epoch=False, phase="test")
+                        # Save model:
+                        step_model_saver(global_step, [val_loss, val_mic_acc, test_loss, test_mic_acc], step_ckcpoint, capnet)
+                        step_model_saver.save_last_model(step_ckcpoint, capnet, global_step)
+                        step_model_saver.save_model(step_ckcpoint, capnet, global_step, save_ckcpoint=False, global_acc=global_acc, global_loss=global_loss)
+            
+                        es_cur_score = find_current_earlystopping_score(es_metric, val_loss, val_mic_acc, test_loss, test_mic_acc, test_reals[2], test_fakes[2], test_macros[2])
+                        early_stopping(es_cur_score)
+                        if early_stopping.early_stop:
+                            print('Early stopping. Best {}: {:.6f}'.format(es_metric, early_stopping.best_score))
+                            time.sleep(5)
+                            os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, args_txt if resume == '' else '', "({:.4f}_{:.4f}_{:.4f}_{:.4f})_{}_{}".format(step_model_saver.best_scores[0], step_model_saver.best_scores[1], step_model_saver.best_scores[2], step_model_saver.best_scores[3], 'fold' if resume == '' else 'resume', fold_idx)))
+                            next_fold = True
+                        if next_fold:
+                            break
+                        capnet.train()
+                        vgg_ext.train()
+                y_label_step = []
+                y_pred_label_step = []
+
+            running_acc = metrics.accuracy_score(y_label, y_pred_label)        
+
+            if next_fold:
+                break
+        if next_fold:
+            next_fold=False
+            continue
+  
+            # Reset to the next epoch
+            running_loss = 0
+            running_acc = 0
+            scheduler.step()
+            capnet.train()
+            # Early stopping:
+            #
+       # Sleep 5 seconds for rename ckcpoint dir:
+        time.sleep(5)
+        # Save epoch acc val, epoch acc test, step acc val, step acc test
+        if osp.exists(ckc_pointdir):
+            os.rename(src=ckc_pointdir, dst=osp.join(checkpoint, args_txt if resume == '' else '', "({:.4f}_{:.4f}_{:.4f}_{:.4f})_{}_{}".format(step_model_saver.best_scores[0], step_model_saver.best_scores[1], step_model_saver.best_scores[2], step_model_saver.best_scores[3], 'fold' if resume == '' else 'resume', fold_idx)))
+    return
+
 
 ############################################################################################################
 ################# DUAL CNN - <CNN/FEEDFORWARD> FOR RGB IMAGE AND FREQUENCY ANALYSIS STREAM #################

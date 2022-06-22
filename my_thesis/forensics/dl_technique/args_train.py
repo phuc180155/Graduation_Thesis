@@ -35,6 +35,13 @@ def parse_args():
     parser_capsule = sub_parser.add_parser('capsule', help='CapsuleNet')
     parser_capsule.add_argument("--beta",type=int,required=False,default=0.9,help="Beta for optimizer Adam")
     parser_capsule.add_argument("--dropout", type=float, required=False, default=0.05)
+
+    parser_kfold_capsule = sub_parser.add_parser('kfold_capsule', help='CapsuleNet')
+    parser_kfold_capsule.add_argument("--beta",type=int,required=False,default=0.9,help="Beta for optimizer Adam")
+    parser_kfold_capsule.add_argument("--dropout", type=float, required=False, default=0.05)
+    parser_kfold_capsule.add_argument("--n_folds",type=int,default=5,help="")
+    parser_kfold_capsule.add_argument("--what_fold",type=str,default='all',help="")
+    parser_kfold_capsule.add_argument("--use_trick",type=int,default=0,help="")
     
     parser_xception = sub_parser.add_parser('xception', help='XceptionNet')
     parser_xception.add_argument('--pretrained', type=int, default=0, required=True)
@@ -723,6 +730,13 @@ if __name__ == "__main__":
         train_capsulenet(train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir, gpu_id=args.gpu_id, beta1=args.beta, dropout=args.dropout, image_size=args.image_size, lr=args.lr,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="capsulenet", args_txt=args_txt, augmentation=args.augmentation)
+
+    elif model == 'kfold_capsule':
+        from module.train_kfold import train_kfold_capsulenet
+        args_txt = "lr{}_batch{}_es{}_nf{}_trick{}_beta{}_dropout{}_seed{}_drmlp0.0_aug{}".format(args.lr, args.batch_size, args.es_metric, args.n_folds, args.use_trick, args.beta, args.dropout, args.seed, args.augmentation)
+        train_kfold_capsulenet(what_fold=args.what_fold, n_folds=args.n_folds, use_trick=args.use_trick, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir, gpu_id=args.gpu_id, beta1=args.beta, dropout=args.dropout, image_size=args.image_size, lr=args.lr,\
+                           batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="kfold_capsulenet", args_txt=args_txt, augmentation=args.augmentation)
            
     elif model == 'srm_two_stream':
         from module.train_torch import train_image_stream
