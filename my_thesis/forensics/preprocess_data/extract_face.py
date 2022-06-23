@@ -24,7 +24,7 @@ real_video_dir = "../../../../2_Deep_Learning/Dataset/facial_forgery/FF+/origina
 def parse_args():
     parser = argparse.ArgumentParser(description="Fake Detection")
     parser.add_argument('--in_dir', default='', help='path to train data')
-    parser.add_argument('--out_dir', default='', help='path to test data')
+    parser.add_argument('--out_dir', default='out', help='path to test data')
     parser.add_argument('--num_thread', default=4, type=int, help='number of threads')
     parser.add_argument('--duration', default=15, type=int)
     return parser.parse_args()
@@ -126,14 +126,13 @@ def extract_face(video_path: str, ext_margin=0.2):
 args = parse_args()
 if __name__ == '__main__':
     video_paths = []
-    video_types = ['/*/*/*/*.mp4', '/*/*/*/*.avi']  # Deepfakes/c23/videos/*.mp4
-    in_dir = args.in_dir if args.in_dir != '' else real_video_dir
+    video_types = ['/*.mp4', '/*/*/*/*.avi']  # Deepfakes/c23/videos/*.mp4
+    in_dir = '/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/preprocess_data/test'
     # Duyệt tất cả các path tới video
     for type in video_types:
         paths = glob.glob(in_dir + type)
         video_paths.extend(paths)
 
-    video_paths = [p.replace("\\", "/") for p in video_paths]
     print("Paths: ", len(video_paths))
 
     # Sử dụng tính toán đa luồng
