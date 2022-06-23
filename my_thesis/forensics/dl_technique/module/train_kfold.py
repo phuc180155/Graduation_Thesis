@@ -707,18 +707,18 @@ def train_kfold_dual_stream(model_, what_fold='all', n_folds=5, use_trick=True, 
         # Generate dataloader train and validation:
 
         trainset, valset = kfold.get_fold(fold_idx=fold_idx)
-        sys.stdout = open('/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/dl_technique/inspect/61dfdcv6/train/fold_{}.txt'.format(fold_idx), 'w')
-        # print("\n=====================================================================================================")
-        # print("**** Train: ")
-        for img in trainset:
-            print(img)
-        sys.stdout = sys.__stdout__
-        sys.stdout = open('/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/dl_technique/inspect/61dfdcv6/val/fold_{}.txt'.format(fold_idx), 'w')
-        # print("\n**** Val: ")
-        for img in valset:
-            print(img)
-        sys.stdout = sys.__stdout__
-        continue
+        # sys.stdout = open('/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/dl_technique/inspect/61dfdcv6/train/fold_{}.txt'.format(fold_idx), 'w')
+        # # print("\n=====================================================================================================")
+        # # print("**** Train: ")
+        # for img in trainset:
+        #     print(img)
+        # sys.stdout = sys.__stdout__
+        # sys.stdout = open('/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/dl_technique/inspect/61dfdcv6/val/fold_{}.txt'.format(fold_idx), 'w')
+        # # print("\n**** Val: ")
+        # for img in valset:
+        #     print(img)
+        # sys.stdout = sys.__stdout__
+        # continue
 
         dataloader_train, dataloader_val, num_samples = generate_dataloader_dual_cnn_stream_for_kfold(train_dir, trainset, valset, image_size, batch_size, num_workers, augmentation=augmentation, highpass=highpass)
         dataloader_test = generate_test_dataloader_dual_cnn_stream_for_kfold(test_dir, image_size, 2*batch_size, num_workers, highpass=highpass)        
