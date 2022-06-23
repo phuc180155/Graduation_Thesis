@@ -40,6 +40,7 @@ class CALayer(nn.Module):
         attn_weight = self.conv_du(y)   # B, C, 1, 1
         attn = attn_weight * x
         attnw_idx = torch.topk(input=attn_weight,k=self.topk,dim=1,largest=True, sorted=False).indices  # B, k, 1, 1
+        attnw_idx = torch.sort(attnw_idx, dim=1).values
         attnw_idx = attnw_idx.expand(-1, -1, x.shape[2], x.shape[3])     
         attn = torch.gather(attn, dim=1, index=attnw_idx)
         return attn
