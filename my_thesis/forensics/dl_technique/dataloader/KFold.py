@@ -20,7 +20,7 @@ class CustomizeKFold(object):
             if 'dfdcv5' in train_dir:
                 self.do_trick = 'real:5000,fake:2000'
             if 'dfdcv6' in train_dir:
-                self.do_trick = 'real:0,fake:0'
+                self.do_trick = 'real:2000,fake:1000'
             if 'df_in_the_wild' in train_dir:
                 if 'df_in_the_wildv5' in train_dir:
                     self.do_trick = 'real:4000,fake:2000'
