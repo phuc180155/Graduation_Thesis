@@ -280,6 +280,39 @@ def parse_args():
     parser_kfold_dual_dab_cnn_multivit.add_argument("--topk_channels", type=float, default=1.0, help="or [0_2_4_7_10]")
     parser_kfold_dual_dab_cnn_multivit.add_argument("--c",type=int, default=1, help="")
 
+    parser_kfold_dual_dab_cnn = sub_parser.add_parser('kfold_dual_dab_cnn', help='My model')
+    parser_kfold_dual_dab_cnn.add_argument("--n_folds",type=int,default=5,help="")
+    parser_kfold_dual_dab_cnn.add_argument("--what_fold",type=str,default='all',help="")
+    parser_kfold_dual_dab_cnn.add_argument("--use_trick",type=int,default=0,help="")
+    parser_kfold_dual_dab_cnn.add_argument("--backbone",type=str, default="efficient_net", required=False, help="Type of backbone")
+    parser_kfold_dual_dab_cnn.add_argument("--pretrained",type=int, default=1, required=False, help="Load pretrained backbone")
+    parser_kfold_dual_dab_cnn.add_argument("--unfreeze_blocks", type=int, default=-1, help="Unfreeze blocks in backbone")
+    parser_kfold_dual_dab_cnn.add_argument("--division_lr", type=int, default=0, help="")
+    parser_kfold_dual_dab_cnn.add_argument("--features_at_block", type=str, default='10', help="")
+    parser_kfold_dual_dab_cnn.add_argument("--act_dab", type=str, default='none', help="")
+    parser_kfold_dual_dab_cnn.add_argument("--dab_modules", type=str, default='sa', help="")
+    parser_kfold_dual_dab_cnn.add_argument("--dabifft_normalize", type=str, help="")
+    parser_kfold_dual_dab_cnn.add_argument("--dab_blocks", type=str, default='0_1_3_5', help="or [0_2_4_7_10]")
+    parser_kfold_dual_dab_cnn.add_argument("--topk_channels", type=float, default=1.0, help="or [0_2_4_7_10]")
+
+    parser_kfold_pairwise_dual_dab_cnn = sub_parser.add_parser('kfold_pairwise_dual_dab_cnn', help='My model')
+    parser_kfold_pairwise_dual_dab_cnn.add_argument("--n_folds",type=int,default=5,help="")
+    parser_kfold_pairwise_dual_dab_cnn.add_argument("--what_fold",type=str,default='all',help="")
+    parser_kfold_pairwise_dual_dab_cnn.add_argument("--use_trick",type=int,default=0,help="")
+    parser_kfold_pairwise_dual_dab_cnn.add_argument("--backbone",type=str, default="efficient_net", required=False, help="Type of backbone")
+    parser_kfold_pairwise_dual_dab_cnn.add_argument("--pretrained",type=int, default=1, required=False, help="Load pretrained backbone")
+    parser_kfold_pairwise_dual_dab_cnn.add_argument("--unfreeze_blocks", type=int, default=-1, help="Unfreeze blocks in backbone")
+    parser_kfold_pairwise_dual_dab_cnn.add_argument("--division_lr", type=int, default=0, help="")
+    parser_kfold_pairwise_dual_dab_cnn.add_argument("--features_at_block", type=str, default='10', help="")
+    parser_kfold_pairwise_dual_dab_cnn.add_argument("--act_dab", type=str, default='none', help="")
+    parser_kfold_pairwise_dual_dab_cnn.add_argument("--dab_modules", type=str, default='sa', help="")
+    parser_kfold_pairwise_dual_dab_cnn.add_argument("--dabifft_normalize", type=str, help="")
+    parser_kfold_pairwise_dual_dab_cnn.add_argument("--dab_blocks", type=str, default='0_1_3_5', help="or [0_2_4_7_10]")
+    parser_kfold_pairwise_dual_dab_cnn.add_argument("--topk_channels", type=float, default=1.0, help="or [0_2_4_7_10]")
+    parser_kfold_pairwise_dual_dab_cnn.add_argument("--embedding_return", type=str, default='mlp_hidden', help="")
+    parser_kfold_pairwise_dual_dab_cnn.add_argument("--weight_importance", type=float, default=2.0)
+    parser_kfold_pairwise_dual_dab_cnn.add_argument("--margin", type=float, default=2.0)
+
     parser_kfold_pairwise_dual_dab_cnn_multivit = sub_parser.add_parser('kfold_pairwise_dual_dab_cnn_multivit', help='My model')
     parser_kfold_pairwise_dual_dab_cnn_multivit.add_argument("--n_folds",type=int,default=5,help="")
     parser_kfold_pairwise_dual_dab_cnn_multivit.add_argument("--what_fold",type=str,default='all',help="")
@@ -1820,4 +1853,53 @@ if __name__ == "__main__":
         train_kfold_pairwise_dual_stream(model_, what_fold=args.what_fold, n_folds=args.n_folds, use_trick=args.use_trick, weight_importance=args.weight_importance, margin=args.margin, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name=model_name, args_txt=args_txt, augmentation=args.augmentation)
+
+    elif model == "kfold_dual_dab_cnn":
+        from module.train_kfold import train_kfold_dual_stream
+        from model.cnn.dual_dab_cnn.model import DualDabCNN
+            
+        model_ = DualDabCNN(image_size=args.image_size, num_classes=1, \
+            mlp_dim=args.mlp_dim,\
+            backbone=args.backbone, pretrained=args.pretrained,unfreeze_blocks=args.unfreeze_blocks,\
+            features_at_block=args.features_at_block, \
+            act_dab=args.act_dab, topk_channels=args.topk_channels, dab_modules=args.dab_modules, dabifft_normalize=args.dabifft_normalize, dab_blocks=args.dab_blocks)
+        
+        args_txt = "lr{}-{}_b{}_c{}_es{}_l{}_nf{}trick{}_md{}_bb{}pre{}_fatb{}_".format(args.lr, args.division_lr, args.batch_size, args.c, args.es_metric, args.loss, args.n_folds, args.use_trick, args.mlp_dim, args.backbone, args.pretrained, args.features_at_block)
+        args_txt += "act{}_".format(args.act_dab)
+        args_txt += "topk{}_dabm{}_dabi{}_dabb{}_".format(args.topk_channels, args.dab_modules, args.dabifft_normalize, args.dab_blocks)
+        args_txt += "sd{}".format(args.seed)
+        args_txt += "_dr{}aug{}".format(args.dropout_in_mlp, args.augmentation)
+        print(len(args_txt))
+        use_pretrained = True if args.pretrained or args.resume != '' else False
+        criterion = [args.loss]
+        if args.gamma:
+            args_txt += "_gamma{}".format(args.gamma)
+            criterion.append(args.gamma)
+        model_name = "kfold_dual_dab_cnn"
+        train_kfold_dual_stream(model_, what_fold=args.what_fold, n_folds=args.n_folds, use_trick=args.use_trick, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
+                           batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name=model_name, args_txt=args_txt, augmentation=args.augmentation)
+
+    elif model == "kfold_pairwise_dual_dab_cnn":
+        from module.train_kfold import train_kfold_pairwise_dual_stream
+        from model.cnn.dual_dab_cnn.pairwise_model import PairwiseDualDabCNN
+            
+        model_ = PairwiseDualDabCNN(image_size=args.image_size, num_classes=1, \
+            mlp_dim=args.mlp_dim,\
+            backbone=args.backbone, pretrained=args.pretrained,unfreeze_blocks=args.unfreeze_blocks,\
+            features_at_block=args.features_at_block, \
+            act_dab=args.act_dab, topk_channels=args.topk_channels, dab_modules=args.dab_modules, dabifft_normalize=args.dabifft_normalize, dab_blocks=args.dab_blocks)
+        
+        args_txt = "lr{}-{}_b{}_c{}_es{}_l{}_nf{}trick{}_ret{}_im{}_mar{}_md{}_bb{}pre{}_fatb{}_".format(args.lr, args.division_lr, args.batch_size, args.c, args.es_metric, args.loss, args.n_folds, args.use_trick, args.embedding_return, args.weight_importance, args.margin, args.mlp_dim, args.backbone, args.pretrained, args.features_at_block)
+        args_txt += "act{}_".format(args.act_dab)
+        args_txt += "topk{}_dabm{}_dabi{}_dabb{}_".format(args.topk_channels, args.dab_modules, args.dabifft_normalize, args.dab_blocks)
+        args_txt += "sd{}".format(args.seed)
+        args_txt += "_dr{}aug{}".format(args.dropout_in_mlp, args.augmentation)
+        print(len(args_txt))
+        use_pretrained = True if args.pretrained or args.resume != '' else False
+        model_name = "kfold_pairwise_dual_dab_cnn"
+        train_kfold_pairwise_dual_stream(model_, what_fold=args.what_fold, n_folds=args.n_folds, use_trick=args.use_trick, weight_importance=args.weight_importance, margin=args.margin, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir,  image_size=args.image_size, lr=args.lr, division_lr=args.division_lr, use_pretrained=use_pretrained,\
+                           batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name=model_name, args_txt=args_txt, augmentation=args.augmentation)
+    
     
