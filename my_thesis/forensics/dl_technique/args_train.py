@@ -230,7 +230,7 @@ def parse_args():
     parser_kfold_dual_cnn_multivit.add_argument("--features_at_block", type=str, default='10', help="")
     parser_kfold_dual_cnn_multivit.add_argument("--transformer_shareweight", type=int, default=0, help="")
     parser_kfold_dual_cnn_multivit.add_argument("--highpass", default=None, help="")
-    parser_kfold_dual_cnn_multivit.add_argument("--c",type=int, default=1, help="")
+    parser_kfold_dual_cnn_multivit.add_argument("--c",type=int, default=0, help="")
 
     parser_kfold_pairwise_dual_cnn_multivit = sub_parser.add_parser('kfold_pairwise_dual_cnn_multivit', help='My model')
     parser_kfold_pairwise_dual_cnn_multivit.add_argument("--n_folds",type=int,default=5,help="")
@@ -253,7 +253,7 @@ def parse_args():
     parser_kfold_pairwise_dual_cnn_multivit.add_argument("--gammaagg_reso", type=str, default='-1_-1', help="")
     parser_kfold_pairwise_dual_cnn_multivit.add_argument("--features_at_block", type=str, default='10', help="")
     parser_kfold_pairwise_dual_cnn_multivit.add_argument("--transformer_shareweight", type=int, default=0, help="")
-    parser_kfold_pairwise_dual_cnn_multivit.add_argument("--c",type=int, default=1, help="")
+    parser_kfold_pairwise_dual_cnn_multivit.add_argument("--c",type=int, default=0, help="")
 
     parser_kfold_dual_dab_cnn_multivit = sub_parser.add_parser('kfold_dual_dab_cnn_multivit', help='My model')
     parser_kfold_dual_dab_cnn_multivit.add_argument("--n_folds",type=int,default=5,help="")
@@ -278,7 +278,7 @@ def parse_args():
     parser_kfold_dual_dab_cnn_multivit.add_argument("--dabifft_normalize", type=str, help="")
     parser_kfold_dual_dab_cnn_multivit.add_argument("--dab_blocks", type=str, default='0_1_3_5', help="or [0_2_4_7_10]")
     parser_kfold_dual_dab_cnn_multivit.add_argument("--topk_channels", type=float, default=1.0, help="or [0_2_4_7_10]")
-    parser_kfold_dual_dab_cnn_multivit.add_argument("--c",type=int, default=1, help="")
+    parser_kfold_dual_dab_cnn_multivit.add_argument("--c",type=int, default=0, help="")
 
     parser_kfold_dual_dab_cnn = sub_parser.add_parser('kfold_dual_dab_cnn', help='My model')
     parser_kfold_dual_dab_cnn.add_argument("--n_folds",type=int,default=5,help="")
@@ -339,7 +339,7 @@ def parse_args():
     parser_kfold_pairwise_dual_dab_cnn_multivit.add_argument("--dabifft_normalize", type=str, help="")
     parser_kfold_pairwise_dual_dab_cnn_multivit.add_argument("--dab_blocks", type=str, default='0_1_3_5', help="or [0_2_4_7_10]")
     parser_kfold_pairwise_dual_dab_cnn_multivit.add_argument("--topk_channels", type=float, default=1.0, help="or [0_2_4_7_10]")
-    parser_kfold_pairwise_dual_dab_cnn_multivit.add_argument("--c",type=int, default=1, help="")
+    parser_kfold_pairwise_dual_dab_cnn_multivit.add_argument("--c",type=int, default=0, help="")
     
     parser_triple_cnn_vit = sub_parser.add_parser('triple_cnn_vit', help='My model')
     parser_triple_cnn_vit.add_argument("--patch_size",type=int,default=7,help="patch_size in vit")
