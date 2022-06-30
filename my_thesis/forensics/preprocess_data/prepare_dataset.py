@@ -733,7 +733,7 @@ def truncate_videos_in_dataset(dataset_path: str, phase='train', real_trunc_rati
                 os.remove(p)
 
 if __name__ == '__main__':
-    dataset_path = "/mnt/disk1/doan/phucnp/Dataset/dfdcv6/image"
+    dataset_path = "/mnt/disk1/doan/phucnp/Dataset/UADFV/image"
     num_real_v_move = 500
     num_fake_v_move = 500
     move_v = False
@@ -742,11 +742,12 @@ if __name__ == '__main__':
     num_real_i_move = 9000
     num_fake_i_move = 28000
 
-    merge = False
+    # merge = True
     # move(dataset_path=dataset_path, num_real_v_move=num_real_i_move if move_i else num_real_v_move, num_fake_v_move=num_fake_i_move if move_i else num_fake_v_move, merge=merge, move_v=move_v, move_i=move_i)
 
-    # truncate_images_in_dataset(dataset_path=dataset_path, phase='test', real_trunc_ratio=float(3/8), fake_trunc_ratio=float(0), truncated=True)
-    truncate_videos_in_dataset(dataset_path=dataset_path, phase='train', real_trunc_ratio=float(0), fake_trunc_ratio=float(0.25), truncated=True)
+    # truncate_images_in_dataset(dataset_path=dataset_path, phase='train', real_trunc_ratio=float(175/228), fake_trunc_ratio=float(175/228), truncated=True)
+    # truncate_images_in_dataset(dataset_path=dataset_path, phase='test', real_trunc_ratio=float(888/988), fake_trunc_ratio=float(848/948), truncated=True)
+    # truncate_videos_in_dataset(dataset_path=dataset_path, phase='train', real_trunc_ratio=float(0), fake_trunc_ratio=float(0.25), truncated=True)
 
     # statisticize_dataset(dataset_path=dataset_path)
     # val_real_want = 20000
@@ -761,11 +762,11 @@ if __name__ == '__main__':
     # split_by_video(dataset_path, val_real_image=val_real_image,val_fake_image=val_fake_image, move=move, phase_two=phase_two)
     statisticize_dataset(dataset_path=dataset_path)
     print("\n")
-    statistic_video(data_dir="/mnt/disk1/doan/phucnp/Dataset/dfdcv6/image/train")
+    statistic_video(data_dir="/mnt/disk1/doan/phucnp/Dataset/UADFV/image/train")
     print("\n")
-    statistic_video(data_dir="/mnt/disk1/doan/phucnp/Dataset/dfdcv6/image/test")
+    statistic_video(data_dir="/mnt/disk1/doan/phucnp/Dataset/UADFV/image/test")
     print("\n")
-    statistic_video(data_dir="/mnt/disk1/doan/phucnp/Dataset/dfdcv6/image/val")
+    statistic_video(data_dir="/mnt/disk1/doan/phucnp/Dataset/UADFV/image/val")
     # # dataset_path = "/mnt/disk1/doan/phucnp/Dataset/df_in_the_wildv5/image"
 
     # val_real_image = 10000

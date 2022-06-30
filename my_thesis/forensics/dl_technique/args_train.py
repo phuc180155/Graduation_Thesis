@@ -1864,7 +1864,7 @@ if __name__ == "__main__":
             features_at_block=args.features_at_block, \
             act_dab=args.act_dab, topk_channels=args.topk_channels, dab_modules=args.dab_modules, dabifft_normalize=args.dabifft_normalize, dab_blocks=args.dab_blocks)
         
-        args_txt = "lr{}-{}_b{}_c{}_es{}_l{}_nf{}trick{}_md{}_bb{}pre{}_fatb{}_".format(args.lr, args.division_lr, args.batch_size, args.c, args.es_metric, args.loss, args.n_folds, args.use_trick, args.mlp_dim, args.backbone, args.pretrained, args.features_at_block)
+        args_txt = "lr{}-{}_b{}_es{}_l{}_nf{}trick{}_md{}_bb{}pre{}_fatb{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.n_folds, args.use_trick, args.mlp_dim, args.backbone, args.pretrained, args.features_at_block)
         args_txt += "act{}_".format(args.act_dab)
         args_txt += "topk{}_dabm{}_dabi{}_dabb{}_".format(args.topk_channels, args.dab_modules, args.dabifft_normalize, args.dab_blocks)
         args_txt += "sd{}".format(args.seed)
@@ -1890,7 +1890,7 @@ if __name__ == "__main__":
             features_at_block=args.features_at_block, \
             act_dab=args.act_dab, topk_channels=args.topk_channels, dab_modules=args.dab_modules, dabifft_normalize=args.dabifft_normalize, dab_blocks=args.dab_blocks)
         
-        args_txt = "lr{}-{}_b{}_c{}_es{}_l{}_nf{}trick{}_ret{}_im{}_mar{}_md{}_bb{}pre{}_fatb{}_".format(args.lr, args.division_lr, args.batch_size, args.c, args.es_metric, args.loss, args.n_folds, args.use_trick, args.embedding_return, args.weight_importance, args.margin, args.mlp_dim, args.backbone, args.pretrained, args.features_at_block)
+        args_txt = "lr{}-{}_b{}_es{}_l{}_nf{}trick{}_ret{}_im{}_mar{}_md{}_bb{}pre{}_fatb{}_".format(args.lr, args.division_lr, args.batch_size, args.es_metric, args.loss, args.n_folds, args.use_trick, args.embedding_return, args.weight_importance, args.margin, args.mlp_dim, args.backbone, args.pretrained, args.features_at_block)
         args_txt += "act{}_".format(args.act_dab)
         args_txt += "topk{}_dabm{}_dabi{}_dabb{}_".format(args.topk_channels, args.dab_modules, args.dabifft_normalize, args.dab_blocks)
         args_txt += "sd{}".format(args.seed)
