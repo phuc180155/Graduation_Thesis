@@ -167,8 +167,8 @@ def train_kfold_twooutput_image_stream(model_, what_fold='all', n_folds=5, use_t
             
         # Define Early stopping and Model saver
         early_stopping = EarlyStopping(patience=es_patience, verbose=True, tunning_metric=es_metric)
-        epoch_model_saver = ModelSaver(save_metrics=["val_loss", "val_acc", "test_loss", 'test_acc'])
-        step_model_saver = ModelSaver(save_metrics=["val_loss", "val_acc", "test_loss", 'test_acc'])
+        epoch_model_saver = ModelSaver(save_metrics=["val_loss", 'test_acc'])
+        step_model_saver = ModelSaver(save_metrics=["val_loss", 'test_acc'])
         
         # Define and load model
         model = model.to(device)
@@ -221,8 +221,8 @@ def train_kfold_twooutput_image_stream(model_, what_fold='all', n_folds=5, use_t
                 running_loss += loss.item()
                 global_loss += loss.item()
                 values, preds = torch.max(output, dim=1)
-                running_acc += torch.mean((labels.data == preds), dtype=torch.float32).item()
-                global_acc += torch.mean((labels.data == preds), dtype=torch.float32).item()
+                running_acc += torch.mean(torch.tensor(labels.data == preds, dtype=torch.float32).cpu().detach()).item()
+                global_acc += torch.mean(torch.tensor(labels.data == preds, dtype=torch.float32).cpu().detach()).item()
 
                 # Save step's loss:
                 # To tensorboard and to writer
@@ -241,7 +241,7 @@ def train_kfold_twooutput_image_stream(model_, what_fold='all', n_folds=5, use_t
                         test_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros = eval_kfold_twooutput_image_stream_stream(model, dataloader_test, device, criterion, adj_brightness=adj_brightness, adj_contrast=adj_brightness)
                         save_result(step_test_writer, log, global_step, global_loss/global_step, global_acc/global_step, test_loss, test_mac_acc, test_mic_acc, test_reals, test_fakes, test_micros, test_macros, is_epoch=False, phase="test")
                         # Save model:
-                        step_model_saver(global_step, [val_loss, val_mic_acc, test_loss, test_mic_acc], step_ckcpoint, model)
+                        step_model_saver(global_step, [val_loss, test_mic_acc], step_ckcpoint, model)
                         step_model_saver.save_last_model(step_ckcpoint, model, global_step)
                         step_model_saver.save_model(step_ckcpoint, model, global_step, save_ckcpoint=False, global_acc=global_acc, global_loss=global_loss)
                     
