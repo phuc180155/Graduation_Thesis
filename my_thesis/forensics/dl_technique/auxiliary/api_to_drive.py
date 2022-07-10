@@ -9,6 +9,7 @@ from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 from scipy.fft import dst
 from tqdm import tqdm
+from time import time
 
 import json
 
@@ -256,31 +257,35 @@ class GoogleDriveAPI(object):
         f_id = upload(src_folder=folder_path, dst_id=dest_id, root=True)
         return f_id
 
-    def download_file_to_device(self, file_path: str, dest_dir: str, overwrite=False):
+    def download_file_to_device(self, file_path: str, dest_dir: str, file_id=None, file_name="default.zip", overwrite=False):
         """_summary_ download a file with path <file_path> to destination directory.
         """
         print("Downloading...")
-        assert osp.isdir(dest_dir), "Destination should be a folder."
-        files = self.find_file(file_path, verbose=True)
-        assert len(files) == 1, "{} files found!".format("No" if len(files) == 0 else len(files))
-        assert self.is_file(files[0]['id']), "Source should be a file."
-        
-        # Check destination contains file has the same name or not.
-        file_name = osp.basename(file_path)
-        dest_path = join(dest_dir, file_name)
-        exist = osp.exists(dest_path)
-        if overwrite and exist:
-            os.remove(dest_path)
+        begin = time()
+        if file_id is None:
+            assert osp.isdir(dest_dir), "Destination should be a folder."
+            files = self.find_file(file_path, verbose=True)
+            assert len(files) == 1, "{} files found!".format("No" if len(files) == 0 else len(files))
+            assert self.is_file(files[0]['id']), "Source should be a file."
             
-        # Redefine the name if file existed and overwrite is set to False.
-        if not overwrite and exist:
-            file_name = self.name_copied_file(file_name)
-            while osp.exists(join(dest_dir, file_name)):
-                file_name = self.name_copied_file(file_name)  
-
+            # Check destination contains file has the same name or not.
+            file_name = osp.basename(file_path)
+            dest_path = join(dest_dir, file_name)
+            exist = osp.exists(dest_path)
+            if overwrite and exist:
+                os.remove(dest_path)
+                
+            # Redefine the name if file existed and overwrite is set to False.
+            if not overwrite and exist:
+                file_name = self.name_copied_file(file_name)
+                while osp.exists(join(dest_dir, file_name)):
+                    file_name = self.name_copied_file(file_name)  
         # Download file
-        file = self.get_file(id=files[0]['id'])
+            file = self.get_file(id=files[0]['id'])
+        else:
+            file = self.get_file(id=file_id)
         file.GetContentFile(filename=file_name)
+        print("Downloaded: ", time() - begin)
         shutil.move(src=file_name, dst=join(dest_dir, file_name))
     
     def download_folder_to_device(self, folder_path: str, dest_dir: str, overwrite=False):
@@ -523,7 +528,7 @@ if __name__ == '__main__':
     
     # folder_path = "/mnt/disk1/doan/phucnp/Dataset/dfdcv4/image" #
     # dst_id = "1V2V8UPfqy0W5MN4TuR8yMPTEFgMuIRli"    #my repo
-    gdrive.upload_folder_to_drive(folder_path=args.folder_path, dest_id=args.dst_id, overwrite=False)
+    gdrive.download_file_to_device(file_path='', dest_dir="/mnt/disk1/doan/phucnp/Dataset", file_id="1_d2iJn34vL2fGkUI_BUgRl_o-cRGqB1Z", overwrite=False)
     
     # folder_path = "/mnt/disk1/phucnp/Graduation_Thesis/review/forensics/dl_technique/checkpoint" #
     # dst_id = "1QzAdW_4VFMeiLGoFowgb1lNQ4iFSazWA"    #my repo

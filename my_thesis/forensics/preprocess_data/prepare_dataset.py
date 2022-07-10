@@ -733,7 +733,7 @@ def truncate_videos_in_dataset(dataset_path: str, phase='train', real_trunc_rati
                 os.remove(p)
 
 if __name__ == '__main__':
-    dataset_path = "/mnt/disk1/doan/phucnp/Dataset/UADFV/image"
+    dataset_path = "/mnt/disk1/doan/phucnp/Dataset/extend_data/stylegan"
     num_real_v_move = 500
     num_fake_v_move = 500
     move_v = False

@@ -114,6 +114,7 @@ class MultiscaleViT(nn.Module):
 
         self.patch_size = list(map(int, patch_reso.split('-')))
         self.gamma_reso = list(map(float, gamma_reso.split('_')))
+        print("patch size: ", self.patch_size)
         self.gamma = []
         self.g0 = nn.Parameter(torch.ones(1))
         self.g1 = nn.Parameter(torch.ones(1))
@@ -196,7 +197,6 @@ class MultiscaleViT(nn.Module):
                 output = self.transformer(embed)
             if self.residual:
                 output = embed + self.gamma[i] * output        # B, num_patch, dim
-            # print("     output shape: ", output.shape)
             output = output.mean(dim = 1).squeeze(dim=1)          # B, 1, dim
             outputs.append(output)
         
@@ -357,10 +357,11 @@ class DualCNNMultiViT(nn.Module):
     def forward(self, rgb_imgs, freq_imgs):
         rgb_features, freq_features = self.extract_feature(rgb_imgs, freq_imgs)
         ifreq_features = self.ifft(freq_features, norm_type=self.normalize_ifft)
+        
         # print("Features shape: ", rgb_features.shape, freq_features.shape, ifreq_features.shape)
 
         ##### Forward to ViT
-        x = self.multi_transformer(rgb_features, freq_features, ifreq_features)     # B, number_of_patch * D
+        x = self.multi_transformer(rgb_features, freq_features, ifreq_features)     # B, number_of_patch * D 
 
         x = self.mlp_dropout(x)         # B, number_of_patch * D
         x = self.mlp_head_hidden(x)     # B, number_of_patch * D => B, mlp_dim

@@ -646,7 +646,7 @@ def eval_kfold_dual_stream(model, dataloader, device, criterion, adj_brightness=
 
             # Loss in a batch
             # sys.stdout = open('/mnt/disk1/doan/phucnp/Graduation_Thesis/my_thesis/forensics/dl_technique/check.txt', 'w')
-            # print("inputs shape, fft images shape: ", inputs.shape, fft_imgs.shape)
+            # print("inputs: ", inputs)
             # print("logps shape: ", logps.shape)
             # print("labels shape: ", labels.shape)
             # print("logps: ", logps)

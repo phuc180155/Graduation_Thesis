@@ -69,6 +69,13 @@ def parse_args():
     parser_kfold_dual_eff.add_argument("--what_fold",type=str,default='all',help="")
     parser_kfold_dual_eff.add_argument("--use_trick",type=int,default=0,help="")
 
+    parser_kfold_efficient_suppression = sub_parser.add_parser('kfold_efficient_suppression', help="Efficient-Frequency Net")
+    parser_kfold_efficient_suppression.add_argument('--pretrained', type=int, default=0, required=True)
+    parser_kfold_efficient_suppression.add_argument("--n_folds",type=int,default=5,help="")
+    parser_kfold_efficient_suppression.add_argument("--what_fold",type=str,default='all',help="")
+    parser_kfold_efficient_suppression.add_argument("--use_trick",type=int,default=0,help="")
+    parser_kfold_efficient_suppression.add_argument("--features_at_block",type=str,help="")
+    
     parser_srm_2_stream = sub_parser.add_parser('srm_two_stream', help="SRM 2 stream net from \"Generalizing Face Forgery Detection with High-frequency Features (CVPR 2021).\"")
     
     # Ablation study 1: Remove ViT
@@ -1902,4 +1909,19 @@ if __name__ == "__main__":
                            batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
                            adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name=model_name, args_txt=args_txt, augmentation=args.augmentation)
     
-    
+    elif model == "kfold_efficient_suppression":
+        from module.train_for_visualization import train_kfold_twooutput_image_stream
+        from model.visualization_usage.efficient_suppression import EfficientSuppression
+        
+        model_ = EfficientSuppression(pretrained=args.pretrained, features_at_block=args.features_at_block)
+        args_txt = "lr{}_batch{}_es{}_loss{}_nf{}_trick{}_pre{}_fatblock{}_seed{}".format(args.lr, args.batch_size, args.es_metric,args.loss,args.n_folds, args.use_trick, args.pretrained, args.features_at_block, args.seed)
+        args_txt += "_drmlp{}_aug{}".format(0.0, args.augmentation)
+        criterion = [args.loss]
+        if args.gamma:
+            args_txt += "_gamma{}".format(args.gamma)
+            criterion.append(args.gamma)
+        
+        use_pretrained = True if args.pretrained or args.resume != '' else False
+        train_kfold_twooutput_image_stream(model_, what_fold=args.what_fold, n_folds=args.n_folds, use_trick=args.use_trick, criterion_name=criterion, train_dir=args.train_dir, val_dir=args.val_dir, test_dir=args.test_dir, image_size=args.image_size, lr=args.lr, division_lr=False, use_pretrained=False,\
+                           batch_size=args.batch_size, num_workers=args.workers, checkpoint=args.checkpoint, resume=args.resume, epochs=args.n_epochs, eval_per_iters=args.eval_per_iters, seed=args.seed,\
+                           adj_brightness=adj_brightness, adj_contrast=adj_contrast, es_metric=args.es_metric, es_patience=args.es_patience, model_name="kfold_efficient_suppression", args_txt=args_txt, augmentation=args.augmentation)

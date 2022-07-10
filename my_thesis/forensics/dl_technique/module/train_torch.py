@@ -119,6 +119,9 @@ def define_criterion(criterion_name: List[str], num_samples: int):
     if criterion_name[0] == 'bce':
         criterion = nn.BCELoss()
         print("Use binary cross entropy loss.")
+    elif criterion_name[0] == 'ce':
+        criterion = nn.CrossEntropyLoss()
+        print("Use cross entropy loss.")
     else:
         if criterion_name[0] == 'cbce':
             criterion = WBCE(weights=[1.0, 1.0])
