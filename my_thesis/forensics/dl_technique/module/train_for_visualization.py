@@ -70,7 +70,7 @@ def eval_kfold_twooutput_image_stream_stream(model ,dataloader, device, criterio
 
             # Find accuracy
             values, preds = torch.max(output, dim=1)
-            mean_acc = torch.mean((labels.data == preds), dtype=torch.float32).item()
+            mean_acc = torch.mean(torch.tensor(labels.data == preds, dtype=torch.float32).cpu().detach()).item()
             mac_accuracy += mean_acc
             #
             pred_label = preds.cpu().detach().numpy()
